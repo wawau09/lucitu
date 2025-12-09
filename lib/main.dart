@@ -5,20 +5,23 @@ import 'package:placelist/Pages/search.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'Pages/main_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await FlutterNaverMap().init(
-      clientId: '0w1sxphr42',
-      onAuthFailed: (ex) => switch (ex) {
-            NQuotaExceededException(:final message) =>
-              print("사용량 초과 (message: $message)"),
-            NUnauthorizedClientException() ||
-            NClientUnspecifiedException() ||
-            NAnotherAuthFailedException() =>
-              print("인증 실패: $ex"),
-  });
+  if (!kIsWeb) {
+    await FlutterNaverMap().init(
+        clientId: '0w1sxphr42',
+        onAuthFailed: (ex) => switch (ex) {
+              NQuotaExceededException(:final message) =>
+                print("사용량 초과 (message: $message)"),
+              NUnauthorizedClientException() ||
+              NClientUnspecifiedException() ||
+              NAnotherAuthFailedException() =>
+                print("인증 실패: $ex"),
+    });
+  }
 
   await Supabase.initialize(
     url: "https://mgebziaamxgrhudurklz.supabase.co",
@@ -38,8 +41,8 @@ class MyApp extends StatefulWidget {
 class MyAppState extends State<MyApp> {
   final List<Widget> screens = [
     MapPage(),
-    MainPage(),
     SearchPage(),
+    MainPage(),
   ];
 
   int screenIndex = 1;

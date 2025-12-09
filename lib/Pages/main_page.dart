@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:placelist/DB/store_database.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class MainPage extends StatefulWidget{
   const MainPage({super.key});
@@ -35,6 +36,16 @@ class Main extends State<MainPage> {
     return response?['image_id']?.toString() ?? "0";
   }
 
+  Future<String> getFolder(int id) async {
+    final response = await supabase
+        .from('stores')
+        .select('folder_name')
+        .eq('id', id)   // 'name' 대신 'id' 컬럼과 비교합니다.
+        .maybeSingle();
+
+    return response?['folder_name']?.toString() ?? "0";
+  }
+
   String getImage(String name) {
     final publicUrl = supabase.storage
     .from('image')
@@ -43,8 +54,37 @@ class Main extends State<MainPage> {
     return publicUrl;
   }
 
+  String getFolderImage(String folder, String name) {
+    final publicUrl = supabase.storage
+    .from('image')
+    .getPublicUrl('$folder/$name.jpeg');
+
+    return publicUrl;
+  }
+
+  Future<List<String>> getFolders() async {
+    final response = await supabase.storage
+        .from('your-bucket')
+        .list(path: ''); // 루트 경로
+
+    // response는 List<StorageItem>
+    return response
+        .where((item) => item.metadata == null) // 폴더는 metadata == null 이다
+        .map((item) => item.name)
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+    return const Center(
+      child: Text(
+        '검색 기능 개발 진행중',
+        style: TextStyle(fontSize: 16),
+      ),
+    );
+  }
+
     return Scaffold(
       backgroundColor: Colors.white,        
       body: ListView(
@@ -86,12 +126,12 @@ class Main extends State<MainPage> {
       ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: FutureBuilder<String>(
-          future: getImageID(index),
+          future: getFolder(index),
           builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
             if(!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             } else {
-              return SizedBox(width: 200, height: 200, child: Image.network(getImage(snapshot.data ?? '0')));
+              return SizedBox(width: 200, height: 200, child: Image.network(getFolderImage(snapshot.data ?? 'test', "1")));
             }
           }
         )
