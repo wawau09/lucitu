@@ -31,6 +31,7 @@ class Search extends State<SearchPage> {
 
   // index 대신 진짜 ID를 받도록 수정
   Widget buildCard(int storeId) => GestureDetector( // Card 위젯으로 감싸면 그림자 효과 등 예쁨
+    behavior: HitTestBehavior.opaque,
     onTap: () {
       showImagePopup(storeId);
     },
