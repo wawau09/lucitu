@@ -30,54 +30,88 @@ class Search extends State<SearchPage> {
   }
 
   // index 대신 진짜 ID를 받도록 수정
-  Widget buildCard(int storeId) => Card( // Card 위젯으로 감싸면 그림자 효과 등 예쁨
-    elevation: 2,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch, // 가로로 꽉 차게
-      children: [
-        // 1. 이미지 영역 (비율 유지)
-        Expanded( 
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+  Widget buildCard(int storeId) => GestureDetector( // Card 위젯으로 감싸면 그림자 효과 등 예쁨
+    onTap: () {
+      showImagePopup(storeId);
+    },
+    child: Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch, // 가로로 꽉 차게
+        children: [
+          // 1. 이미지 영역 (비율 유지)
+          Expanded( 
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: FutureBuilder<String>(
+                future: getFolder(storeId), // 리스트 순서(index)가 아니라 진짜 ID를 넣어야 함
+                builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else {
+                    return Image.network(
+                      getFolderImage(snapshot.data ?? 'test', "1"),
+                      fit: BoxFit.cover, // 박스 크기에 맞춰 꽉 채우기
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.error), // 에러 처리
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+          // 2. 텍스트 영역
+          Padding(
+            padding: const EdgeInsets.all(12.0),
             child: FutureBuilder<String>(
-              future: getFolder(storeId), // 리스트 순서(index)가 아니라 진짜 ID를 넣어야 함
+              future: getID(storeId),
               builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const SizedBox(height: 20, child: LinearProgressIndicator());
                 } else {
-                  return Image.network(
-                    getFolderImage(snapshot.data ?? 'test', "1"),
-                    fit: BoxFit.cover, // 박스 크기에 맞춰 꽉 채우기
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.error), // 에러 처리
+                  return Text(
+                    snapshot.data ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   );
                 }
               },
             ),
           ),
-        ),
-        // 2. 텍스트 영역
-        Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: FutureBuilder<String>(
-            future: getID(storeId),
-            builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-              if (!snapshot.hasData) {
-                return const SizedBox(height: 20, child: LinearProgressIndicator());
-              } else {
-                return Text(
-                  snapshot.data ?? '',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                );
-              }
-            },
-          ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
+
+  void showImagePopup(int storeId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent, // 배경 투명하게
+          child: Container(
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text("ID $storeId 번 가게입니다."),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context), // 닫기
+                  child: const Text("닫기"),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
