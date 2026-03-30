@@ -72,53 +72,112 @@ class Main extends State<MainPage> {
 
   // 이제 Store 객체를 직접 받아서 화면을 그립니다.
   Widget buildCard(Store store) => Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 15),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: FutureBuilder<String>(
-                // store 객체에 이미 들어있는 folderName을 사용합니다.
-                future: getImageUrl(store.folderName, "1"),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Container(
-                      width: 200,
-                      height: 200,
-                      color: Colors.grey[200],
-                      child: const Center(child: CircularProgressIndicator()),
+      width: 220,
+      margin: const EdgeInsets.only(right: 20, bottom: 10), // 카드 사이 간격
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24), // 더 둥근 모서리
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, // 텍스트 왼쪽 정렬
+        children: [
+          // 1. 이미지 영역 (상단 곡률 유지)
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                child: FutureBuilder<String>(
+                  future: getImageUrl(store.folderName, "1"),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Container(
+                        height: 180,
+                        color: Colors.grey[100],
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      );
+                    }
+                    return Image.network(
+                      snapshot.data!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     );
-                  }
-                  
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Container(
-                      width: 200,
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image_not_supported),
-                    );
-                  }
-
-                  return Image.network(
-                    snapshot.data!,
-                    width: 200,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  );
-                },
+                  },
+                ),
               ),
+              // 이미지 위에 '저장' 버튼이나 '평점' 칩 올리기
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.star, color: Colors.amber, size: 14),
+                      SizedBox(width: 4),
+                      Text("4.5", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // 2. 텍스트 정보 영역
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  store.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                // 카페 특징 태그 (예시)
+                Row(
+                  children: [
+                    _buildTag("디저트 맛집"),
+                    const SizedBox(width: 4),
+                    _buildTag("조용한"),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            // 별도의 FutureBuilder 없이 store.name을 바로 사용!
-            Text(
-              store.name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+
+  // 태그 생성을 위한 보조 위젯
+  Widget _buildTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.lightBlue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 10, color: Colors.lightBlue, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
 }
