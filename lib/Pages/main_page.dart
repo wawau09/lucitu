@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:placelist/DB/store_database.dart';
 import 'package:placelist/DB/store.dart'; 
 
 class MainScreen extends StatefulWidget {
@@ -11,7 +11,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final StoreDatabase storesDatabase = StoreDatabase();
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +36,8 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        // Firestore의 'stores' 컬렉션을 실시간으로 구독
-        stream: _firestore.collection('stores').snapshots(),
+      body: StreamBuilder<List<Store>>(
+        stream: storesDatabase.stream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text('데이터 로드 중 오류가 발생했습니다.'));
@@ -47,13 +46,7 @@ class _MainScreenState extends State<MainScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // 작성하신 Store.fromMap을 사용하여 데이터 변환
-          final List<Store> stores = snapshot.data!.docs.map((doc) {
-            return Store.fromMap(
-              doc.id, 
-              doc.data() as Map<String, dynamic>
-            );
-          }).toList();
+          final List<Store> stores = snapshot.data ?? [];
 
           if (stores.isEmpty) {
             return _buildEmptyState();

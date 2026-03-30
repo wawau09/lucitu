@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Firebase 패키지 추가
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // flutterfire configure 로 생성된 파일
+import 'supabase_config.dart';
 
 import 'package:placelist/Pages/map.dart';
 import 'package:placelist/Pages/search.dart';
@@ -14,9 +13,9 @@ import 'Pages/main_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase 초기화
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
 
   if (!kIsWeb) {

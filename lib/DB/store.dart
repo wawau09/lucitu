@@ -1,7 +1,7 @@
 class Store {
-  String? id; // Firebase Document ID를 담기 위해 String으로 변경
+  String? id;
   String name;
-  String folderName; // DB에 저장된 폴더명 (이미지 경로 탐색용)
+  String folderName;
 
   Store({
     this.id,
@@ -9,16 +9,15 @@ class Store {
     required this.folderName,
   });
 
-  // Firestore에서 데이터를 가져올 때
-  factory Store.fromMap(String docId, Map<String, dynamic> map) {
+  factory Store.fromMap(Map<String, dynamic> map) {
+    final dynamic rawId = map['id'];
     return Store(
-      id: docId,
+      id: rawId?.toString(),
       name: map['name'] ?? '이름 없음',
       folderName: map['folder_name'] ?? 'default_folder',
     );
   }
 
-  // Firestore에 데이터를 저장할 때
   Map<String, dynamic> toMap() {
     return {
       'name': name,

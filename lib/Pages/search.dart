@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:placelist/DB/store.dart';
 import 'package:placelist/DB/store_database.dart';
-import 'package:firebase_storage/firebase_storage.dart'; // 추가
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:placelist/supabase_config.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -12,14 +13,13 @@ class SearchPage extends StatefulWidget {
 
 class Search extends State<SearchPage> {
   final storesDatabase = StoreDatabase();
+  final SupabaseClient _client = Supabase.instance.client;
 
-  // Firebase Storage에서 다운로드 URL을 가져오는 함수
   Future<String> getImageUrl(String folderName, String fileName) async {
     try {
-      final ref = FirebaseStorage.instance.ref().child('$folderName/$fileName.jpeg');
-      return await ref.getDownloadURL();
+      final path = '$folderName/$fileName.jpeg';
+      return _client.storage.from(supabaseStorageBucket).getPublicUrl(path);
     } catch (e) {
-      // 이미지 로드 실패 시 기본 이미지 URL이나 에러 처리
       return ''; 
     }
   }
