@@ -59,16 +59,6 @@ class _MainScreenState extends State<MainScreen> {
           );
         },
       ),
-      // 카페 추가 플로팅 버튼
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: 카페 추가 페이지 연결
-        },
-        label: const Text("장소 추가", style: TextStyle(fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.add),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
     );
   }
 
