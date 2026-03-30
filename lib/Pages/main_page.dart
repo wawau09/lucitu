@@ -50,16 +50,13 @@ class _MainScreenState extends State<MainScreen> {
             return _buildEmptyState();
           }
 
-          return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSectionTitle("카페"),
-                _buildVerticalList(stores),
-                const SizedBox(height: 100), // FAB 공간 확보
-              ],
-            ),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle("카페"),
+              Expanded(child: _buildVerticalList(stores)),
+              const SizedBox(height: 100), // FAB 공간 확보
+            ],
           );
         },
       ),
@@ -94,8 +91,7 @@ class _MainScreenState extends State<MainScreen> {
   // 하단 세로 리스트
   Widget _buildVerticalList(List<Store> stores) {
     return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: stores.length,
       itemBuilder: (context, index) {

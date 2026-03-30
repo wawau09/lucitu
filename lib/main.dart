@@ -62,6 +62,7 @@ class MyAppState extends State<MyApp> {
           toolbarHeight: 50,
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.white,
+          shadowColor: Colors.transparent,
           scrolledUnderElevation: 0,
           elevation: 0,
           centerTitle: true,
