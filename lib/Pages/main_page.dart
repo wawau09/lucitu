@@ -22,7 +22,7 @@ class _MainScreenState extends State<MainScreen> {
         elevation: 0,
         centerTitle: false,
         title: Text(
-          'PLACE LIST',
+          'Placelist',
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.bold,

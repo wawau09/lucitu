@@ -15,13 +15,43 @@ class Search extends State<SearchPage> {
   final storesDatabase = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
 
-  Future<String> getImageUrl(String folderName, String fileName) async {
-    try {
-      final path = '$folderName/$fileName.jpeg';
-      return _client.storage.from(supabaseStorageBucket).getPublicUrl(path);
-    } catch (e) {
-      return ''; 
+  Future<String> getImageUrl(Store store, String fileName) async {
+    if (store.imageUrl != null && store.imageUrl!.isNotEmpty) {
+      return store.imageUrl!;
     }
+
+    final storage = _client.storage.from(supabaseStorageBucket);
+
+    if (store.imagePath != null && store.imagePath!.isNotEmpty) {
+      try {
+        return await storage.createSignedUrl(store.imagePath!, 60 * 60);
+      } catch (_) {}
+      try {
+        return storage.getPublicUrl(store.imagePath!);
+      } catch (_) {}
+    }
+
+    final candidates = <String>[
+      '${store.folderName}/$fileName.jpeg',
+      '${store.folderName}/$fileName.jpg',
+      '${store.folderName}/$fileName.png',
+      '${store.folderName}/$fileName',
+    ];
+
+    for (final path in candidates) {
+      try {
+        // Signed URL works for both private/public buckets when read policy allows.
+        return await storage.createSignedUrl(path, 60 * 60);
+      } catch (_) {
+        try {
+          return storage.getPublicUrl(path);
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+
+    return '';
   }
 
   // 이제 int index나 id가 아닌, 완성된 Store 객체를 통째로 받습니다.
@@ -42,7 +72,7 @@ class Search extends State<SearchPage> {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               // Supabase Storage에서 URL 가져오기
               child: FutureBuilder<String>(
-                future: getImageUrl(store.folderName, "1"), 
+                future: getImageUrl(store, "1"), 
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
