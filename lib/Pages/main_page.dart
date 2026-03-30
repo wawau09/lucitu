@@ -54,8 +54,8 @@ class _MainScreenState extends State<MainScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSectionTitle("카페"),
-              Expanded(child: _buildVerticalList(stores)),
-              const SizedBox(height: 100), // FAB 공간 확보
+              _buildCafeCards(stores),
+              const SizedBox(height: 24),
             ],
           );
         },
@@ -88,16 +88,19 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // 하단 세로 리스트
-  Widget _buildVerticalList(List<Store> stores) {
-    return ListView.builder(
+  // 카페 카드 리스트 (기존 인기 카드 스타일 재사용)
+  Widget _buildCafeCards(List<Store> stores) {
+    return SizedBox(
+      height: 280,
+      child: ListView.builder(
+      scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: stores.length,
       itemBuilder: (context, index) {
         final store = stores[index];
         return Card(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(right: 14, bottom: 6),
           color: Colors.white,
           elevation: 3,
           shadowColor: Colors.black.withOpacity(0.08),
@@ -105,60 +108,62 @@ class _MainScreenState extends State<MainScreen> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: Colors.grey.shade200),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
+          child: SizedBox(
+            width: 210,
+            child: Column(
             children: [
-              // 리스트 왼쪽 이미지 아이콘
+              // 카드 상단 이미지
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: SizedBox(
-                  width: 50,
-                  height: 50,
+                  width: double.infinity,
+                  height: 180,
                   child: FutureBuilder<String>(
                     future: _getMainImageUrl(store),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return Container(
-                          color: Colors.black87,
-                          child: const Icon(Icons.coffee, color: Colors.white, size: 24),
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image, color: Colors.white, size: 40),
                         );
                       }
                       return Image.network(
                         snapshot.data!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.black87,
-                          child: const Icon(Icons.broken_image, color: Colors.white, size: 18),
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.broken_image, color: Colors.grey, size: 24),
                         ),
                       );
                     },
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              // 리스트 중앙 텍스트
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      store.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                    Text(
-                      "ID: ${store.id?.substring(0, 5)}...", // ID 앞부분만 살짝 표시
-                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
-                    ),
+                  Text(
+                    store.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "#${store.folderName}",
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
             ],
           ),
           ),
         );
       },
+    ),
     );
   }
 
