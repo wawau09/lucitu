@@ -40,7 +40,7 @@ class Search extends State<SearchPage> {
           Expanded( 
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              // Firebase Storage에서 URL 가져오기
+              // Supabase Storage에서 URL 가져오기
               child: FutureBuilder<String>(
                 future: getImageUrl(store.folderName, "1"), 
                 builder: (context, snapshot) {

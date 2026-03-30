@@ -44,8 +44,8 @@ class MyApp extends StatefulWidget {
 class MyAppState extends State<MyApp> {
   final List<Widget> screens = [
     MapPage(),
-    SearchPage(),
     MainScreen(),
+    SearchPage(),
   ];
 
   int screenIndex = 1;
