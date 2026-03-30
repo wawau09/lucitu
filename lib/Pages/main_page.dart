@@ -54,8 +54,7 @@ class _MainScreenState extends State<MainScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSectionTitle("카페"),
-              _buildCafeCards(stores),
-              const SizedBox(height: 24),
+              Expanded(child: _buildCafeCards(stores)),
             ],
           );
         },
@@ -90,17 +89,14 @@ class _MainScreenState extends State<MainScreen> {
 
   // 카페 카드 리스트 (기존 인기 카드 스타일 재사용)
   Widget _buildCafeCards(List<Store> stores) {
-    return SizedBox(
-      height: 280,
-      child: ListView.builder(
-      scrollDirection: Axis.horizontal,
+    return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
       itemCount: stores.length,
       itemBuilder: (context, index) {
         final store = stores[index];
         return Card(
-          margin: const EdgeInsets.only(right: 14, bottom: 6),
+          margin: const EdgeInsets.only(bottom: 14),
           color: Colors.white,
           elevation: 3,
           shadowColor: Colors.black.withOpacity(0.08),
@@ -108,16 +104,14 @@ class _MainScreenState extends State<MainScreen> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: Colors.grey.shade200),
           ),
-          child: SizedBox(
-            width: 210,
-            child: Column(
+          child: Column(
             children: [
               // 카드 상단 이미지
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 180,
+                  height: 230,
                   child: FutureBuilder<String>(
                     future: _getMainImageUrl(store),
                     builder: (context, snapshot) {
@@ -150,20 +144,13 @@ class _MainScreenState extends State<MainScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "#${store.folderName}",
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
                   ],
                 ),
               ),
             ],
           ),
-          ),
         );
       },
-    ),
     );
   }
 
