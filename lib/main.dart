@@ -46,7 +46,7 @@ class MyAppState extends State<MyApp> {
   final List<Widget> screens = [
     MapPage(),
     SearchPage(),
-    MainPage(),
+    MainScreen(),
   ];
 
   int screenIndex = 1;

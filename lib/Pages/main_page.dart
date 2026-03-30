@@ -1,182 +1,240 @@
 import 'package:flutter/material.dart';
-import 'package:placelist/DB/store.dart';
-import 'package:placelist/DB/store_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:placelist/DB/store.dart'; 
 
-class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
 
   @override
-  State<MainPage> createState() => Main();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class Main extends State<MainPage> {
-  final storesDatabase = StoreDatabase();
-
-  // Firebase Storage에서 이미지 URL을 가져오는 함수
-  Future<String> getImageUrl(String folder, String imageName) async {
-    try {
-      // Storage 경로: 폴더명/파일명.jpeg
-      final ref = FirebaseStorage.instance.ref().child('$folder/$imageName.jpeg');
-      return await ref.getDownloadURL();
-    } catch (e) {
-      debugPrint("이미지 로드 실패: $e");
-      return ""; // 실패 시 빈 문자열 반환
-    }
-  }
+class _MainScreenState extends State<MainScreen> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) {
-      return const Center(
-        child: Text('검색 기능 개발 진행중', style: TextStyle(fontSize: 16)),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: ListView(
-        children: [
-          const Padding(padding: EdgeInsets.all(8.0)),
-          StreamBuilder<List<Store>>(
-            stream: storesDatabase.stream,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const SizedBox(
-                  height: 250,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              final stores = snapshot.data!;
-
-              return SizedBox(
-                height: 280, // 텍스트 영역을 고려해 높이 상향 조절
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: stores.length,
-                  itemBuilder: (context, index) {
-                    // index 대신 데이터 객체를 직접 전달
-                    return buildCard(stores[index]);
-                  },
-                ),
-              );
-            },
-          )
+      backgroundColor: const Color(0xFFF8F9FA), // 세련된 연회색 배경
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: Text(
+          'PLACE LIST',
+          style: GoogleFonts.poppins(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.black),
+            onPressed: () {},
+          ),
         ],
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        // Firestore의 'stores' 컬렉션을 실시간으로 구독
+        stream: _firestore.collection('stores').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('데이터 로드 중 오류가 발생했습니다.'));
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // 작성하신 Store.fromMap을 사용하여 데이터 변환
+          final List<Store> stores = snapshot.data!.docs.map((doc) {
+            return Store.fromMap(
+              doc.id, 
+              doc.data() as Map<String, dynamic>
+            );
+          }).toList();
+
+          if (stores.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle("인기 있는 장소"),
+                _buildHorizontalList(stores),
+                _buildSectionTitle("모든 리스트"),
+                _buildVerticalList(stores),
+                const SizedBox(height: 100), // FAB 공간 확보
+              ],
+            ),
+          );
+        },
+      ),
+      // 카페 추가 플로팅 버튼
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // TODO: 카페 추가 페이지 연결
+        },
+        label: const Text("장소 추가", style: TextStyle(fontWeight: FontWeight.bold)),
+        icon: const Icon(Icons.add),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
       ),
     );
   }
 
-  // 이제 Store 객체를 직접 받아서 화면을 그립니다.
-  Widget buildCard(Store store) => Container(
-      width: 220,
-      margin: const EdgeInsets.only(right: 20, bottom: 10), // 카드 사이 간격
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24), // 더 둥근 모서리
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+  // 섹션 제목 위젯
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+      child: Text(
+        title,
+        style: GoogleFonts.notoSans(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, // 텍스트 왼쪽 정렬
-        children: [
-          // 1. 이미지 영역 (상단 곡률 유지)
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                child: FutureBuilder<String>(
-                  future: getImageUrl(store.folderName, "1"),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Container(
-                        height: 180,
-                        color: Colors.grey[100],
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                      );
-                    }
-                    return Image.network(
-                      snapshot.data!,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    );
-                  },
-                ),
-              ),
-              // 이미지 위에 '저장' 버튼이나 '평점' 칩 올리기
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.amber, size: 14),
-                      SizedBox(width: 4),
-                      Text("4.5", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          // 2. 텍스트 정보 영역
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  store.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                // 카페 특징 태그 (예시)
-                Row(
-                  children: [
-                    _buildTag("디저트 맛집"),
-                    const SizedBox(width: 4),
-                    _buildTag("조용한"),
-                  ],
+    );
+  }
+
+  // 상단 가로 스크롤 카드 리스트
+  Widget _buildHorizontalList(List<Store> stores) {
+    return SizedBox(
+      height: 250,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: stores.length,
+        itemBuilder: (context, index) {
+          final store = stores[index];
+          return Container(
+            width: 200,
+            margin: const EdgeInsets.only(right: 16, bottom: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
-          ),
-        ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 카드 상단 이미지 영역
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.image, color: Colors.white, size: 40),
+                    ),
+                  ),
+                ),
+                // 카드 하단 텍스트 영역
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        store.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "#${store.folderName}",
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
+  }
 
-  // 태그 생성을 위한 보조 위젯
-  Widget _buildTag(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: Colors.lightBlue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 10, color: Colors.lightBlue, fontWeight: FontWeight.w600),
+  // 하단 세로 리스트
+  Widget _buildVerticalList(List<Store> stores) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: stores.length,
+      itemBuilder: (context, index) {
+        final store = stores[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              // 리스트 왼쪽 이미지 아이콘
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.coffee, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              // 리스트 중앙 텍스트
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      store.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    Text(
+                      "ID: ${store.id?.substring(0, 5)}...", // ID 앞부분만 살짝 표시
+                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 데이터가 없을 때 표시할 화면
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.map_outlined, size: 100, color: Colors.grey[200]),
+          const SizedBox(height: 16),
+          Text(
+            "아직 등록된 장소가 없네요!",
+            style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 16),
+          ),
+        ],
       ),
     );
   }
