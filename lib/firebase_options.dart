@@ -72,4 +72,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'placelist-5bacb.firebasestorage.app',
     iosBundleId: 'com.wawau.placelist',
   );
+
 }
