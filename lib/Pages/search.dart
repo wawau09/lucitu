@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:placelist/DB/store.dart';
 import 'package:placelist/DB/store_database.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_storage/firebase_storage.dart'; // 추가
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -11,74 +12,61 @@ class SearchPage extends StatefulWidget {
 
 class Search extends State<SearchPage> {
   final storesDatabase = StoreDatabase();
-  final supabase = Supabase.instance.client;
 
-  // ... (기존 getID, getFolder 함수들은 그대로 둠) ...
-  Future<String> getID(int id) async {
-    final response = await supabase.from('stores').select('name').eq('id', id).maybeSingle();
-    return response?['name']?.toString() ?? "NULL";
+  // Firebase Storage에서 다운로드 URL을 가져오는 함수
+  Future<String> getImageUrl(String folderName, String fileName) async {
+    try {
+      final ref = FirebaseStorage.instance.ref().child('$folderName/$fileName.jpeg');
+      return await ref.getDownloadURL();
+    } catch (e) {
+      // 이미지 로드 실패 시 기본 이미지 URL이나 에러 처리
+      return ''; 
+    }
   }
 
-  String getFolderImage(String folder, String name) {
-    final publicUrl = supabase.storage.from('image').getPublicUrl('$folder/$name.jpeg');
-    return publicUrl;
-  }
-
-  Future<String> getFolder(int id) async {
-    final response = await supabase.from('stores').select('folder_name').eq('id', id).maybeSingle(); // stores -> places 확인 필요
-    return response?['folder_name']?.toString() ?? "0";
-  }
-
-  // index 대신 진짜 ID를 받도록 수정
-  Widget buildCard(int storeId) => GestureDetector( // Card 위젯으로 감싸면 그림자 효과 등 예쁨
-    
+  // 이제 int index나 id가 아닌, 완성된 Store 객체를 통째로 받습니다.
+  Widget buildCard(Store store) => GestureDetector(
     behavior: HitTestBehavior.opaque,
     onTap: () {
-      showImagePopup(storeId);
+      showImagePopup(store.id ?? '알 수 없음');
     },
     child: Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch, // 가로로 꽉 차게
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. 이미지 영역 (비율 유지)
+          // 1. 이미지 영역
           Expanded( 
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              // Firebase Storage에서 URL 가져오기
               child: FutureBuilder<String>(
-                future: getFolder(storeId), // 리스트 순서(index)가 아니라 진짜 ID를 넣어야 함
-                builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-                  if (!snapshot.hasData) {
+                future: getImageUrl(store.folderName, "1"), 
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
-                  } else {
-                    return Image.network(
-                      getFolderImage(snapshot.data ?? 'test', "1"),
-                      fit: BoxFit.cover, // 박스 크기에 맞춰 꽉 채우기
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.error), // 에러 처리
-                    );
                   }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Icon(Icons.broken_image, size: 50, color: Colors.grey);
+                  }
+                  return Image.network(
+                    snapshot.data!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                  );
                 },
               ),
             ),
           ),
-          // 2. 텍스트 영역
+          // 2. 텍스트 영역 (DB를 다시 호출하지 않고 Store 객체의 속성을 바로 사용!)
           Padding(
             padding: const EdgeInsets.all(12.0),
-            child: FutureBuilder<String>(
-              future: getID(storeId),
-              builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-                if (!snapshot.hasData) {
-                  return const SizedBox(height: 20, child: LinearProgressIndicator());
-                } else {
-                  return Text(
-                    snapshot.data ?? '',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  );
-                }
-              },
+            child: Text(
+              store.name,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -86,12 +74,12 @@ class Search extends State<SearchPage> {
     ),
   );
 
-  void showImagePopup(int storeId) {
+  void showImagePopup(String storeId) {
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          backgroundColor: Colors.transparent, // 배경 투명하게
+          backgroundColor: Colors.transparent,
           child: Container(
             width: 400,
             height: 400,
@@ -102,9 +90,9 @@ class Search extends State<SearchPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("ID $storeId 번 가게입니다."),
+                Text("문서 ID: $storeId 번 가게입니다."),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context), // 닫기
+                  onPressed: () => Navigator.pop(context),
                   child: const Text("닫기"),
                 ),
               ],
@@ -119,7 +107,7 @@ class Search extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: StreamBuilder(
+      body: StreamBuilder<List<Store>>(
         stream: storesDatabase.stream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -128,23 +116,18 @@ class Search extends State<SearchPage> {
           final stores = snapshot.data!;
 
           return Padding(
-            padding: const EdgeInsets.all(16.0), // 전체 여백 추가
+            padding: const EdgeInsets.all(16.0),
             child: GridView.builder(
               itemCount: stores.length,
-              // ✅ 여기가 핵심! 반응형 그리드 설정
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 250, // 카드의 최대 너비 (이것보다 넓어지면 칸 수가 늘어남)
-                childAspectRatio: 0.8,   // 가로 세로 비율 (0.8 = 세로가 약간 더 김)
-                crossAxisSpacing: 16,    // 좌우 간격
-                mainAxisSpacing: 16,     // 위아래 간격
+                maxCrossAxisExtent: 250, 
+                childAspectRatio: 0.8,   
+                crossAxisSpacing: 16,    
+                mainAxisSpacing: 16,     
               ),
               itemBuilder: (context, index) {
-                // stores 리스트 안에 있는 객체에서 실제 id를 뽑아야 정확합니다.
-                // 예: stores[index]['id'] 또는 stores[index].id (모델에 따라 다름)
-                // 여기서는 일단 item의 id를 가져온다고 가정합니다.
-                final int storeId = int.tryParse(stores[index].id.toString()) ?? 0;
-                
-                return buildCard(storeId);
+                // Store 객체를 통째로 buildCard에 넘겨줍니다.
+                return buildCard(stores[index]); 
               },
             ),
           );
@@ -152,4 +135,4 @@ class Search extends State<SearchPage> {
       ),
     );
   }
-} 
+}

@@ -1,27 +1,34 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:placelist/DB/store.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StoreDatabase {
-  final database = Supabase.instance.client.from('stores');
+  final CollectionReference _storesCollection = 
+      FirebaseFirestore.instance.collection('stores');
 
   // Create
-  Future createStore(Store newStore) async {
-    await database.insert(newStore.toMap());
+  Future<void> createStore(Store newStore) async {
+    await _storesCollection.add(newStore.toMap());
   }
 
-  // Read
-  final stream = Supabase.instance.client.from('stores').stream(
-    primaryKey: ['id'],
-  ).map((data) => data.map((storeMap) => Store.fromMap(storeMap)).toList());
+  // Read (Stream)
+  // Firestore 컬렉션의 변화를 실시간으로 감지하여 List<Store>로 변환
+  Stream<List<Store>> get stream {
+    return _storesCollection.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Store.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+      }).toList();
+    });
+  }
 
-  Future updateStore(Store oldStore, String newName) async {
-    await database.update({
+  // Update
+  Future<void> updateStore(Store oldStore, String newName) async {
+    await _storesCollection.doc(oldStore.id).update({
       'name': newName
-    }).eq('id', oldStore.id!);
+    });
   }
 
   // Delete
-  Future deleteStore(Store store) async {
-    await database.delete().eq('id', store.id!);
+  Future<void> deleteStore(Store store) async {
+    await _storesCollection.doc(store.id).delete();
   }
 }

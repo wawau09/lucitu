@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1018243169551",
+    "project_id": "placelist-5bacb",
+    "storage_bucket": "placelist-5bacb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1018243169551:android:7abc48a3c34e2ee6f7127a",
+        "android_client_info": {
+          "package_name": "com.example.placelist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8tvmwvnyx_lH9Mf3UEVakxDFK2nHj9-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
