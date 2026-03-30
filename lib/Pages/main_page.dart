@@ -34,25 +34,6 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), // 세련된 연회색 배경
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: Text(
-          'Placelist',
-          style: GoogleFonts.poppins(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
-      ),
       body: StreamBuilder<List<Store>>(
         stream: storesDatabase.stream,
         builder: (context, snapshot) {
@@ -74,9 +55,7 @@ class _MainScreenState extends State<MainScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionTitle("인기 있는 장소"),
-                _buildHorizontalList(stores),
-                _buildSectionTitle("모든 리스트"),
+                _buildSectionTitle("카페"),
                 _buildVerticalList(stores),
                 const SizedBox(height: 100), // FAB 공간 확보
               ],
@@ -112,93 +91,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // 상단 가로 스크롤 카드 리스트
-  Widget _buildHorizontalList(List<Store> stores) {
-    return SizedBox(
-      height: 250,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: stores.length,
-        itemBuilder: (context, index) {
-          final store = stores[index];
-          return Container(
-            width: 200,
-            margin: const EdgeInsets.only(right: 16, bottom: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 카드 상단 이미지 영역
-                Expanded(
-                  child: FutureBuilder<String>(
-                    future: _getMainImageUrl(store),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.image, color: Colors.white, size: 40),
-                          ),
-                        );
-                      }
-                      return ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                        child: Image.network(
-                          snapshot.data!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // 카드 하단 텍스트 영역
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        store.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "#${store.folderName}",
-                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   // 하단 세로 리스트
   Widget _buildVerticalList(List<Store> stores) {
     return ListView.builder(
@@ -218,14 +110,31 @@ class _MainScreenState extends State<MainScreen> {
           child: Row(
             children: [
               // 리스트 왼쪽 이미지 아이콘
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 50,
+                  height: 50,
+                  child: FutureBuilder<String>(
+                    future: _getMainImageUrl(store),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Container(
+                          color: Colors.black87,
+                          child: const Icon(Icons.coffee, color: Colors.white, size: 24),
+                        );
+                      }
+                      return Image.network(
+                        snapshot.data!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.black87,
+                          child: const Icon(Icons.broken_image, color: Colors.white, size: 18),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                child: const Icon(Icons.coffee, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
               // 리스트 중앙 텍스트

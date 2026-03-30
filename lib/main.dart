@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -62,7 +63,7 @@ class MyAppState extends State<MyApp> {
           backgroundColor: Colors.white,
           centerTitle: true,
           title: const Text("Placelist"),
-          titleTextStyle: TextStyle(
+          titleTextStyle: GoogleFonts.poppins(
             fontSize: 35,
             fontWeight: FontWeight.bold,
             color: Colors.black,
@@ -71,23 +72,24 @@ class MyAppState extends State<MyApp> {
 
         body: screens[screenIndex],
         
-        bottomNavigationBar: SalomonBottomBar(
-          currentIndex: screenIndex,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.lightBlue,
-          unselectedItemColor: Colors.grey,
-
-          items: [
-            SalomonBottomBarItem(icon: Icon(Icons.workspaces),title: Text("MAP"), selectedColor: Colors.black,),
-            SalomonBottomBarItem(icon: Icon(Icons.home), title: Text("HOME"), selectedColor: Colors.black,),
-            SalomonBottomBarItem(icon: Icon(Icons.search), title: Text("SEARCH"), selectedColor: Colors.black,),
-          ],
-
-          onTap: (index) {
-            setState(() {
-              screenIndex = index;
-            });
-          }
+        bottomNavigationBar: SafeArea(
+          minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: SalomonBottomBar(
+            currentIndex: screenIndex,
+            backgroundColor: Colors.white,
+            selectedItemColor: Colors.lightBlue,
+            unselectedItemColor: Colors.grey,
+            items: [
+              SalomonBottomBarItem(icon: Icon(Icons.workspaces),title: Text("MAP"), selectedColor: Colors.black,),
+              SalomonBottomBarItem(icon: Icon(Icons.home), title: Text("HOME"), selectedColor: Colors.black,),
+              SalomonBottomBarItem(icon: Icon(Icons.search), title: Text("SEARCH"), selectedColor: Colors.black,),
+            ],
+            onTap: (index) {
+              setState(() {
+                screenIndex = index;
+              });
+            },
+          ),
         ),
       ),
     );

@@ -95,6 +95,8 @@ class Search extends State<SearchPage> {
                   }
                   return Image.network(
                     snapshot.data!,
+                    width: double.infinity,
+                    height: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
                   );
