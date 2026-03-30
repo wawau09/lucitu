@@ -4,5 +4,5 @@ const String supabaseAnonKey =
 
 const String supabaseStorageBucket = String.fromEnvironment(
   'SUPABASE_STORAGE_BUCKET',
-  defaultValue: 'stores',
+  defaultValue: 'image',
 );

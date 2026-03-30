@@ -2,6 +2,7 @@ class Store {
   String? id;
   String name;
   String folderName;
+  int? imageId;
   String? imageUrl;
   String? imagePath;
 
@@ -9,6 +10,7 @@ class Store {
     this.id,
     required this.name,
     required this.folderName,
+    this.imageId,
     this.imageUrl,
     this.imagePath,
   });
@@ -31,11 +33,15 @@ class Store {
             map['thumbnail_path'] ??
             map['photo_path'])
         ?.toString();
+    final int? resolvedImageId = map['image_id'] is int
+        ? map['image_id'] as int
+        : int.tryParse(map['image_id']?.toString() ?? '');
 
     return Store(
       id: rawId?.toString(),
       name: map['name'] ?? '이름 없음',
       folderName: resolvedFolderName,
+      imageId: resolvedImageId,
       imageUrl: resolvedImageUrl,
       imagePath: resolvedImagePath,
     );
@@ -45,6 +51,7 @@ class Store {
     return {
       'name': name,
       'folder_name': folderName,
+      if (imageId != null) 'image_id': imageId,
       if (imageUrl != null && imageUrl!.isNotEmpty) 'image_url': imageUrl,
       if (imagePath != null && imagePath!.isNotEmpty) 'image_path': imagePath,
     };

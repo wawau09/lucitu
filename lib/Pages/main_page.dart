@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/store_database.dart';
 import 'package:placelist/DB/store.dart'; 
+import 'package:placelist/supabase_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -12,6 +14,21 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final StoreDatabase storesDatabase = StoreDatabase();
+  final SupabaseClient _client = Supabase.instance.client;
+
+  Future<String> _getMainImageUrl(Store store) async {
+    final storage = _client.storage.from(supabaseStorageBucket);
+    final path = '${store.folderName}/1.jpeg';
+    try {
+      return await storage.createSignedUrl(path, 60 * 60);
+    } catch (_) {
+      try {
+        return storage.getPublicUrl(path);
+      } catch (_) {
+        return '';
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,14 +141,34 @@ class _MainScreenState extends State<MainScreen> {
               children: [
                 // 카드 상단 이미지 영역
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.image, color: Colors.white, size: 40),
-                    ),
+                  child: FutureBuilder<String>(
+                    future: _getMainImageUrl(store),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.image, color: Colors.white, size: 40),
+                          ),
+                        );
+                      }
+                      return ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                        child: Image.network(
+                          snapshot.data!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 // 카드 하단 텍스트 영역

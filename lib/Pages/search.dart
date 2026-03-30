@@ -15,7 +15,7 @@ class Search extends State<SearchPage> {
   final storesDatabase = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
 
-  Future<String> getImageUrl(Store store, String fileName) async {
+  Future<String> getImageUrl(Store store) async {
     if (store.imageUrl != null && store.imageUrl!.isNotEmpty) {
       return store.imageUrl!;
     }
@@ -31,11 +31,24 @@ class Search extends State<SearchPage> {
       } catch (_) {}
     }
 
+    final String imageToken =
+        (store.imageId != null && store.imageId! > 0) ? '${store.imageId}' : '1';
+
     final candidates = <String>[
-      '${store.folderName}/$fileName.jpeg',
-      '${store.folderName}/$fileName.jpg',
-      '${store.folderName}/$fileName.png',
-      '${store.folderName}/$fileName',
+      // folder_name 자체가 파일명인 경우 (ex: DAUNT_outdoor.jpg)
+      store.folderName,
+      '${store.folderName}.jpeg',
+      '${store.folderName}.jpg',
+      '${store.folderName}.png',
+      // 폴더/파일 구조 fallback
+      '${store.folderName}/$imageToken.jpeg',
+      '${store.folderName}/$imageToken.jpg',
+      '${store.folderName}/$imageToken.png',
+      '${store.folderName}/$imageToken',
+      '${store.folderName}/1.jpeg',
+      '${store.folderName}/1.jpg',
+      '${store.folderName}/1.png',
+      '${store.folderName}/1',
     ];
 
     for (final path in candidates) {
@@ -72,7 +85,7 @@ class Search extends State<SearchPage> {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               // Supabase Storage에서 URL 가져오기
               child: FutureBuilder<String>(
-                future: getImageUrl(store, "1"), 
+                future: getImageUrl(store), 
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
