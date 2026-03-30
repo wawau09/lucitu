@@ -100,14 +100,18 @@ class _MainScreenState extends State<MainScreen> {
       itemCount: stores.length,
       itemBuilder: (context, index) {
         final store = stores[index];
-        return Container(
+        return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
+          color: Colors.white,
+          elevation: 3,
+          shadowColor: Colors.black.withOpacity(0.08),
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey.shade200),
           ),
-          child: Row(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
             children: [
               // 리스트 왼쪽 이미지 아이콘
               ClipRRect(
@@ -155,6 +159,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
               const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
             ],
+          ),
           ),
         );
       },

@@ -61,6 +61,9 @@ class MyAppState extends State<MyApp> {
         appBar: AppBar(
           toolbarHeight: 50,
           backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          scrolledUnderElevation: 0,
+          elevation: 0,
           centerTitle: true,
           title: const Text("Placelist"),
           titleTextStyle: GoogleFonts.poppins(
