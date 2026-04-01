@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
+import 'package:dot_navigation_bar/dot_navigation_bar.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -49,7 +50,8 @@ class MyAppState extends State<MyApp> {
     SearchPage(),
   ];
 
-  int screenIndex = 1;
+  int _currentIndex = 1;
+  bool _bottomBarVisible = true;
 
   // This widget is the root of your application.
   @override
@@ -57,6 +59,7 @@ class MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
+        extendBody: true,
         backgroundColor: Colors.white,
         appBar: AppBar(
           toolbarHeight: 50,
@@ -74,25 +77,59 @@ class MyAppState extends State<MyApp> {
           ),
         ),
 
-        body: screens[screenIndex],
+        body: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            final direction = notification.direction;
+            if (direction == ScrollDirection.reverse && _bottomBarVisible) {
+              setState(() => _bottomBarVisible = false);
+            } else if (direction == ScrollDirection.forward &&
+                !_bottomBarVisible) {
+              setState(() => _bottomBarVisible = true);
+            }
+            return false;
+          },
+          child: IndexedStack(
+            index: _currentIndex,
+            children: screens,
+          ),
+        ),
         
-        bottomNavigationBar: SafeArea(
-          minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          child: SalomonBottomBar(
-            currentIndex: screenIndex,
-            backgroundColor: Colors.white,
-            selectedItemColor: Colors.lightBlue,
-            unselectedItemColor: Colors.grey,
-            items: [
-              SalomonBottomBarItem(icon: Icon(Icons.workspaces),title: Text("MAP"), selectedColor: Colors.black,),
-              SalomonBottomBarItem(icon: Icon(Icons.home), title: Text("HOME"), selectedColor: Colors.black,),
-              SalomonBottomBarItem(icon: Icon(Icons.search), title: Text("SEARCH"), selectedColor: Colors.black,),
-            ],
-            onTap: (index) {
-              setState(() {
-                screenIndex = index;
-              });
-            },
+        bottomNavigationBar: AnimatedSlide(
+          duration: const Duration(milliseconds: 300),
+          offset: _bottomBarVisible ? Offset.zero : const Offset(0, 1.5),
+          curve: Curves.easeInOutCubic,
+          child: SafeArea(
+            minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: DotNavigationBar(
+              currentIndex: _currentIndex,
+              marginR: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+              paddingR: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              itemPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              backgroundColor: Colors.white,
+              dotIndicatorColor: Colors.black, // Default dot color for visual accent
+              items: [
+                DotNavigationBarItem(
+                  icon: const Icon(Icons.workspaces, size: 30),
+                  selectedColor: Colors.lightBlue,
+                  unselectedColor: Colors.grey,
+                ),
+                DotNavigationBarItem(
+                  icon: const Icon(Icons.home, size: 30),
+                  selectedColor: Colors.lightBlue,
+                  unselectedColor: Colors.grey,
+                ),
+                DotNavigationBarItem(
+                  icon: const Icon(Icons.search, size: 30),
+                  selectedColor: Colors.lightBlue,
+                  unselectedColor: Colors.grey,
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -15,6 +15,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final StoreDatabase storesDatabase = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
+  int _reloadToken = 0;
 
   Future<String> _getMainImageUrl(Store store) async {
     final storage = _client.storage.from(supabaseStorageBucket);
@@ -35,10 +36,11 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), // 세련된 연회색 배경
       body: StreamBuilder<List<Store>>(
+        key: ValueKey(_reloadToken),
         stream: storesDatabase.stream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(child: Text('데이터 로드 중 오류가 발생했습니다.'));
+            return _buildErrorState();
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -155,6 +157,30 @@ class _MainScreenState extends State<MainScreen> {
           Text(
             "아직 등록된 장소가 없네요!",
             style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            '데이터 로드 중 오류가 발생했습니다.',
+            style: TextStyle(fontSize: 15),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _reloadToken++;
+              });
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('다시 불러오기'),
           ),
         ],
       ),
