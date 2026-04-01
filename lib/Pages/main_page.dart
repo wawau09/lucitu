@@ -4,6 +4,7 @@ import 'package:placelist/DB/store_database.dart';
 import 'package:placelist/DB/store.dart'; 
 import 'package:placelist/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:placelist/Pages/store_detail_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -90,15 +91,24 @@ class _MainScreenState extends State<MainScreen> {
       itemCount: stores.length,
       itemBuilder: (context, index) {
         final store = stores[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 14),
-          color: Colors.white,
-          elevation: 3,
-          shadowColor: Colors.black.withOpacity(0.08),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey.shade200),
-          ),
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StoreDetailPage(store: store),
+              ),
+            );
+          },
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 14),
+            color: Colors.white,
+            elevation: 3,
+            shadowColor: Colors.black.withOpacity(0.08),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.grey.shade200),
+            ),
           child: Column(
             children: [
               // 카드 상단 이미지
@@ -128,22 +138,20 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                  Text(
-                    store.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  ],
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                child: Text(
+                  store.name,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
+        ),
         );
       },
     );
