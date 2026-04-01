@@ -102,9 +102,8 @@ class MyAppState extends State<MyApp> {
             minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: DotNavigationBar(
               currentIndex: _currentIndex,
-              marginR: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
-              paddingR: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              itemPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              marginR: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+              paddingR: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
               onTap: (index) {
                 setState(() {
                   _currentIndex = index;
@@ -114,17 +113,17 @@ class MyAppState extends State<MyApp> {
               dotIndicatorColor: Colors.black, // Default dot color for visual accent
               items: [
                 DotNavigationBarItem(
-                  icon: const Icon(Icons.workspaces, size: 30),
+                  icon: const Icon(Icons.workspaces, size: 28),
                   selectedColor: Colors.lightBlue,
                   unselectedColor: Colors.grey,
                 ),
                 DotNavigationBarItem(
-                  icon: const Icon(Icons.home, size: 30),
+                  icon: const Icon(Icons.home, size: 28),
                   selectedColor: Colors.lightBlue,
                   unselectedColor: Colors.grey,
                 ),
                 DotNavigationBarItem(
-                  icon: const Icon(Icons.search, size: 30),
+                  icon: const Icon(Icons.search, size: 28),
                   selectedColor: Colors.lightBlue,
                   unselectedColor: Colors.grey,
                 ),
