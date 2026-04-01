@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dot_navigation_bar/dot_navigation_bar.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -100,34 +99,53 @@ class MyAppState extends State<MyApp> {
           curve: Curves.easeInOutCubic,
           child: SafeArea(
             minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: DotNavigationBar(
-              currentIndex: _currentIndex,
-              marginR: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-              paddingR: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              backgroundColor: Colors.white,
-              dotIndicatorColor: Colors.black, // Default dot color for visual accent
-              items: [
-                DotNavigationBarItem(
-                  icon: const Icon(Icons.workspaces, size: 28),
-                  selectedColor: Colors.lightBlue,
-                  unselectedColor: Colors.grey,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    spreadRadius: 0,
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: BottomNavigationBar(
+                  currentIndex: _currentIndex,
+                  showSelectedLabels: false,
+                  showUnselectedLabels: false,
+                  backgroundColor: Colors.white,
+                  selectedItemColor: Colors.lightBlue,
+                  unselectedItemColor: Colors.grey,
+                  iconSize: 30,
+                  elevation: 0,
+                  type: BottomNavigationBarType.fixed,
+                  onTap: (index) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  },
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.workspaces),
+                      label: 'Map',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.home),
+                      label: 'Home',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.search),
+                      label: 'Search',
+                    ),
+                  ],
                 ),
-                DotNavigationBarItem(
-                  icon: const Icon(Icons.home, size: 28),
-                  selectedColor: Colors.lightBlue,
-                  unselectedColor: Colors.grey,
-                ),
-                DotNavigationBarItem(
-                  icon: const Icon(Icons.search, size: 28),
-                  selectedColor: Colors.lightBlue,
-                  unselectedColor: Colors.grey,
-                ),
-              ],
+              ),
             ),
           ),
         ),

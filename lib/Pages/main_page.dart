@@ -39,14 +39,17 @@ class _MainScreenState extends State<MainScreen> {
         key: ValueKey(_reloadToken),
         stream: storesDatabase.stream,
         builder: (context, snapshot) {
+          final List<Store> stores = snapshot.data ?? [];
+
           if (snapshot.hasError) {
-            return _buildErrorState();
+            debugPrint('Stream error: ${snapshot.error}');
+            if (stores.isEmpty) {
+              return _buildErrorState();
+            }
           }
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && stores.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          final List<Store> stores = snapshot.data ?? [];
 
           if (stores.isEmpty) {
             return _buildEmptyState();
