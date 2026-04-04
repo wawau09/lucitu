@@ -57,8 +57,10 @@ class MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        extendBody: true,
+      home: PopScope(
+        canPop: false,
+        child: Scaffold(
+          extendBody: true,
         backgroundColor: Colors.white,
         appBar: AppBar(
           toolbarHeight: 50,
@@ -115,40 +117,47 @@ class MyAppState extends State<MyApp> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(30),
-                child: BottomNavigationBar(
-                  currentIndex: _currentIndex,
-                  showSelectedLabels: false,
-                  showUnselectedLabels: false,
-                  backgroundColor: Colors.white,
-                  selectedItemColor: Colors.lightBlue,
-                  unselectedItemColor: Colors.grey,
-                  iconSize: 30,
-                  elevation: 0,
-                  type: BottomNavigationBarType.fixed,
-                  onTap: (index) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                  },
-                  items: const [
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.workspaces),
-                      label: 'Map',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.home),
-                      label: 'Home',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.search),
-                      label: 'Search',
-                    ),
-                  ],
+                child: Theme(
+                  data: ThemeData(
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                  ),
+                  child: BottomNavigationBar(
+                    currentIndex: _currentIndex,
+                    showSelectedLabels: false,
+                    showUnselectedLabels: false,
+                    backgroundColor: Colors.white,
+                    selectedItemColor: Colors.lightBlue,
+                    unselectedItemColor: Colors.grey,
+                    iconSize: 30,
+                    elevation: 0,
+                    type: BottomNavigationBarType.fixed,
+                    onTap: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    items: const [
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.workspaces),
+                        label: 'Map',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.home),
+                        label: 'Home',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.search),
+                        label: 'Search',
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
+      ),
       ),
     );
   }
