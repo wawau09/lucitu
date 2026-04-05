@@ -57,6 +57,15 @@ class MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.iOS: FadeUpwardsPageTransitionsBuilder(), // iOS 스와이프 뒤로가기 제스처 방지
+            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.macOS: FadeUpwardsPageTransitionsBuilder(),
+          },
+        ),
+      ),
       home: PopScope(
         canPop: false,
         child: Scaffold(

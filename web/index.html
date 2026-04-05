@@ -31,6 +31,15 @@
 
   <title>placelist</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      /* 브라우저 기본 스와이프 탐색 및 바운스 효과 방지 */
+      overscroll-behavior-x: none;
+      overscroll-behavior-y: none;
+      /* 터치 제스처를 브라우저가 아닌 플러터(웹)에서 완전 제어하도록 설정 */
+      touch-action: none;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
