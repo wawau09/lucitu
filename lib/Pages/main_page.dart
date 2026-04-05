@@ -95,8 +95,17 @@ class _MainScreenState extends State<MainScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => StoreDetailPage(store: store),
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) => StoreDetailPage(store: store),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SlideTransition(
+                    position: animation.drive(
+                      Tween(begin: const Offset(1.0, 0.0), end: Offset.zero)
+                          .chain(CurveTween(curve: Curves.easeOutCubic)),
+                    ),
+                    child: child,
+                  );
+                },
               ),
             );
           },
