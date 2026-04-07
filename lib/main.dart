@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
-import 'package:flutter/rendering.dart';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -45,7 +45,6 @@ class MyAppState extends State<MyApp> {
   final List<Widget> screens = [MapPage(), MainScreen(), SearchPage()];
 
   int _currentIndex = 1;
-  bool _bottomBarVisible = true;
 
   // This widget is the root of your application.
   @override
@@ -66,28 +65,11 @@ class MyAppState extends State<MyApp> {
           extendBody: true,
           backgroundColor: Colors.white,
 
-          body: NotificationListener<UserScrollNotification>(
-            onNotification: (notification) {
-              final direction = notification.direction;
-              if (direction == ScrollDirection.reverse && _bottomBarVisible) {
-                setState(() => _bottomBarVisible = false);
-              } else if (direction == ScrollDirection.forward &&
-                  !_bottomBarVisible) {
-                setState(() => _bottomBarVisible = true);
-              }
-              return false;
-            },
-            child: IndexedStack(index: _currentIndex, children: screens),
-          ),
+          body: IndexedStack(index: _currentIndex, children: screens),
 
-          bottomNavigationBar: AnimatedSlide(
-            duration: const Duration(milliseconds: 300),
-            offset: _bottomBarVisible ? Offset.zero : const Offset(0, 1.5),
-            curve: Curves.easeInOutCubic,
-            child: SafeArea(
+          bottomNavigationBar: SafeArea(
               minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(30),
@@ -141,7 +123,6 @@ class MyAppState extends State<MyApp> {
                 ),
               ),
             ),
-          ),
         ),
       ),
     );

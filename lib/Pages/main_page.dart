@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/store_database.dart';
 import 'package:placelist/DB/store.dart'; 
@@ -40,7 +41,45 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeader(),
+            // 타이틀
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: Text(
+                "PlaceList",
+                style: GoogleFonts.poppins(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+            // 검색창 (항상 표시)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: Colors.black, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Search The Place",
+                      style: GoogleFonts.poppins(
+                        color: Colors.black87,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             Expanded(
               child: StreamBuilder<List<Store>>(
                 key: ValueKey(_reloadToken),
@@ -72,51 +111,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // 메인 화면 헤더 위젯 (타이틀 & 검색창)
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "PlaceList",
-            style: GoogleFonts.poppins(
-              fontSize: 42,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-              letterSpacing: -1.0,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.grey.shade300, width: 1),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                const Icon(Icons.search, color: Colors.black, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  "Search The Place",
-                  style: GoogleFonts.poppins(
-                    color: Colors.black87,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 카페 카드 리스트 (기존 인기 카드 스타일 재사용)
+  // 카페 카드 리스트
   Widget _buildCafeCards(List<Store> stores) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
