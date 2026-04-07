@@ -67,8 +67,8 @@ class MyAppState extends State<MyApp> {
 
           body: IndexedStack(index: _currentIndex, children: screens),
 
-          bottomNavigationBar: SafeArea(
-              minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          bottomNavigationBar: Padding(
+              padding: EdgeInsets.fromLTRB(12, 0, 12, MediaQuery.of(context).padding.bottom + 8),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
