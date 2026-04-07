@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/store_database.dart';
-import 'package:placelist/DB/store.dart'; 
+import 'package:placelist/DB/store.dart';
 import 'package:placelist/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/Pages/store_detail_page.dart';
@@ -93,7 +93,8 @@ class _MainScreenState extends State<MainScreen> {
                       return _buildErrorState();
                     }
                   }
-                  if (snapshot.connectionState == ConnectionState.waiting && stores.isEmpty) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      stores.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
@@ -124,12 +125,21 @@ class _MainScreenState extends State<MainScreen> {
             Navigator.push(
               context,
               PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => StoreDetailPage(store: store),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                pageBuilder:
+                    (context, animation, secondaryAnimation) =>
+                        StoreDetailPage(store: store),
+                transitionsBuilder: (
+                  context,
+                  animation,
+                  secondaryAnimation,
+                  child,
+                ) {
                   return SlideTransition(
                     position: animation.drive(
-                      Tween(begin: const Offset(1.0, 0.0), end: Offset.zero)
-                          .chain(CurveTween(curve: Curves.easeOutCubic)),
+                      Tween(
+                        begin: const Offset(1.0, 0.0),
+                        end: Offset.zero,
+                      ).chain(CurveTween(curve: Curves.easeOutCubic)),
                     ),
                     child: child,
                   );
@@ -146,49 +156,66 @@ class _MainScreenState extends State<MainScreen> {
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(color: Colors.grey.shade200),
             ),
-          child: Column(
-            children: [
-              // 카드 상단 이미지
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 230,
-                  child: FutureBuilder<String>(
-                    future: _getMainImageUrl(store),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.image, color: Colors.white, size: 40),
+            child: Column(
+              children: [
+                // 카드 상단 이미지
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 230,
+                    child: FutureBuilder<String>(
+                      future: _getMainImageUrl(store),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Icon(
+                              Icons.image,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          );
+                        }
+                        return Image.network(
+                          snapshot.data!,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (context, error, stackTrace) => Container(
+                                color: Colors.grey[200],
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey,
+                                  size: 24,
+                                ),
+                              ),
                         );
-                      }
-                      return Image.network(
-                        snapshot.data!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image, color: Colors.grey, size: 24),
-                        ),
-                      );
-                    },
+                      },
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-                child: Text(
-                  store.name,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 18,
+                    horizontal: 16,
+                  ),
+                  child: Text(
+                    store.name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         );
       },
     );
@@ -216,10 +243,7 @@ class _MainScreenState extends State<MainScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            '데이터 로드 중 오류가 발생했습니다.',
-            style: TextStyle(fontSize: 15),
-          ),
+          const Text('데이터 로드 중 오류가 발생했습니다.', style: TextStyle(fontSize: 15)),
           const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: () {

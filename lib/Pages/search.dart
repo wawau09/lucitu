@@ -14,6 +14,8 @@ class SearchPage extends StatefulWidget {
 class Search extends State<SearchPage> {
   final storesDatabase = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
+  final TextEditingController _searchController = TextEditingController();
+  List<Store> _filteredStores = [];
 
   Future<String> getImageUrl(Store store) async {
     if (store.imageUrl != null && store.imageUrl!.isNotEmpty) {
@@ -148,6 +150,24 @@ class Search extends State<SearchPage> {
     );
   }
 
+  void _filterStores(String query, List<Store> stores) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredStores = stores;
+      } else {
+        _filteredStores = stores.where((store) =>
+            store.name.toLowerCase().contains(query.toLowerCase())
+        ).toList();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -159,22 +179,62 @@ class Search extends State<SearchPage> {
             return const Center(child: CircularProgressIndicator());
           }
           final stores = snapshot.data!;
+          
+          // Initialize filtered stores when data loads
+          if (_filteredStores.isEmpty && _searchController.text.isEmpty) {
+            _filteredStores = stores;
+          }
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: GridView.builder(
-              itemCount: stores.length,
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 250, 
-                childAspectRatio: 0.8,   
-                crossAxisSpacing: 16,    
-                mainAxisSpacing: 16,     
+          return Column(
+            children: [
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (query) => _filterStores(query, stores),
+                  decoration: InputDecoration(
+                    hintText: '가게 이름으로 검색...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                  ),
+                ),
               ),
-              itemBuilder: (context, index) {
-                // Store 객체를 통째로 buildCard에 넘겨줍니다.
-                return buildCard(stores[index]); 
-              },
-            ),
+              // Results Grid
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _filteredStores.isEmpty
+                      ? Center(
+                          child: Text(
+                            _searchController.text.isEmpty 
+                                ? '가게가 없습니다' 
+                                : '검색 결과가 없습니다',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        )
+                      : GridView.builder(
+                          itemCount: _filteredStores.length,
+                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 250, 
+                            childAspectRatio: 0.8,   
+                            crossAxisSpacing: 16,    
+                            mainAxisSpacing: 16,     
+                          ),
+                          itemBuilder: (context, index) {
+                            return buildCard(_filteredStores[index]); 
+                          },
+                        ),
+                ),
+              ),
+            ],
           );
         },
       ),
