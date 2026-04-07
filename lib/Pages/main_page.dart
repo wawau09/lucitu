@@ -138,6 +138,7 @@ class _MainScreenState extends State<MainScreen> {
                       return Image.network(
                         snapshot.data!,
                         fit: BoxFit.cover,
+                        cacheWidth: 800, // 메모리 사용량을 줄여 사파리 WebGL 크래시 방지
                         errorBuilder: (context, error, stackTrace) => Container(
                           color: Colors.grey[200],
                           child: const Icon(Icons.broken_image, color: Colors.grey, size: 24),
