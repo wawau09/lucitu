@@ -35,50 +35,83 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // 세련된 연회색 배경
-      body: StreamBuilder<List<Store>>(
-        key: ValueKey(_reloadToken),
-        stream: storesDatabase.stream,
-        builder: (context, snapshot) {
-          final List<Store> stores = snapshot.data ?? [];
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: StreamBuilder<List<Store>>(
+                key: ValueKey(_reloadToken),
+                stream: storesDatabase.stream,
+                builder: (context, snapshot) {
+                  final List<Store> stores = snapshot.data ?? [];
 
-          if (snapshot.hasError) {
-            debugPrint('Stream error: ${snapshot.error}');
-            if (stores.isEmpty) {
-              return _buildErrorState();
-            }
-          }
-          if (snapshot.connectionState == ConnectionState.waiting && stores.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+                  if (snapshot.hasError) {
+                    debugPrint('Stream error: ${snapshot.error}');
+                    if (stores.isEmpty) {
+                      return _buildErrorState();
+                    }
+                  }
+                  if (snapshot.connectionState == ConnectionState.waiting && stores.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-          if (stores.isEmpty) {
-            return _buildEmptyState();
-          }
+                  if (stores.isEmpty) {
+                    return _buildEmptyState();
+                  }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionTitle("카페"),
-              Expanded(child: _buildCafeCards(stores)),
-            ],
-          );
-        },
+                  return _buildCafeCards(stores);
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // 섹션 제목 위젯
-  Widget _buildSectionTitle(String title) {
+  // 메인 화면 헤더 위젯 (타이틀 & 검색창)
+  Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-      child: Text(
-        title,
-        style: GoogleFonts.notoSans(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "PlaceList",
+            style: GoogleFonts.poppins(
+              fontSize: 42,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+              letterSpacing: -1.0,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: Colors.black, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  "Search The Place",
+                  style: GoogleFonts.poppins(
+                    color: Colors.black87,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -138,7 +171,6 @@ class _MainScreenState extends State<MainScreen> {
                       return Image.network(
                         snapshot.data!,
                         fit: BoxFit.cover,
-                        cacheWidth: 800, // 메모리 사용량을 줄여 사파리 WebGL 크래시 방지
                         errorBuilder: (context, error, stackTrace) => Container(
                           color: Colors.grey[200],
                           child: const Icon(Icons.broken_image, color: Colors.grey, size: 24),

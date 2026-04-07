@@ -62,7 +62,6 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                   return Image.network(
                     snapshot.data!,
                     fit: BoxFit.cover,
-                    cacheWidth: 1000, // 메모리 사용량을 줄여 사파리 WebGL 크래시 방지
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: Colors.grey[200],
                       child: const Center(
