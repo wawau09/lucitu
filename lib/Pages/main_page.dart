@@ -18,6 +18,7 @@ class _MainScreenState extends State<MainScreen> {
   final StoreDatabase storesDatabase = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
   int _reloadToken = 0;
+  String _searchQuery = '';
 
   Future<String> _getMainImageUrl(Store store) async {
     final storage = _client.storage.from(supabaseStorageBucket);
@@ -65,18 +66,27 @@ class _MainScreenState extends State<MainScreen> {
                   border: Border.all(color: Colors.grey.shade300, width: 1),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search, color: Colors.black, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Search The Place",
-                      style: GoogleFonts.poppins(
-                        color: Colors.black87,
-                        fontSize: 14,
-                      ),
+                child: TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  style: GoogleFonts.poppins(
+                    color: Colors.black87,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    icon: const Icon(Icons.search, color: Colors.black, size: 24),
+                    hintText: "Search The Place",
+                    hintStyle: GoogleFonts.poppins(
+                      color: Colors.grey,
+                      fontSize: 14,
                     ),
-                  ],
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
               ),
             ),
@@ -85,7 +95,13 @@ class _MainScreenState extends State<MainScreen> {
                 key: ValueKey(_reloadToken),
                 stream: storesDatabase.stream,
                 builder: (context, snapshot) {
-                  final List<Store> stores = snapshot.data ?? [];
+                  List<Store> stores = snapshot.data ?? [];
+                  
+                  if (_searchQuery.isNotEmpty) {
+                    stores = stores.where((store) =>
+                        store.name.toLowerCase().contains(_searchQuery.toLowerCase())
+                    ).toList();
+                  }
 
                   if (snapshot.hasError) {
                     debugPrint('Stream error: ${snapshot.error}');
