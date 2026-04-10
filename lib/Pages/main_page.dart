@@ -19,6 +19,13 @@ class _MainScreenState extends State<MainScreen> {
   final SupabaseClient _client = Supabase.instance.client;
   int _reloadToken = 0;
   String _searchQuery = '';
+  late Stream<List<Store>> _storesStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _storesStream = storesDatabase.stream;
+  }
 
   Future<String> _getMainImageUrl(Store store) async {
     final storage = _client.storage.from(supabaseStorageBucket);
@@ -93,7 +100,7 @@ class _MainScreenState extends State<MainScreen> {
             Expanded(
               child: StreamBuilder<List<Store>>(
                 key: ValueKey(_reloadToken),
-                stream: storesDatabase.stream,
+                stream: _storesStream,
                 builder: (context, snapshot) {
                   List<Store> stores = snapshot.data ?? [];
                   
@@ -264,6 +271,7 @@ class _MainScreenState extends State<MainScreen> {
           ElevatedButton.icon(
             onPressed: () {
               setState(() {
+                _storesStream = storesDatabase.stream;
                 _reloadToken++;
               });
             },
