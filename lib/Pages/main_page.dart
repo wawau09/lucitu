@@ -19,12 +19,12 @@ class _MainScreenState extends State<MainScreen> {
   final SupabaseClient _client = Supabase.instance.client;
   int _reloadToken = 0;
   String _searchQuery = '';
-  late Stream<List<Store>> _storesStream;
+  late Future<List<Store>> _storesFuture;
 
   @override
   void initState() {
     super.initState();
-    _storesStream = storesDatabase.stream;
+    _storesFuture = storesDatabase.getStores();
   }
 
   Future<String> _getMainImageUrl(Store store) async {
@@ -74,6 +74,8 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: TextField(
+                  textAlign: TextAlign.center,
+                  textAlignVertical: TextAlignVertical.center,
                   onChanged: (value) {
                     setState(() {
                       _searchQuery = value;
@@ -84,23 +86,21 @@ class _MainScreenState extends State<MainScreen> {
                     fontSize: 14,
                   ),
                   decoration: InputDecoration(
-                    icon: const Icon(Icons.search, color: Colors.black, size: 24),
+                    prefixIcon: const Icon(Icons.search, color: Colors.black, size: 24),
                     hintText: "Search The Place",
                     hintStyle: GoogleFonts.poppins(
                       color: Colors.grey,
                       fontSize: 14,
                     ),
                     border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ),
             ),
             Expanded(
-              child: StreamBuilder<List<Store>>(
+              child: FutureBuilder<List<Store>>(
                 key: ValueKey(_reloadToken),
-                stream: _storesStream,
+                future: _storesFuture,
                 builder: (context, snapshot) {
                   List<Store> stores = snapshot.data ?? [];
                   
@@ -271,7 +271,7 @@ class _MainScreenState extends State<MainScreen> {
           ElevatedButton.icon(
             onPressed: () {
               setState(() {
-                _storesStream = storesDatabase.stream;
+                _storesFuture = storesDatabase.getStores();
                 _reloadToken++;
               });
             },

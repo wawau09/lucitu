@@ -17,12 +17,12 @@ class Search extends State<SearchPage> {
   final SupabaseClient _client = Supabase.instance.client;
   final TextEditingController _searchController = TextEditingController();
   List<Store> _filteredStores = [];
-  late Stream<List<Store>> _storesStream;
+  late Future<List<Store>> _storesFuture;
 
   @override
   void initState() {
     super.initState();
-    _storesStream = storesDatabase.stream;
+    _storesFuture = storesDatabase.getStores();
   }
 
   Future<String> getImageUrl(Store store) async {
@@ -168,8 +168,8 @@ class Search extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: StreamBuilder<List<Store>>(
-        stream: _storesStream,
+      body: FutureBuilder<List<Store>>(
+        future: _storesFuture,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());

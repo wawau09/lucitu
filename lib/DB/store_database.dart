@@ -15,6 +15,11 @@ class StoreDatabase {
     });
   }
 
+  Future<List<Store>> getStores() async {
+    final List<dynamic> rows = await _client.from(_table).select().order('id');
+    return rows.map((row) => Store.fromMap(row as Map<String, dynamic>)).toList();
+  }
+
   Future<void> updateStore(Store oldStore, String newName) async {
     if (oldStore.id == null) return;
     await _client.from(_table).update({'name': newName}).eq('id', oldStore.id!);
