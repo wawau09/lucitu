@@ -72,9 +72,8 @@ class _MainScreenState extends State<MainScreen> {
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: Colors.grey.shade300, width: 1),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.only(left: 14, right: 16),
                 child: TextField(
-                  textAlign: TextAlign.center,
                   textAlignVertical: TextAlignVertical.center,
                   onChanged: (value) {
                     setState(() {
@@ -87,6 +86,10 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search, color: Colors.black, size: 24),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
                     hintText: "Search The Place",
                     hintStyle: GoogleFonts.poppins(
                       color: Colors.grey,
