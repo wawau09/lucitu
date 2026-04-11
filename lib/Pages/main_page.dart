@@ -83,17 +83,21 @@ class _MainScreenState extends State<MainScreen> {
                   style: GoogleFonts.poppins(
                     color: Colors.black87,
                     fontSize: 14,
+                    height: 1.2,
                   ),
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search, color: Colors.black, size: 24),
                     prefixIconConstraints: const BoxConstraints(
                       minWidth: 40,
-                      minHeight: 40,
+                      minHeight: 48,
                     ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                     hintText: "Search The Place",
                     hintStyle: GoogleFonts.poppins(
                       color: Colors.grey,
                       fontSize: 14,
+                      height: 1.2,
                     ),
                     border: InputBorder.none,
                   ),
