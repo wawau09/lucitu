@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/DB/store.dart';
@@ -108,6 +109,13 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                     alignment: Alignment.bottomCenter,
                     children: [
                       PageView.builder(
+                        scrollBehavior: const MaterialScrollBehavior().copyWith(
+                          dragDevices: {
+                            PointerDeviceKind.mouse,
+                            PointerDeviceKind.touch,
+                            PointerDeviceKind.trackpad,
+                          },
+                        ),
                         onPageChanged: (index) {
                           setState(() {
                             _currentPage = index;
@@ -166,7 +174,7 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                   Text(
                     widget.store.name,
                     style: GoogleFonts.notoSans(
-                      fontSize: 32,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                       height: 1.2,
