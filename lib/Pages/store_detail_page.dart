@@ -15,19 +15,61 @@ class StoreDetailPage extends StatefulWidget {
 
 class _StoreDetailPageState extends State<StoreDetailPage> {
   final SupabaseClient _client = Supabase.instance.client;
+  int _currentPage = 0;
+  late Future<List<String>> _imagesFuture;
 
-  Future<String> _getMainImageUrl(Store store) async {
+  @override
+  void initState() {
+    super.initState();
+    _imagesFuture = _getStoreImageUrls(widget.store);
+  }
+
+  Future<List<String>> _getStoreImageUrls(Store store) async {
     final storage = _client.storage.from(supabaseStorageBucket);
-    final path = '${store.folderName}/1.jpeg';
+    List<String> urls = [];
     try {
-      return await storage.createSignedUrl(path, 60 * 60);
-    } catch (_) {
-      try {
-        return storage.getPublicUrl(path);
-      } catch (_) {
-        return '';
+      final files = await storage.list(path: store.folderName);
+      var imageFiles = files.where((f) => 
+        f.name.toLowerCase().endsWith('.jpeg') || 
+        f.name.toLowerCase().endsWith('.jpg') || 
+        f.name.toLowerCase().endsWith('.png')
+      ).toList();
+      
+      imageFiles.sort((a, b) {
+        int numA = int.tryParse(a.name.split('.').first) ?? 0;
+        int numB = int.tryParse(b.name.split('.').first) ?? 0;
+        return numA.compareTo(numB);
+      });
+
+      for (var file in imageFiles) {
+        final path = '${store.folderName}/${file.name}';
+        try {
+          urls.add(await storage.createSignedUrl(path, 60 * 60));
+        } catch (_) {
+          urls.add(storage.getPublicUrl(path));
+        }
+      }
+    } catch (e) {
+      for (int i = 1; i <= 2; i++) {
+        final path = '${store.folderName}/$i.jpeg';
+        try {
+          urls.add(await storage.createSignedUrl(path, 60 * 60));
+        } catch (_) {
+          urls.add(storage.getPublicUrl(path));
+        }
       }
     }
+    
+    if (urls.isEmpty) {
+      final path = '${store.folderName}/1.jpeg';
+      try {
+        urls.add(await storage.createSignedUrl(path, 60 * 60));
+      } catch (_) {
+        urls.add(storage.getPublicUrl(path));
+      }
+    }
+    
+    return urls;
   }
 
   @override
@@ -48,8 +90,8 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
             SizedBox(
               height: 400,
               width: double.infinity,
-              child: FutureBuilder<String>(
-                future: _getMainImageUrl(widget.store),
+              child: FutureBuilder<List<String>>(
+                future: _imagesFuture,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return Container(
@@ -59,15 +101,57 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                       ),
                     );
                   }
-                  return Image.network(
-                    snapshot.data!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey, size: 60),
+                  
+                  final imageUrls = snapshot.data!;
+                  
+                  return Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [
+                      PageView.builder(
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentPage = index;
+                          });
+                        },
+                        itemCount: imageUrls.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                            color: Colors.grey[100], // light background to better see contain bounds
+                            child: Image.network(
+                              imageUrls[index],
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Icon(Icons.broken_image, color: Colors.grey, size: 60),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ),
+                      if (imageUrls.length > 1)
+                        Positioned(
+                          bottom: 16,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              imageUrls.length,
+                              (index) => Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _currentPage == index
+                                      ? Colors.blue
+                                      : Colors.grey.shade400,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 },
               ),
