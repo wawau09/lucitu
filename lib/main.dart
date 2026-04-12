@@ -16,18 +16,20 @@ Future<void> main() async {
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
-  await FlutterNaverMap().init(
-    clientId: '0w1sxphr42',
-    onAuthFailed:
-        (ex) => switch (ex) {
-          NQuotaExceededException(:final message) => print(
-            "사용량 초과 (message: $message)",
-          ),
-          NUnauthorizedClientException() ||
-          NClientUnspecifiedException() ||
-          NAnotherAuthFailedException() => print("인증 실패: $ex"),
-        },
-  );
+  if (!kIsWeb) {
+    await FlutterNaverMap().init(
+      clientId: '0w1sxphr42',
+      onAuthFailed:
+          (ex) => switch (ex) {
+            NQuotaExceededException(:final message) => print(
+              "사용량 초과 (message: $message)",
+            ),
+            NUnauthorizedClientException() ||
+            NClientUnspecifiedException() ||
+            NAnotherAuthFailedException() => print("인증 실패: $ex"),
+          },
+    );
+  }
 
   runApp(const MyApp());
 }
