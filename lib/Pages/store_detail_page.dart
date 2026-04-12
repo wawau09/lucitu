@@ -44,30 +44,18 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
 
       for (var file in imageFiles) {
         final path = '${store.folderName}/${file.name}';
-        try {
-          urls.add(await storage.createSignedUrl(path, 60 * 60));
-        } catch (_) {
-          urls.add(storage.getPublicUrl(path));
-        }
+        urls.add(storage.getPublicUrl(path));
       }
     } catch (e) {
       for (int i = 1; i <= 2; i++) {
         final path = '${store.folderName}/$i.jpeg';
-        try {
-          urls.add(await storage.createSignedUrl(path, 60 * 60));
-        } catch (_) {
-          urls.add(storage.getPublicUrl(path));
-        }
+        urls.add(storage.getPublicUrl(path));
       }
     }
     
     if (urls.isEmpty) {
       final path = '${store.folderName}/1.jpeg';
-      try {
-        urls.add(await storage.createSignedUrl(path, 60 * 60));
-      } catch (_) {
-        urls.add(storage.getPublicUrl(path));
-      }
+      urls.add(storage.getPublicUrl(path));
     }
     
     return urls;

@@ -15,7 +15,12 @@ class Map extends State<MapPage> {
    @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return getWebMap();
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: getWebMap(),
+        ),
+      );
     }
 
     // NaverMapController 객체의 비동기 작업 완료를 나타내는 Completer 생성

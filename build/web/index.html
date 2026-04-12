@@ -34,7 +34,8 @@
   <script>
     function initNaverMap(elementId) {
       if (!window.naver || !window.naver.maps) {
-        console.error("Naver Maps API not loaded");
+        console.error("Naver Maps API not loaded yet, retrying in 500ms");
+        setTimeout(function() { initNaverMap(elementId); }, 500);
         return;
       }
       var mapOptions = {

@@ -13,8 +13,8 @@ Widget getWebMap() {
         ..style.width = '100%'
         ..style.height = '100%';
       
-      Future.delayed(const Duration(milliseconds: 100), () {
-        js.context.callMethod('initNaverMap', [div.id]);
+      Future.delayed(const Duration(milliseconds: 200), () {
+        js.context.callMethod('initNaverMap', [div]);
       });
       
       return div;

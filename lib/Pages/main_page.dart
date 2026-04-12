@@ -31,13 +31,9 @@ class _MainScreenState extends State<MainScreen> {
     final storage = _client.storage.from(supabaseStorageBucket);
     final path = '${store.folderName}/1.jpeg';
     try {
-      return await storage.createSignedUrl(path, 60 * 60);
+      return storage.getPublicUrl(path);
     } catch (_) {
-      try {
-        return storage.getPublicUrl(path);
-      } catch (_) {
-        return '';
-      }
+      return '';
     }
   }
 
