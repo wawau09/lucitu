@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'map_stub.dart' if (dart.library.html) 'map_web.dart';
 
 class MapPage extends StatefulWidget{
   const MapPage({super.key});
@@ -14,12 +15,7 @@ class Map extends State<MapPage> {
    @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return const Center(
-        child: Text(
-          '웹에서는 네이버 지도를 지원하지 않습니다.',
-          style: TextStyle(fontSize: 16),
-        ),
-      );
+      return getWebMap();
     }
 
     // NaverMapController 객체의 비동기 작업 완료를 나타내는 Completer 생성

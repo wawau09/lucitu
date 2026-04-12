@@ -31,6 +31,45 @@
 
   <title>lucitu</title>
   <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=0w1sxphr42"></script>
+  <script>
+    function initNaverMap(elementId) {
+      if (!window.naver || !window.naver.maps) {
+        console.error("Naver Maps API not loaded");
+        return;
+      }
+      var mapOptions = {
+        center: new naver.maps.LatLng(35.1, 128.95),
+        zoom: 12
+      };
+      var map = new naver.maps.Map(elementId, mapOptions);
+      
+      var marker1 = new naver.maps.Marker({
+          position: new naver.maps.LatLng(35.10658, 128.9663),
+          map: map
+      });
+      var infoWindow1 = new naver.maps.InfoWindow({
+          content: '<div style="padding:10px;font-family:sans-serif;font-size:14px;border-radius:10px;box-shadow: 0 2px 4px rgba(0,0,0,0.1);">아트몰링</div>',
+          borderWidth: 0,
+          disableAnchor: true,
+          backgroundColor: 'transparent',
+          pixelOffset: new naver.maps.Point(0, -15)
+      });
+      infoWindow1.open(map, marker1);
+
+      var marker2 = new naver.maps.Marker({
+          position: new naver.maps.LatLng(35.15571, 129.0596),
+          map: map
+      });
+      var infoWindow2 = new naver.maps.InfoWindow({
+          content: '<div style="padding:10px;font-family:sans-serif;font-size:14px;border-radius:10px;box-shadow: 0 2px 4px rgba(0,0,0,0.1);">내공초밥</div>',
+          borderWidth: 0,
+          disableAnchor: true,
+          backgroundColor: 'transparent',
+          pixelOffset: new naver.maps.Point(0, -15)
+      });
+      infoWindow2.open(map, marker2);
+    }
+  </script>
   <link rel="manifest" href="manifest.json">
   <style>
     html, body {

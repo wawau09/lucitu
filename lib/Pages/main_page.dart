@@ -93,7 +93,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    hintText: "Search The Place",
+                    hintText: "Search the lucy",
                     hintStyle: GoogleFonts.poppins(
                       color: Colors.grey,
                       fontSize: 14,
