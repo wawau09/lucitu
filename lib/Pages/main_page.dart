@@ -102,6 +102,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
             // Category Filter Section
             const CategoryFilterSection(),
             const SizedBox(height: 20),

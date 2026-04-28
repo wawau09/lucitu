@@ -29,7 +29,7 @@ class CategoryFilterSection extends ConsumerWidget {
       children: [
         // Selected filter bar
         const Padding(
-          padding: EdgeInsets.only(top: 4),
+          padding: EdgeInsets.only(top: 0),
           child: SelectedFilterBar(),
         ),
 
