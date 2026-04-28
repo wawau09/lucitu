@@ -102,10 +102,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
             // Category Filter Section
             const CategoryFilterSection(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Expanded(
               child: FutureBuilder<List<Store>>(
                 key: ValueKey(_reloadToken),

@@ -4,6 +4,7 @@ import '../models/category_model.dart';
 import '../data/category_data.dart';
 import 'category_chip.dart';
 import 'selected_filter_bar.dart';
+import '../providers/category_provider.dart';
 
 /// Category filter section with 2 horizontally scrollable rows.
 class CategoryFilterSection extends ConsumerWidget {
@@ -11,6 +12,8 @@ class CategoryFilterSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(selectedCategoriesProvider);
+
     // Split categories into two rows
     final topRow = <Category>[];
     final bottomRow = <Category>[];
@@ -27,13 +30,11 @@ class CategoryFilterSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Selected filter bar
-        const Padding(
-          padding: EdgeInsets.only(top: 0),
-          child: SelectedFilterBar(),
-        ),
-
-        const SizedBox(height: 12),
+        // Only show filter bar and its spacing if categories are selected
+        if (selected.isNotEmpty) ...[
+          const SelectedFilterBar(),
+          const SizedBox(height: 8),
+        ],
         
         // 2 horizontally scrollable rows
         SingleChildScrollView(
