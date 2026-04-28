@@ -45,12 +45,10 @@ class Search extends State<SearchPage> {
         (store.imageId != null && store.imageId! > 0) ? '${store.imageId}' : '1';
 
     final candidates = <String>[
-      // folder_name 자체가 파일명인 경우 (ex: DAUNT_outdoor.jpg)
       store.folderName,
       '${store.folderName}.jpeg',
       '${store.folderName}.jpg',
       '${store.folderName}.png',
-      // 폴더/파일 구조 fallback
       '${store.folderName}/$imageToken.jpeg',
       '${store.folderName}/$imageToken.jpg',
       '${store.folderName}/$imageToken.png',
@@ -63,7 +61,6 @@ class Search extends State<SearchPage> {
 
     for (final path in candidates) {
       try {
-        // Signed URL works for both private/public buckets when read policy allows.
         return await storage.createSignedUrl(path, 60 * 60);
       } catch (_) {
         try {
@@ -77,7 +74,6 @@ class Search extends State<SearchPage> {
     return '';
   }
 
-  // 이제 int index나 id가 아닌, 완성된 Store 객체를 통째로 받습니다.
   Widget buildCard(Store store) => GestureDetector(
     behavior: HitTestBehavior.opaque,
     onTap: () {
@@ -104,11 +100,9 @@ class Search extends State<SearchPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. 이미지 영역
           Expanded( 
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              // Supabase Storage에서 URL 가져오기
               child: FutureBuilder<String>(
                 future: getImageUrl(store), 
                 builder: (context, snapshot) {
@@ -129,7 +123,6 @@ class Search extends State<SearchPage> {
               ),
             ),
           ),
-          // 2. 텍스트 영역 (DB를 다시 호출하지 않고 Store 객체의 속성을 바로 사용!)
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Text(
@@ -143,8 +136,6 @@ class Search extends State<SearchPage> {
       ),
     ),
   );
-
-
 
   void _filterStores(String query, List<Store> stores) {
     setState(() {
@@ -176,14 +167,12 @@ class Search extends State<SearchPage> {
           }
           final stores = snapshot.data!;
           
-          // Initialize filtered stores when data loads
           if (_filteredStores.isEmpty && _searchController.text.isEmpty) {
             _filteredStores = stores;
           }
 
           return Column(
             children: [
-              // Search Bar
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
@@ -200,7 +189,6 @@ class Search extends State<SearchPage> {
                   ),
                 ),
               ),
-              // Results Grid
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),

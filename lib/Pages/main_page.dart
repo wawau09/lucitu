@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/store_database.dart';
@@ -6,15 +7,16 @@ import 'package:placelist/DB/store.dart';
 import 'package:placelist/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/Pages/store_detail_page.dart';
+import 'package:placelist/widgets/category_section.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends ConsumerState<MainScreen> {
   final StoreDatabase storesDatabase = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
   int _reloadToken = 0;
@@ -100,6 +102,9 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
             ),
+            // Category Filter Section
+            const CategoryFilterSection(),
+            const SizedBox(height: 20),
             Expanded(
               child: FutureBuilder<List<Store>>(
                 key: ValueKey(_reloadToken),
