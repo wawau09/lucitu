@@ -145,9 +145,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   // 카페 카드 리스트
   Widget _buildCafeCards(List<Store> stores) {
-    return ListView.builder(
+    return GridView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.68,
+      ),
       itemCount: stores.length,
       itemBuilder: (context, index) {
         final store = stores[index];
@@ -179,7 +185,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             );
           },
           child: Card(
-            margin: const EdgeInsets.only(bottom: 14),
+            margin: EdgeInsets.zero,
             color: Colors.white,
             elevation: 3,
             shadowColor: Colors.black.withOpacity(0.08),
@@ -188,15 +194,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               side: BorderSide(color: Colors.grey.shade200),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 카드 상단 이미지
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(16),
                   ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 230,
+                  child: AspectRatio(
+                    aspectRatio: 3 / 4,
                     child: FutureBuilder<String>(
                       future: _getMainImageUrl(store),
                       builder: (context, snapshot) {
@@ -227,21 +233,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     ),
                   ),
                 ),
-                Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 18,
-                    horizontal: 16,
-                  ),
-                  child: Text(
-                    store.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                Expanded(
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    child: Text(
+                      store.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -251,6 +258,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       },
     );
   }
+
 
   // 데이터가 없을 때 표시할 화면
   Widget _buildEmptyState() {
