@@ -152,7 +152,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 0.58,
+        childAspectRatio: 0.67,
       ),
       itemCount: stores.length,
       itemBuilder: (context, index) {

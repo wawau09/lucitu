@@ -65720,7 +65720,7 @@ s=this.b
 return s*(B.e.iH(a-1,this.a)+1)-(s-this.d)}}
 A.aiy.prototype={}
 A.aiz.prototype={
-CM(a){var s=Math.max(0,a.w-12)/2,r=s/0.58
+CM(a){var s=Math.max(0,a.w-12)/2,r=s/0.67
 return new A.PJ(2,r+12,s+12,r,s,A.rD(a.x))},
 k8(a){return!1}}
 A.aiA.prototype={
