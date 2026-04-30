@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:glass_liquid_navbar/glass_liquid_navbar.dart';
+import 'package:cupertino_native_better/cupertino_native_better.dart';
 import 'supabase_config.dart';
 
 import 'package:placelist/Pages/map.dart';
@@ -66,31 +67,43 @@ class MyAppState extends State<MyApp> {
 
           body: IndexedStack(index: _currentIndex, children: screens),
 
-          bottomNavigationBar: LiquidGlassNavbar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            theme: LiquidGlassTheme.light(
-              selectedColor: const Color(0xFF3267A2),
-              indicatorColor: const Color(0xFF3267A2).withValues(alpha: 0.1),
-            ),
-            items: [
-              LiquidNavItem(
-                icon: Icons.map_rounded,
-                label: 'Map',
-              ),
-              LiquidNavItem(
-                icon: Icons.home_rounded,
-                label: 'Home',
-              ),
-              LiquidNavItem(
-                icon: Icons.search_rounded,
-                label: 'Search',
-              ),
-            ],
+          bottomNavigationBar: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: () {
+              final bar = CNTabBar(
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                tint: const Color(0xFF3267A2),
+                backgroundColor: kIsWeb ? Colors.white.withValues(alpha: 0.7) : Colors.transparent,
+                items: const [
+                  CNTabBarItem(
+                    label: 'Map',
+                    icon: CNSymbol('map.fill'),
+                  ),
+                  CNTabBarItem(
+                    label: 'Home',
+                    icon: CNSymbol('house.fill'),
+                  ),
+                  CNTabBarItem(
+                    label: 'Search',
+                    icon: CNSymbol('magnifyingglass'),
+                  ),
+                ],
+              );
+              
+              if (kIsWeb) return bar;
+              
+              return bar.liquidGlass(
+                effect: CNGlassEffect.prominent,
+                shape: CNGlassEffectShape.rect,
+                cornerRadius: 32,
+                interactive: true,
+              );
+            }(),
           ),
         ),
       ),
