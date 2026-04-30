@@ -1,9 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cupertino_native_better/cupertino_native_better.dart';
 import 'supabase_config.dart';
 
 import 'package:placelist/Pages/map.dart';
@@ -68,42 +68,60 @@ class MyAppState extends State<MyApp> {
           body: IndexedStack(index: _currentIndex, children: screens),
 
           bottomNavigationBar: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: () {
-              final bar = CNTabBar(
-                currentIndex: _currentIndex,
-                onTap: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-                tint: const Color(0xFF3267A2),
-                backgroundColor: kIsWeb ? Colors.white.withValues(alpha: 0.7) : Colors.transparent,
-                items: const [
-                  CNTabBarItem(
-                    label: 'Map',
-                    icon: CNSymbol('map.fill'),
+            padding: EdgeInsets.fromLTRB(24, 0, 24, MediaQuery.of(context).padding.bottom + 12),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                  CNTabBarItem(
-                    label: 'Home',
-                    icon: CNSymbol('house.fill'),
+                  child: BottomNavigationBar(
+                    currentIndex: _currentIndex,
+                    showSelectedLabels: false,
+                    showUnselectedLabels: false,
+                    backgroundColor: Colors.transparent,
+                    selectedItemColor: const Color(0xFF3267A2),
+                    unselectedItemColor: Colors.black.withOpacity(0.3),
+                    iconSize: 28,
+                    elevation: 0,
+                    type: BottomNavigationBarType.fixed,
+                    onTap: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    items: const [
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.map_rounded),
+                        label: 'Map',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.home_rounded),
+                        label: 'Home',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.search_rounded),
+                        label: 'Search',
+                      ),
+                    ],
                   ),
-                  CNTabBarItem(
-                    label: 'Search',
-                    icon: CNSymbol('magnifyingglass'),
-                  ),
-                ],
-              );
-              
-              if (kIsWeb) return bar;
-              
-              return bar.liquidGlass(
-                effect: CNGlassEffect.prominent,
-                shape: CNGlassEffectShape.rect,
-                cornerRadius: 32,
-                interactive: true,
-              );
-            }(),
+                ),
+              ),
+            ),
           ),
         ),
       ),
