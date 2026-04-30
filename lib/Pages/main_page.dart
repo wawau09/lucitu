@@ -54,7 +54,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               child: Text(
                 "Lucitu.",
                 style: GoogleFonts.poppins(
-                  fontSize: 30,
+                  fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF3267A2),
                   letterSpacing: -0.5,
@@ -65,7 +65,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
               child: Container(
-                height: 48,
+                height: 40,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
@@ -85,13 +85,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     height: 1.2,
                   ),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search, color: Colors.black, size: 24),
+                    prefixIcon: const Icon(Icons.search, color: Colors.black, size: 20),
                     prefixIconConstraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 48,
+                      minWidth: 36,
+                      minHeight: 40,
                     ),
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
                     hintText: "Search cafes",
                     hintStyle: GoogleFonts.poppins(
                       color: Colors.grey,

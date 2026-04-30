@@ -182,7 +182,9 @@ class Search extends State<SearchPage> {
                   onChanged: (query) => _filterStores(query, stores),
                   decoration: InputDecoration(
                     hintText: '가게 이름으로 검색...',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
