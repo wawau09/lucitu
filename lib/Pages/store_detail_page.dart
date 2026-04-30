@@ -64,7 +64,7 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F5EF),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

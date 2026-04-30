@@ -64,7 +64,7 @@ class MyAppState extends State<MyApp> {
         canPop: false,
         child: Scaffold(
           extendBody: true,
-          backgroundColor: Colors.white,
+          backgroundColor: const Color(0xFFF8F5EF),
 
           body: IndexedStack(index: _currentIndex, children: screens),
 

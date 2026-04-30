@@ -158,8 +158,10 @@ class Search extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: FutureBuilder<List<Store>>(
+      backgroundColor: const Color(0xFFF8F5EF),
+      body: SafeArea(
+        bottom: false,
+        child: FutureBuilder<List<Store>>(
         future: _storesFuture,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -206,6 +208,7 @@ class Search extends State<SearchPage> {
                         )
                       : GridView.builder(
                           itemCount: _filteredStores.length,
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                             maxCrossAxisExtent: 250, 
                             childAspectRatio: 0.8,   
@@ -222,6 +225,7 @@ class Search extends State<SearchPage> {
           );
         },
       ),
-    );
+    ),
+   );
   }
 }
