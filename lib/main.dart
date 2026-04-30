@@ -73,7 +73,10 @@ class MyAppState extends State<MyApp> {
                 _currentIndex = index;
               });
             },
-            activeColor: const Color(0xFF3267A2),
+            theme: LiquidGlassTheme.light(
+              selectedColor: const Color(0xFF3267A2),
+              indicatorColor: const Color(0xFF3267A2).withValues(alpha: 0.1),
+            ),
             items: [
               LiquidNavItem(
                 icon: Icons.map_rounded,
