@@ -91,7 +91,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     ),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    hintText: "Search the lucy",
+                    hintText: "Search cafes",
                     hintStyle: GoogleFonts.poppins(
                       color: Colors.grey,
                       fontSize: 14,
