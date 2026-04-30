@@ -40,6 +40,7 @@ dependencies:
   google_fonts: ^8.0.2
   dot_navigation_bar: ^1.0.2
   flutter_riverpod: ^2.6.1
+  glass_liquid_navbar: ^0.2.0
 
 dev_dependencies:
   flutter_test:

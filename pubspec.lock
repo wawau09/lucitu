@@ -224,6 +224,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.5.0"
+  glass_liquid_navbar:
+    dependency: "direct main"
+    description:
+      name: glass_liquid_navbar
+      sha256: "782fa0d0c112ad6c1341b286cd59b802d86b6f4b5383aaafe3b0cd7180d266dd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   google_fonts:
     dependency: "direct main"
     description:
