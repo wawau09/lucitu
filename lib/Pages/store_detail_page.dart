@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/DB/store.dart';
 import 'package:placelist/supabase_config.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:panorama_viewer/panorama_viewer.dart';
 class StoreDetailPage extends StatefulWidget {
   final Store store;
 
@@ -147,6 +147,53 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                             ),
                           ),
                         ),
+                      Positioned(
+                        right: 16,
+                        bottom: 16,
+                        child: Material(
+                          color: Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(20),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => Scaffold(
+                                    extendBodyBehindAppBar: true,
+                                    appBar: AppBar(
+                                      backgroundColor: Colors.transparent,
+                                      elevation: 0,
+                                      iconTheme: const IconThemeData(color: Colors.white),
+                                    ),
+                                    body: PanoramaViewer(
+                                      child: Image.asset('assets/relax_inn_seaview_suite_4k.jpg'),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.threed_rotation, size: 20, color: Colors.black87),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "파노라마",
+                                    style: GoogleFonts.notoSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 },

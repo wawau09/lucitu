@@ -48,19 +48,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 타이틀
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-              child: Text(
-                "Lucitu.",
-                style: GoogleFonts.poppins(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF3267A2),
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
+
             // 검색창 (항상 표시)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),

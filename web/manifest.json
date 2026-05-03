@@ -1,6 +1,6 @@
 {
-    "name": "lucitu",
-    "short_name": "lucitu",
+    "name": "placelist",
+    "short_name": "placelist",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",

@@ -23,16 +23,21 @@ class CategoryFilterSection extends ConsumerWidget {
           const SelectedFilterBar(),
           const SizedBox(height: 8),
         ],
-        
+
         // Single horizontally scrollable row
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            children: allCategories.map((cat) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: CategoryChip(category: cat),
-            )).toList(),
+            children:
+                allCategories
+                    .map(
+                      (cat) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: CategoryChip(category: cat),
+                      ),
+                    )
+                    .toList(),
           ),
         ),
       ],
