@@ -8,6 +8,7 @@ import 'package:placelist/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/Pages/store_detail_page.dart';
 import 'package:placelist/widgets/category_section.dart';
+import 'package:placelist/providers/favorites_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -102,19 +103,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () {
-                      // Navigate to account page logic can be added here
-                    },
-                    icon: const Icon(
-                      Icons.account_circle,
-                      size: 32,
-                      color: Colors.black87,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
                 ],
               ),
             ),
@@ -204,7 +192,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             margin: EdgeInsets.zero,
             color: Colors.white,
             elevation: 3,
-            shadowColor: Colors.black.withOpacity(0.08),
+            shadowColor: Colors.black.withValues(alpha: 0.08),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(color: Colors.grey.shade200),
@@ -260,7 +248,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -305,15 +293,26 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(
-                            Icons.favorite_border,
-                            color: Colors.grey,
-                            size: 20,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final favoriteIds = ref.watch(favoritesProvider);
+                            final isFavorited = store.id != null && favoriteIds.contains(store.id);
+
+                            return IconButton(
+                              onPressed: () {
+                                if (store.id != null) {
+                                  ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
+                                }
+                              },
+                              icon: Icon(
+                                isFavorited ? Icons.favorite : Icons.favorite_border,
+                                color: isFavorited ? Colors.redAccent : Colors.grey,
+                                size: 22,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            );
+                          },
                         ),
                       ],
                     ),

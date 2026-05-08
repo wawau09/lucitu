@@ -4,6 +4,8 @@ import 'package:placelist/DB/store_database.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/supabase_config.dart';
 import 'package:placelist/Pages/store_detail_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:placelist/providers/favorites_provider.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -168,15 +170,26 @@ class Search extends State<SearchPage> {
                     textAlign: TextAlign.left,
                   ),
                 ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(
-                    Icons.favorite_border,
-                    color: Colors.grey,
-                    size: 20,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final favoriteIds = ref.watch(favoritesProvider);
+                    final isFavorited = store.id != null && favoriteIds.contains(store.id);
+
+                    return IconButton(
+                      onPressed: () {
+                        if (store.id != null) {
+                          ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
+                        }
+                      },
+                      icon: Icon(
+                        isFavorited ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorited ? Colors.redAccent : Colors.grey,
+                        size: 20,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    );
+                  },
                 ),
               ],
             ),

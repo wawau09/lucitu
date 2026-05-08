@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:placelist/Pages/favorites_list_page.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -174,7 +175,10 @@ class _AccountPageState extends State<AccountPage> {
             title: const Text("내가 찜한 카페"),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              // TODO: 찜한 카페 목록 페이지 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FavoritesListPage()),
+              );
             },
           ),
           ListTile(
