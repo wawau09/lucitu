@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/Pages/store_detail_page.dart';
 import 'package:placelist/widgets/category_section.dart';
 import 'package:placelist/providers/favorites_provider.dart';
+import 'package:placelist/providers/navigation_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -212,9 +213,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           ],
                         ),
                         const Spacer(),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
                             Consumer(
                               builder: (context, ref, child) {
                                 final favoriteIds = ref.watch(favoritesProvider);
@@ -224,6 +227,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   children: [
                                     IconButton(
                                       onPressed: () {
+                                        final user = Supabase.instance.client.auth.currentUser;
+                                        if (user == null) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('찜 기능을 사용하려면 로그인이 필요합니다.')),
+                                          );
+                                          ref.read(navigationProvider.notifier).setIndex(2);
+                                          return;
+                                        }
                                         if (store.id != null) {
                                           ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
                                         }

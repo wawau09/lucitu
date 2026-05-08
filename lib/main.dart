@@ -1,12 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_config.dart';
 import 'package:placelist/Pages/account.dart';
 import 'package:placelist/Pages/search.dart';
 import 'Pages/main_page.dart';
+import 'package:placelist/providers/navigation_provider.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -18,20 +18,14 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  MyAppState createState() => MyAppState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(navigationProvider);
+    final List<Widget> screens = [const SearchPage(), const MainScreen(), const AccountPage()];
 
-class MyAppState extends State<MyApp> {
-  final List<Widget> screens = [const SearchPage(), const MainScreen(), const AccountPage()];
-
-  int _currentIndex = 1;
-
-  @override
-  Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -44,15 +38,15 @@ class MyAppState extends State<MyApp> {
         child: Scaffold(
           extendBody: true,
           backgroundColor: Colors.white,
-          body: IndexedStack(index: _currentIndex, children: screens),
+          body: IndexedStack(index: currentIndex, children: screens),
           bottomNavigationBar: Container(
             margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -63,19 +57,17 @@ class MyAppState extends State<MyApp> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: BottomNavigationBar(
-                  currentIndex: _currentIndex,
+                  currentIndex: currentIndex,
                   showSelectedLabels: false,
                   showUnselectedLabels: false,
                   backgroundColor: Colors.transparent,
                   selectedItemColor: const Color(0xFF3267A2),
-                  unselectedItemColor: Colors.black.withOpacity(0.3),
+                  unselectedItemColor: Colors.black.withValues(alpha: 0.3),
                   iconSize: 28,
                   elevation: 0,
                   type: BottomNavigationBarType.fixed,
                   onTap: (index) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
+                    ref.read(navigationProvider.notifier).setIndex(index);
                   },
                   items: const [
                     BottomNavigationBarItem(

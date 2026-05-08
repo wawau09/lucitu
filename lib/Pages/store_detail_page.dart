@@ -7,6 +7,7 @@ import 'package:placelist/supabase_config.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
 import 'package:placelist/providers/favorites_provider.dart';
+import 'package:placelist/providers/navigation_provider.dart';
 
 class StoreDetailPage extends ConsumerStatefulWidget {
   final Store store;
@@ -230,6 +231,15 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                           
                           return IconButton(
                             onPressed: () {
+                              final user = Supabase.instance.client.auth.currentUser;
+                              if (user == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('찜 기능을 사용하려면 로그인이 필요합니다.')),
+                                );
+                                ref.read(navigationProvider.notifier).setIndex(2);
+                                Navigator.pop(context); // 상세페이지에서 나감
+                                return;
+                              }
                               if (widget.store.id != null) {
                                 ref.read(favoritesProvider.notifier).toggleFavorite(widget.store.id!);
                               }
