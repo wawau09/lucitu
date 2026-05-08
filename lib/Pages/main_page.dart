@@ -198,17 +198,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 14),
+                            const Icon(Icons.star, color: Colors.amber, size: 16),
                             const SizedBox(width: 2),
                             Text(
                               (store.rating ?? 0.0).toStringAsFixed(1),
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
                             ),
-                            const SizedBox(width: 12), // 간격 조금 더 넓힘
+                            const SizedBox(width: 12),
                             Consumer(
                               builder: (context, ref, child) {
                                 final favoriteIds = ref.watch(favoritesProvider);
@@ -216,13 +216,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
                                 return Row(
                                   children: [
-                                    Icon(
-                                      isFavorited ? Icons.favorite : Icons.favorite_border,
-                                      color: isFavorited ? Colors.redAccent : Colors.grey[400],
-                                      size: 24, // 아이콘 크기 키움
+                                    IconButton(
+                                      onPressed: () {
+                                        if (store.id != null) {
+                                          ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
+                                        }
+                                      },
+                                      icon: Icon(
+                                        isFavorited ? Icons.favorite : Icons.favorite_border,
+                                        color: isFavorited ? Colors.redAccent : Colors.grey[400],
+                                        size: 20,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
                                     ),
                                     const SizedBox(width: 4),
-                                    // 찜 개수
                                     Text(
                                       isFavorited ? "1" : "0",
                                       style: TextStyle(

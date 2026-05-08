@@ -1,20 +1,23 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/DB/store.dart';
 import 'package:placelist/supabase_config.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
-class StoreDetailPage extends StatefulWidget {
+import 'package:placelist/providers/favorites_provider.dart';
+
+class StoreDetailPage extends ConsumerStatefulWidget {
   final Store store;
 
-  const StoreDetailPage({Key? key, required this.store}) : super(key: key);
+  const StoreDetailPage({super.key, required this.store});
 
   @override
-  State<StoreDetailPage> createState() => _StoreDetailPageState();
+  ConsumerState<StoreDetailPage> createState() => _StoreDetailPageState();
 }
 
-class _StoreDetailPageState extends State<StoreDetailPage> {
+class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
   final SupabaseClient _client = Supabase.instance.client;
   int _currentPage = 0;
   late Future<List<String>> _imagesFuture;
@@ -112,7 +115,7 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                         itemCount: imageUrls.length,
                         itemBuilder: (context, index) {
                           return Container(
-                            color: Colors.grey[100], // light background to better see contain bounds
+                            color: Colors.grey[100], 
                             child: Image.network(
                               imageUrls[index],
                               fit: BoxFit.contain,
@@ -148,16 +151,16 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                           ),
                         ),
                       Positioned(
-                        top: 48, // Below status bar / app bar area
+                        top: 48,
                         right: 16,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -184,7 +187,7 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                         right: 16,
                         bottom: 16,
                         child: Material(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(20),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
@@ -233,7 +236,6 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
               ),
             ),
             
-            // Name and Details Container
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
@@ -253,13 +255,25 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                           ),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(
-                          Icons.favorite_border,
-                          color: Colors.black87,
-                          size: 28,
-                        ),
+                      // 상세 페이지 찜 버튼
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final favoriteIds = ref.watch(favoritesProvider);
+                          final isFavorited = widget.store.id != null && favoriteIds.contains(widget.store.id);
+                          
+                          return IconButton(
+                            onPressed: () {
+                              if (widget.store.id != null) {
+                                ref.read(favoritesProvider.notifier).toggleFavorite(widget.store.id!);
+                              }
+                            },
+                            icon: Icon(
+                              isFavorited ? Icons.favorite : Icons.favorite_border,
+                              color: isFavorited ? Colors.redAccent : Colors.black87,
+                              size: 28,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -274,7 +288,6 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                   ),
                   const SizedBox(height: 32),
                   
-                  // Placeholder for future information
                   Text(
                     "상세 소개",
                     style: GoogleFonts.notoSans(
