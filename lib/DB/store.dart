@@ -6,6 +6,8 @@ class Store {
   String? imageUrl;
   String? imagePath;
 
+  double? rating;
+
   Store({
     this.id,
     required this.name,
@@ -13,6 +15,7 @@ class Store {
     this.imageId,
     this.imageUrl,
     this.imagePath,
+    this.rating,
   });
 
   factory Store.fromMap(Map<String, dynamic> map) {
@@ -36,6 +39,10 @@ class Store {
     final int? resolvedImageId = map['image_id'] is int
         ? map['image_id'] as int
         : int.tryParse(map['image_id']?.toString() ?? '');
+    
+    final double? resolvedRating = map['rating'] is num 
+        ? (map['rating'] as num).toDouble() 
+        : double.tryParse(map['rating']?.toString() ?? '');
 
     return Store(
       id: rawId?.toString(),
@@ -44,6 +51,7 @@ class Store {
       imageId: resolvedImageId,
       imageUrl: resolvedImageUrl,
       imagePath: resolvedImagePath,
+      rating: resolvedRating,
     );
   }
 
@@ -54,6 +62,7 @@ class Store {
       if (imageId != null) 'image_id': imageId,
       if (imageUrl != null && imageUrl!.isNotEmpty) 'image_url': imageUrl,
       if (imagePath != null && imagePath!.isNotEmpty) 'image_path': imagePath,
+      if (rating != null) 'rating': rating,
     };
   }
 }

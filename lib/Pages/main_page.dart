@@ -30,19 +30,27 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Future<String> _getMainImageUrl(Store store) async {
-    final storage = _client.storage.from(supabaseStorageBucket);
-    final path = '${store.folderName}/1.jpeg';
-    try {
-      return storage.getPublicUrl(path);
-    } catch (_) {
-      return '';
+    // 1. 우선 imageUrl이 있으면 그대로 사용
+    if (store.imageUrl != null && store.imageUrl!.isNotEmpty) {
+      return store.imageUrl!;
     }
+
+    final storage = _client.storage.from(supabaseStorageBucket);
+
+    // 2. imagePath가 있으면 Storage에서 가져옴
+    if (store.imagePath != null && store.imagePath!.isNotEmpty) {
+      return storage.getPublicUrl(store.imagePath!);
+    }
+
+    // 3. 폴더명 기반 기본 경로 시도 (1.jpeg가 기본이라고 가정)
+    final path = '${store.folderName}/1.jpeg';
+    return storage.getPublicUrl(path);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
+      backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -52,43 +60,62 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             // 검색창 (항상 표시)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
-                ),
-                padding: const EdgeInsets.only(left: 14, right: 16),
-                child: TextField(
-                  textAlignVertical: TextAlignVertical.center,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  style: GoogleFonts.poppins(
-                    color: Colors.black87,
-                    fontSize: 14,
-                    height: 1.2,
-                  ),
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search, color: Colors.black, size: 20),
-                    prefixIconConstraints: const BoxConstraints(
-                      minWidth: 36,
-                      minHeight: 40,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                      ),
+                      padding: const EdgeInsets.only(left: 14, right: 16),
+                      child: TextField(
+                        textAlignVertical: TextAlignVertical.center,
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                        style: GoogleFonts.poppins(
+                          color: Colors.black87,
+                          fontSize: 14,
+                          height: 1.2,
+                        ),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.search, color: Colors.black, size: 20),
+                          prefixIconConstraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 40,
+                          ),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                          hintText: "Search cafes",
+                          hintStyle: GoogleFonts.poppins(
+                            color: Colors.grey,
+                            fontSize: 14,
+                            height: 1.2,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                      ),
                     ),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    hintText: "Search cafes",
-                    hintStyle: GoogleFonts.poppins(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      height: 1.2,
-                    ),
-                    border: InputBorder.none,
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      // Navigate to account page logic can be added here
+                    },
+                    icon: const Icon(
+                      Icons.account_circle,
+                      size: 32,
+                      color: Colors.black87,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
             ),
             // Category Filter Section
@@ -185,58 +212,110 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 카드 상단 이미지
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: 3 / 4,
-                    child: FutureBuilder<String>(
-                      future: _getMainImageUrl(store),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Container(
-                            color: Colors.grey[200],
-                            child: const Icon(
-                              Icons.image,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                          );
-                        }
-                        return Image.network(
-                          snapshot.data!,
-                          fit: BoxFit.cover,
-                          errorBuilder:
-                              (context, error, stackTrace) => Container(
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      child: AspectRatio(
+                        aspectRatio: 3 / 4,
+                        child: FutureBuilder<String>(
+                          future: _getMainImageUrl(store),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return Container(
                                 color: Colors.grey[200],
                                 child: const Icon(
-                                  Icons.broken_image,
-                                  color: Colors.grey,
-                                  size: 24,
+                                  Icons.image,
+                                  color: Colors.white,
+                                  size: 40,
                                 ),
-                              ),
-                        );
-                      },
+                              );
+                            }
+                            return Image.network(
+                              snapshot.data!,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, error, stackTrace) => Container(
+                                    color: Colors.grey[200],
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      color: Colors.grey,
+                                      size: 24,
+                                    ),
+                                  ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
-                  ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star, color: Colors.amber, size: 14),
+                            const SizedBox(width: 2),
+                            Text(
+                              (store.rating ?? 0.0).toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 Expanded(
                   child: Container(
-                    alignment: Alignment.center,
+                    alignment: Alignment.centerLeft,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                     ),
-                    child: Text(
-                      store.name,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            store.name,
+                            textAlign: TextAlign.left,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(
+                            Icons.favorite_border,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -255,7 +334,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.map_outlined, size: 100, color: Colors.grey[200]),
+          Icon(Icons.storefront_outlined, size: 100, color: Colors.grey[200]),
           const SizedBox(height: 16),
           Text(
             "아직 등록된 장소가 없네요!",

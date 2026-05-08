@@ -45,18 +45,14 @@ class Search extends State<SearchPage> {
         (store.imageId != null && store.imageId! > 0) ? '${store.imageId}' : '1';
 
     final candidates = <String>[
-      store.folderName,
-      '${store.folderName}.jpeg',
-      '${store.folderName}.jpg',
-      '${store.folderName}.png',
-      '${store.folderName}/$imageToken.jpeg',
-      '${store.folderName}/$imageToken.jpg',
-      '${store.folderName}/$imageToken.png',
-      '${store.folderName}/$imageToken',
       '${store.folderName}/1.jpeg',
       '${store.folderName}/1.jpg',
       '${store.folderName}/1.png',
       '${store.folderName}/1',
+      '${store.folderName}/$imageToken.jpeg',
+      '${store.folderName}/$imageToken.jpg',
+      '${store.folderName}/$imageToken.png',
+      '${store.folderName}/$imageToken',
     ];
 
     for (final path in candidates) {
@@ -101,35 +97,88 @@ class Search extends State<SearchPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded( 
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: FutureBuilder<String>(
-                future: getImageUrl(store), 
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Icon(Icons.broken_image, size: 50, color: Colors.grey);
-                  }
-                  return Image.network(
-                    snapshot.data!,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
-                  );
-                },
-              ),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: FutureBuilder<String>(
+                    future: getImageUrl(store), 
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Icon(Icons.broken_image, size: 50, color: Colors.grey);
+                      }
+                      return Image.network(
+                        snapshot.data!,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                      );
+                    },
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 2),
+                        Text(
+                          (store.rating ?? 0.0).toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(12.0),
-            child: Text(
-              store.name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    store.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.left,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(
+                    Icons.favorite_border,
+                    color: Colors.grey,
+                    size: 20,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
             ),
           ),
         ],
@@ -158,7 +207,7 @@ class Search extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
+      backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
         child: FutureBuilder<List<Store>>(
