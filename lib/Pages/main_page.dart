@@ -188,7 +188,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "서울시 어딘가 • 2시간 전", // 실제 데이터가 없으므로 예시
+                          "서울시 어딘가", // 시간 정보 제거
                           style: GoogleFonts.notoSans(
                             fontSize: 13,
                             color: Colors.grey[600],
@@ -208,7 +208,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 color: Colors.black87,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 12), // 간격 조금 더 넓힘
                             Consumer(
                               builder: (context, ref, child) {
                                 final favoriteIds = ref.watch(favoritesProvider);
@@ -219,14 +219,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                     Icon(
                                       isFavorited ? Icons.favorite : Icons.favorite_border,
                                       color: isFavorited ? Colors.redAccent : Colors.grey[400],
-                                      size: 16,
+                                      size: 24, // 아이콘 크기 키움
                                     ),
-                                    const SizedBox(width: 2),
-                                    // 찜 개수 (예시)
+                                    const SizedBox(width: 4),
+                                    // 찜 개수
                                     Text(
                                       isFavorited ? "1" : "0",
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 14,
                                         color: Colors.grey[600],
                                       ),
                                     ),
