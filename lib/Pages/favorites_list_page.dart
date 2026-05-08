@@ -103,17 +103,26 @@ class FavoritesListPage extends ConsumerWidget {
                       fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        (store.rating ?? 0.0).toStringAsFixed(1),
-                        style: const TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-                    ],
-                  ),
+                   const SizedBox(height: 4),
+                   if (store.location != null)
+                     Text(
+                       store.location!,
+                       style: GoogleFonts.notoSans(
+                         fontSize: 13,
+                         color: Colors.grey[600],
+                       ),
+                     ),
+                   const SizedBox(height: 4),
+                   Row(
+                     children: [
+                       const Icon(Icons.star, color: Colors.amber, size: 16),
+                       const SizedBox(width: 4),
+                       Text(
+                         (store.rating ?? 0.0).toStringAsFixed(1),
+                         style: const TextStyle(fontSize: 14, color: Colors.grey),
+                       ),
+                     ],
+                   ),
                 ],
               ),
             ),

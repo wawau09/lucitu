@@ -270,6 +270,21 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  if (widget.store.location != null)
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, color: Colors.grey, size: 18),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.store.location!,
+                          style: GoogleFonts.notoSans(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 16),
                   Container(
                     width: 40,

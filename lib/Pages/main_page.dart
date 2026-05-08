@@ -204,7 +204,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              "•  서울시 어딘가",
+                              "•  ${store.location ?? '위치 정보 없음'}",
                               style: GoogleFonts.notoSans(
                                 fontSize: 14,
                                 color: Colors.grey[600],

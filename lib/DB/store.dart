@@ -5,7 +5,7 @@ class Store {
   int? imageId;
   String? imageUrl;
   String? imagePath;
-
+  String? location;
   double? rating;
 
   Store({
@@ -15,6 +15,7 @@ class Store {
     this.imageId,
     this.imageUrl,
     this.imagePath,
+    this.location,
     this.rating,
   });
 
@@ -51,6 +52,7 @@ class Store {
       imageId: resolvedImageId,
       imageUrl: resolvedImageUrl,
       imagePath: resolvedImagePath,
+      location: map['location']?.toString(),
       rating: resolvedRating,
     );
   }
@@ -62,6 +64,7 @@ class Store {
       if (imageId != null) 'image_id': imageId,
       if (imageUrl != null && imageUrl!.isNotEmpty) 'image_url': imageUrl,
       if (imagePath != null && imagePath!.isNotEmpty) 'image_path': imagePath,
+      if (location != null) 'location': location,
       if (rating != null) 'rating': rating,
     };
   }
