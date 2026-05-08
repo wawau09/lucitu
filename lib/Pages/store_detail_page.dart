@@ -150,39 +150,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                             ),
                           ),
                         ),
-                      Positioned(
-                        top: 48,
-                        right: 16,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.star, color: Colors.amber, size: 18),
-                              const SizedBox(width: 4),
-                              Text(
-                                (widget.store.rating ?? 0.0).toStringAsFixed(1),
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      // 평점 배지를 이미지 위에서 제거했습니다.
                       Positioned(
                         right: 16,
                         bottom: 16,
@@ -255,7 +223,6 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                           ),
                         ),
                       ),
-                      // 상세 페이지 찜 버튼
                       Consumer(
                         builder: (context, ref, child) {
                           final favoriteIds = ref.watch(favoritesProvider);
@@ -274,6 +241,22 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                             ),
                           );
                         },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // 평점을 카페명 밑으로 이동
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 20),
+                      const SizedBox(width: 4),
+                      Text(
+                        (widget.store.rating ?? 0.0).toStringAsFixed(1),
+                        style: GoogleFonts.notoSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
                       ),
                     ],
                   ),

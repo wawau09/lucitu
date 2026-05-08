@@ -187,28 +187,34 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          "서울시 어딘가", // 시간 정보 제거
-                          style: GoogleFonts.notoSans(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const Spacer(),
+                        // 평점 위치를 카페명 밑으로 이동
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             const Icon(Icons.star, color: Colors.amber, size: 16),
                             const SizedBox(width: 2),
                             Text(
                               (store.rating ?? 0.0).toStringAsFixed(1),
-                              style: const TextStyle(
+                              style: GoogleFonts.notoSans(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
+                            Text(
+                              "•  서울시 어딘가",
+                              style: GoogleFonts.notoSans(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
                             Consumer(
                               builder: (context, ref, child) {
                                 final favoriteIds = ref.watch(favoritesProvider);
@@ -229,14 +235,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                       ),
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      isFavorited ? "1" : "0",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
-                                      ),
                                     ),
                                   ],
                                 );
