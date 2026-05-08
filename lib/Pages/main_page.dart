@@ -31,19 +31,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Future<String> _getMainImageUrl(Store store) async {
-    // 1. 우선 imageUrl이 있으면 그대로 사용
     if (store.imageUrl != null && store.imageUrl!.isNotEmpty) {
       return store.imageUrl!;
     }
-
     final storage = _client.storage.from(supabaseStorageBucket);
-
-    // 2. imagePath가 있으면 Storage에서 가져옴
     if (store.imagePath != null && store.imagePath!.isNotEmpty) {
       return storage.getPublicUrl(store.imagePath!);
     }
-
-    // 3. 폴더명 기반 기본 경로 시도 (1.jpeg가 기본이라고 가정)
     final path = '${store.folderName}/1.jpeg';
     return storage.getPublicUrl(path);
   }
@@ -57,58 +51,43 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-
-            // 검색창 (항상 표시)
+            // 검색창
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.grey.shade300, width: 1),
-                      ),
-                      padding: const EdgeInsets.only(left: 14, right: 16),
-                      child: TextField(
-                        textAlignVertical: TextAlignVertical.center,
-                        onChanged: (value) {
-                          setState(() {
-                            _searchQuery = value;
-                          });
-                        },
-                        style: GoogleFonts.poppins(
-                          color: Colors.black87,
-                          fontSize: 14,
-                          height: 1.2,
-                        ),
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.search, color: Colors.black, size: 20),
-                          prefixIconConstraints: const BoxConstraints(
-                            minWidth: 36,
-                            minHeight: 40,
-                          ),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                          hintText: "Search cafes",
-                          hintStyle: GoogleFonts.poppins(
-                            color: Colors.grey,
-                            fontSize: 14,
-                            height: 1.2,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                      ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: TextField(
+                  textAlignVertical: TextAlignVertical.center,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 32,
                     ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                    hintText: "카페 이름을 검색해보세요",
+                    hintStyle: GoogleFonts.notoSans(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                    border: InputBorder.none,
                   ),
-                ],
+                ),
               ),
             ),
             // Category Filter Section
             const CategoryFilterSection(),
             const SizedBox(height: 12),
+            const Divider(height: 1, color: Color(0xFFEEEEEE)),
             Expanded(
               child: FutureBuilder<List<Store>>(
                 key: ValueKey(_reloadToken),
@@ -122,12 +101,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     ).toList();
                   }
 
-                  if (snapshot.hasError) {
-                    debugPrint('Stream error: ${snapshot.error}');
-                    if (stores.isEmpty) {
-                      return _buildErrorState();
-                    }
-                  }
                   if (snapshot.connectionState == ConnectionState.waiting &&
                       stores.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
@@ -137,7 +110,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     return _buildEmptyState();
                   }
 
-                  return _buildCafeCards(stores);
+                  return _buildCafeList(stores);
                 },
               ),
             ),
@@ -147,172 +120,121 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  // 카페 카드 리스트
-  Widget _buildCafeCards(List<Store> stores) {
-    return GridView.builder(
+  // 당근마켓 스타일의 리스트 뷰
+  Widget _buildCafeList(List<Store> stores) {
+    return ListView.separated(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.67,
-      ),
+      padding: const EdgeInsets.only(bottom: 100),
       itemCount: stores.length,
+      separatorBuilder: (context, index) => const Divider(
+        height: 1,
+        indent: 16,
+        endIndent: 16,
+        color: Color(0xFFEEEEEE),
+      ),
       itemBuilder: (context, index) {
         final store = stores[index];
-        return GestureDetector(
+        return InkWell(
           onTap: () {
             Navigator.push(
               context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        StoreDetailPage(store: store),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  return SlideTransition(
-                    position: animation.drive(
-                      Tween(
-                        begin: const Offset(1.0, 0.0),
-                        end: Offset.zero,
-                      ).chain(CurveTween(curve: Curves.easeOutCubic)),
-                    ),
-                    child: child,
-                  );
-                },
-              ),
+              MaterialPageRoute(builder: (context) => StoreDetailPage(store: store)),
             );
           },
-          child: Card(
-            margin: EdgeInsets.zero,
-            color: Colors.white,
-            elevation: 3,
-            shadowColor: Colors.black.withValues(alpha: 0.08),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                      child: AspectRatio(
-                        aspectRatio: 3 / 4,
-                        child: FutureBuilder<String>(
-                          future: _getMainImageUrl(store),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                              return Container(
-                                color: Colors.grey[200],
-                                child: const Icon(
-                                  Icons.image,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                              );
-                            }
-                            return Image.network(
-                              snapshot.data!,
-                              fit: BoxFit.cover,
-                              errorBuilder:
-                                  (context, error, stackTrace) => Container(
-                                    color: Colors.grey[200],
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey,
-                                      size: 24,
-                                    ),
-                                  ),
-                            );
-                          },
-                        ),
-                      ),
+                // 왼쪽 이미지
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 130,
+                    height: 130,
+                    child: FutureBuilder<String>(
+                      future: _getMainImageUrl(store),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Container(color: Colors.grey[100]);
+                        }
+                        return Image.network(
+                          snapshot.data!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: Colors.grey[100]),
+                        );
+                      },
                     ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // 오른쪽 정보
+                Expanded(
+                  child: SizedBox(
+                    height: 130,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          store.name,
+                          style: GoogleFonts.notoSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        const SizedBox(height: 4),
+                        Text(
+                          "서울시 어딘가 • 2시간 전", // 실제 데이터가 없으므로 예시
+                          style: GoogleFonts.notoSans(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             const Icon(Icons.star, color: Colors.amber, size: 14),
                             const SizedBox(width: 2),
                             Text(
                               (store.rating ?? 0.0).toStringAsFixed(1),
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: Container(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            store.name,
-                            textAlign: TextAlign.left,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Consumer(
-                          builder: (context, ref, child) {
-                            final favoriteIds = ref.watch(favoritesProvider);
-                            final isFavorited = store.id != null && favoriteIds.contains(store.id);
+                            const SizedBox(width: 8),
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final favoriteIds = ref.watch(favoritesProvider);
+                                final isFavorited = store.id != null && favoriteIds.contains(store.id);
 
-                            return IconButton(
-                              onPressed: () {
-                                if (store.id != null) {
-                                  ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
-                                }
+                                return Row(
+                                  children: [
+                                    Icon(
+                                      isFavorited ? Icons.favorite : Icons.favorite_border,
+                                      color: isFavorited ? Colors.redAccent : Colors.grey[400],
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    // 찜 개수 (예시)
+                                    Text(
+                                      isFavorited ? "1" : "0",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                );
                               },
-                              icon: Icon(
-                                isFavorited ? Icons.favorite : Icons.favorite_border,
-                                color: isFavorited ? Colors.redAccent : Colors.grey,
-                                size: 22,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            );
-                          },
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -326,40 +248,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-
-  // 데이터가 없을 때 표시할 화면
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.storefront_outlined, size: 100, color: Colors.grey[200]),
+          Icon(Icons.storefront_outlined, size: 80, color: Colors.grey[200]),
           const SizedBox(height: 16),
           Text(
-            "아직 등록된 장소가 없네요!",
-            style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 16),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('데이터 로드 중 오류가 발생했습니다.', style: TextStyle(fontSize: 15)),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: () {
-              setState(() {
-                _storesFuture = storesDatabase.getStores();
-                _reloadToken++;
-              });
-            },
-            icon: const Icon(Icons.refresh),
-            label: const Text('다시 불러오기'),
+            "아직 등록된 카페가 없네요!",
+            style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 15),
           ),
         ],
       ),
