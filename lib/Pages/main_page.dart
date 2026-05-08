@@ -213,45 +213,37 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           ],
                         ),
                         const Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                            Consumer(
-                              builder: (context, ref, child) {
-                                final favoriteIds = ref.watch(favoritesProvider);
-                                final isFavorited = store.id != null && favoriteIds.contains(store.id);
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final favoriteIds = ref.watch(favoritesProvider);
+                            final isFavorited = store.id != null && favoriteIds.contains(store.id);
 
-                                return Row(
-                                  children: [
-                                    IconButton(
-                                      onPressed: () {
-                                        final user = Supabase.instance.client.auth.currentUser;
-                                        if (user == null) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('찜 기능을 사용하려면 로그인이 필요합니다.')),
-                                          );
-                                          ref.read(navigationProvider.notifier).setIndex(2);
-                                          return;
-                                        }
-                                        if (store.id != null) {
-                                          ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
-                                        }
-                                      },
-                                      icon: Icon(
-                                        isFavorited ? Icons.favorite : Icons.favorite_border,
-                                        color: isFavorited ? Colors.redAccent : Colors.grey[400],
-                                        size: 20,
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
+                            return Align(
+                              alignment: Alignment.bottomRight,
+                              child: IconButton(
+                                onPressed: () {
+                                  final user = Supabase.instance.client.auth.currentUser;
+                                  if (user == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('찜 기능을 사용하려면 로그인이 필요합니다.')),
+                                    );
+                                    ref.read(navigationProvider.notifier).setIndex(2);
+                                    return;
+                                  }
+                                  if (store.id != null) {
+                                    ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
+                                  }
+                                },
+                                icon: Icon(
+                                  isFavorited ? Icons.favorite : Icons.favorite_border,
+                                  color: isFavorited ? Colors.redAccent : Colors.grey[400],
+                                  size: 20,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
