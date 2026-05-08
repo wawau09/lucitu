@@ -37,8 +37,8 @@ class _AccountPageState extends State<AccountPage> {
       // 이 방식은 Supabase 대시보드에 구글 클라이언트 ID와 시크릿이 설정되어 있어야 합니다.
       await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
-        // 웹이 아닌 경우 앱으로 돌아오기 위한 딥링크 스킴이 필요합니다.
-        redirectTo: kIsWeb ? null : 'io.supabase.placelist://login-callback',
+        // Uri.base.origin을 사용하여 현재 도메인(Vercel 또는 localhost)으로 자동 리디렉션되도록 합니다.
+        redirectTo: kIsWeb ? Uri.base.origin : 'io.supabase.placelist://login-callback',
       );
 
     } catch (error) {
