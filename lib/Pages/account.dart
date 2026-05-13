@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:placelist/Pages/favorites_list_page.dart';
-import 'package:placelist/Pages/terms_agreement_page.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -15,76 +14,18 @@ class AccountPage extends StatefulWidget {
 class _AccountPageState extends State<AccountPage> {
   User? _user;
   bool _isLoading = false;
-  bool _isCheckingTerms = false;
 
   @override
   void initState() {
     super.initState();
     _user = Supabase.instance.client.auth.currentUser;
-
-    // 이미 로그인된 상태이면서 약관 미동의 상태인지 확인
-    if (_user != null) {
-      _checkTermsAgreement(_user!);
-    }
-
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (mounted) {
-        final newUser = data.session?.user;
         setState(() {
-          _user = newUser;
+          _user = data.session?.user;
         });
-
-        // 로그인 직후 신규 사용자 약관 동의 확인
-        if (newUser != null) {
-          _checkTermsAgreement(newUser);
-        }
       }
     });
-  }
-
-  /// 사용자가 약관에 동의했는지 확인하고, 미동의 시 약관 동의 시트를 표시합니다.
-  Future<void> _checkTermsAgreement(User user) async {
-    final termsAgreed = user.userMetadata?['terms_agreed'] == true;
-    if (termsAgreed) return; // 이미 동의함
-
-    // 약간의 딜레이를 줘서 화면 전환이 자연스럽게
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-
-    setState(() => _isCheckingTerms = true);
-
-    final agreed = await showTermsAgreementSheet(context);
-
-    if (agreed == true) {
-      // 동의함 → user_metadata에 기록
-      try {
-        await Supabase.instance.client.auth.updateUser(
-          UserAttributes(data: {'terms_agreed': true}),
-        );
-      } catch (e) {
-        // metadata 업데이트 실패해도 로그인은 유지
-        debugPrint('약관 동의 메타데이터 업데이트 실패: $e');
-      }
-    } else {
-      // 동의하지 않음 → 로그아웃
-      await Supabase.instance.client.auth.signOut();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '약관에 동의해야 서비스를 이용할 수 있습니다.',
-              style: GoogleFonts.notoSans(),
-            ),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      }
-    }
-
-    if (mounted) {
-      setState(() => _isCheckingTerms = false);
-    }
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -125,11 +66,7 @@ class _AccountPageState extends State<AccountPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: _isCheckingTerms
-            ? const Center(child: CircularProgressIndicator())
-            : _user == null
-                ? _buildLoggedOutView()
-                : _buildLoggedInView(),
+        child: _user == null ? _buildLoggedOutView() : _buildLoggedInView(),
       ),
     );
   }

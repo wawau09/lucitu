@@ -2,13 +2,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'supabase_config.dart';
 import 'package:placelist/Pages/account.dart';
 import 'package:placelist/Pages/search.dart';
+import 'package:placelist/Pages/terms_agreement_page.dart';
 import 'Pages/main_page.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,15 +19,93 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends ConsumerWidget {
+/// 앱 전역에서 사용할 navigatorKey
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  bool _isShowingTerms = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 앱 시작 시 이미 로그인된 사용자의 약관 동의 여부 확인
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkTermsAgreement(currentUser);
+      });
+    }
+
+    // 로그인 상태 변경 감지 (OAuth 리다이렉트 후 포함)
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final user = data.session?.user;
+      if (user != null) {
+        // 약간의 딜레이를 줘서 앱이 완전히 준비된 후 실행
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            _checkTermsAgreement(user);
+          }
+        });
+      }
+    });
+  }
+
+  /// 사용자가 약관에 동의했는지 확인하고, 미동의 시 약관 동의 시트를 표시합니다.
+  Future<void> _checkTermsAgreement(User user) async {
+    final termsAgreed = user.userMetadata?['terms_agreed'] == true;
+    if (termsAgreed || _isShowingTerms) return;
+
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
+
+    _isShowingTerms = true;
+
+    final agreed = await showTermsAgreementSheet(ctx);
+
+    if (agreed == true) {
+      // 동의함 → user_metadata에 기록
+      try {
+        await Supabase.instance.client.auth.updateUser(
+          UserAttributes(data: {'terms_agreed': true}),
+        );
+      } catch (e) {
+        debugPrint('약관 동의 메타데이터 업데이트 실패: $e');
+      }
+    } else {
+      // 동의하지 않음 → 로그아웃
+      await Supabase.instance.client.auth.signOut();
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(
+            content: Text(
+              '약관에 동의해야 서비스를 이용할 수 있습니다.',
+              style: GoogleFonts.notoSans(),
+            ),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+
+    _isShowingTerms = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationProvider);
     final List<Widget> screens = [const SearchPage(), const MainScreen(), const AccountPage()];
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
