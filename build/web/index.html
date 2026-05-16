@@ -43,6 +43,31 @@
   </style>
 </head>
 <body>
+  <script>
+    function initNaverMap(element, lat, lng, name) {
+      var mapOptions = {
+        center: new naver.maps.LatLng(lat, lng),
+        zoom: 15,
+        mapDataControl: false,
+        scaleControl: false,
+      };
+      var map = new naver.maps.Map(element, mapOptions);
+      var marker = new naver.maps.Marker({
+        position: new naver.maps.LatLng(lat, lng),
+        map: map
+      });
+      if (name) {
+        var infoWindow = new naver.maps.InfoWindow({
+          content: '<div style="padding:10px; font-family: sans-serif; font-size: 14px; border: none; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">' + name + '</div>',
+          borderWidth: 0,
+          disableAnchor: true,
+          backgroundColor: 'transparent',
+          pixelOffset: new naver.maps.Point(0, -10)
+        });
+        infoWindow.open(map, marker);
+      }
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -8,6 +8,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:placelist/Pages/map_stub.dart' if (dart.library.html) 'package:placelist/Pages/map_web.dart';
 
 class StoreDetailPage extends ConsumerStatefulWidget {
   final Store store;
@@ -22,11 +25,37 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
   final SupabaseClient _client = Supabase.instance.client;
   int _currentPage = 0;
   late Future<List<String>> _imagesFuture;
+  double? _latitude;
+  double? _longitude;
 
   @override
   void initState() {
     super.initState();
     _imagesFuture = _getStoreImageUrls(widget.store);
+    _fetchLocation();
+  }
+
+  Future<void> _fetchLocation() async {
+    if (widget.store.id == null) return;
+    try {
+      final data = await _client
+          .from('stores_map_view')
+          .select('latitude, longitude')
+          .eq('id', widget.store.id!)
+          .maybeSingle();
+      if (data != null && mounted) {
+        setState(() {
+          _latitude = data['latitude'] is num 
+              ? (data['latitude'] as num).toDouble() 
+              : double.tryParse(data['latitude']?.toString() ?? '');
+          _longitude = data['longitude'] is num 
+              ? (data['longitude'] as num).toDouble() 
+              : double.tryParse(data['longitude']?.toString() ?? '');
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch location: $e');
+    }
   }
 
   Future<List<String>> _getStoreImageUrls(Store store) async {
@@ -313,6 +342,63 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                       color: Colors.grey[700],
                     ),
                   ),
+                  const SizedBox(height: 32),
+                  if (_latitude != null && _longitude != null) ...[
+                    Text(
+                      "위치 안내",
+                      style: GoogleFonts.notoSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (kIsWeb)
+                      Container(
+                        height: 250,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: getWebMap(_latitude!, _longitude!, widget.store.name),
+                        ),
+                      )
+                    else
+                      Container(
+                        height: 250,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: NaverMap(
+                            options: NaverMapViewOptions(
+                              initialCameraPosition: NCameraPosition(
+                                target: NLatLng(_latitude!, _longitude!),
+                                zoom: 15,
+                              ),
+                              locationButtonEnable: false,
+                              indoorEnable: true,
+                              consumeSymbolTapEvents: false,
+                            ),
+                            onMapReady: (controller) {
+                              final marker = NMarker(
+                                id: widget.store.id ?? 'marker',
+                                position: NLatLng(_latitude!, _longitude!),
+                              );
+                              controller.addOverlayAll({marker});
+                              final infoWindow = NInfoWindow.onMarker(id: marker.info.id, text: widget.store.name);
+                              marker.openInfoWindow(infoWindow);
+                            },
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 32),
+                  ],
                 ],
               ),
             ),

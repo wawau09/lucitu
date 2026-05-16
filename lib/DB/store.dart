@@ -7,6 +7,8 @@ class Store {
   String? imagePath;
   String? location;
   double? rating;
+  double? latitude;
+  double? longitude;
 
   Store({
     this.id,
@@ -17,6 +19,8 @@ class Store {
     this.imagePath,
     this.location,
     this.rating,
+    this.latitude,
+    this.longitude,
   });
 
   factory Store.fromMap(Map<String, dynamic> map) {
@@ -45,6 +49,14 @@ class Store {
         ? (map['rating'] as num).toDouble() 
         : double.tryParse(map['rating']?.toString() ?? '');
 
+    final double? resolvedLat = map['latitude'] is num 
+        ? (map['latitude'] as num).toDouble() 
+        : double.tryParse(map['latitude']?.toString() ?? '');
+        
+    final double? resolvedLng = map['longitude'] is num 
+        ? (map['longitude'] as num).toDouble() 
+        : double.tryParse(map['longitude']?.toString() ?? '');
+
     return Store(
       id: rawId?.toString(),
       name: map['name'] ?? '이름 없음',
@@ -54,6 +66,8 @@ class Store {
       imagePath: resolvedImagePath,
       location: map['location']?.toString(),
       rating: resolvedRating,
+      latitude: resolvedLat,
+      longitude: resolvedLng,
     );
   }
 
@@ -66,6 +80,8 @@ class Store {
       if (imagePath != null && imagePath!.isNotEmpty) 'image_path': imagePath,
       if (location != null) 'location': location,
       if (rating != null) 'rating': rating,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     };
   }
 }
