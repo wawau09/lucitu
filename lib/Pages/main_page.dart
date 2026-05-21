@@ -10,6 +10,8 @@ import 'package:placelist/Pages/store_detail_page.dart';
 import 'package:placelist/widgets/category_section.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
+import 'package:placelist/providers/category_provider.dart';
+import 'package:placelist/data/category_data.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -45,6 +47,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedCategories = ref.watch(selectedCategoriesProvider);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -100,6 +103,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     stores = stores.where((store) =>
                         store.name.toLowerCase().contains(_searchQuery.toLowerCase())
                     ).toList();
+                  }
+
+                  if (selectedCategories.isNotEmpty) {
+                    stores = stores.where((store) {
+                      final storeCats = getStoreCategories(store);
+                      return ref.read(selectedCategoriesProvider.notifier).matchesAny(storeCats);
+                    }).toList();
                   }
 
                   if (snapshot.connectionState == ConnectionState.waiting &&
