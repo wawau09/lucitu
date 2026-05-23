@@ -667,136 +667,167 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     var atmosphere = 5.0;
     var finalScore = 5.0;
 
-    showDialog<void>(
+    final pageContext = context;
+
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) {
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Center(
-                child: Text(
-                  "\uCE74\uD398 \uD3C9\uC810 \uB9E4\uAE30\uAE30",
-                  style: GoogleFonts.notoSans(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  10,
+                  20,
+                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
                 ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      "\uC774 \uCE74\uD398\uC758 \uD56D\uBAA9\uBCC4 \uD3C9\uC810\uC744 \uB9E4\uACA8\uC8FC\uC138\uC694.\n(5\uC810 \uB9CC\uC810)",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.notoSans(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildRatingCategoryRow(
-                      "\uC74C\uB8CC \uB9DB",
-                      drink,
-                      (val) => setState(() => drink = val),
-                    ),
-                    _buildRatingCategoryRow(
-                      "\uC704\uC0DD \uC0C1\uD0DC",
-                      hygiene,
-                      (val) => setState(() => hygiene = val),
-                    ),
-                    _buildRatingCategoryRow(
-                      "\uB9E4\uC7A5 \uBD84\uC704\uAE30",
-                      atmosphere,
-                      (val) => setState(() => atmosphere = val),
-                    ),
-                    const Divider(height: 32),
-                    _buildRatingCategoryRow(
-                      "\uCD5C\uC885 \uC810\uC218",
-                      finalScore,
-                      (val) => setState(() => finalScore = val),
-                      isFinal: true,
-                    ),
-                  ],
-                ),
-              ),
-              actionsPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              actions: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          "\uCDE8\uC18C",
-                          style: GoogleFonts.notoSans(
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w600,
-                          ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(99),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          Navigator.pop(context);
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('\uD3C9\uC810\uC744 \uB4F1\uB85D\uD558\uB294 \uC911...'),
-                              duration: Duration(milliseconds: 500),
-                            ),
-                          );
-
-                          await ref.read(storesProvider.notifier).submitRating(
-                                storeId: storeId,
-                                drink: drink,
-                                hygiene: hygiene,
-                                atmosphere: atmosphere,
-                                finalScore: finalScore,
-                              );
-
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '\uD3C9\uC810\uC774 \uC131\uACF5\uC801\uC73C\uB85C \uB4F1\uB85D\uB418\uC5C8\uC2B5\uB2C8\uB2E4!',
-                                  style: GoogleFonts.notoSans(),
-                                ),
-                                backgroundColor: Colors.green,
-                                behavior: SnackBarBehavior.floating,
+                      const SizedBox(height: 18),
+                      Text(
+                        "\uCE74\uD398 \uD3C9\uC810 \uB9E4\uAE30\uAE30",
+                        style: GoogleFonts.notoSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "\uC774 \uCE74\uD398\uC758 \uD56D\uBAA9\uBCC4 \uD3C9\uC810\uC744 \uB9E4\uACA8\uC8FC\uC138\uC694.\n(5\uC810 \uB9CC\uC810)",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.notoSans(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      _buildRatingCategoryRow(
+                        "\uC74C\uB8CC \uB9DB",
+                        drink,
+                        (val) => setState(() => drink = val),
+                      ),
+                      _buildRatingCategoryRow(
+                        "\uC704\uC0DD \uC0C1\uD0DC",
+                        hygiene,
+                        (val) => setState(() => hygiene = val),
+                      ),
+                      _buildRatingCategoryRow(
+                        "\uB9E4\uC7A5 \uBD84\uC704\uAE30",
+                        atmosphere,
+                        (val) => setState(() => atmosphere = val),
+                      ),
+                      const Divider(height: 32),
+                      _buildRatingCategoryRow(
+                        "\uCD5C\uC885 \uC810\uC218",
+                        finalScore,
+                        (val) => setState(() => finalScore = val),
+                        isFinal: true,
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(sheetContext),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey[700],
+                                side: BorderSide(color: Colors.grey.shade300),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 13),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3267A2),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                              child: Text(
+                                "\uCDE8\uC18C",
+                                style: GoogleFonts.notoSans(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          "\uB4F1\uB85D",
-                          style: GoogleFonts.notoSans(
-                            fontWeight: FontWeight.bold,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                Navigator.pop(sheetContext);
+
+                                ScaffoldMessenger.of(pageContext).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      '\uD3C9\uC810\uC744 \uB4F1\uB85D\uD558\uB294 \uC911...',
+                                    ),
+                                    duration: Duration(milliseconds: 500),
+                                  ),
+                                );
+
+                                await ref
+                                    .read(storesProvider.notifier)
+                                    .submitRating(
+                                      storeId: storeId,
+                                      drink: drink,
+                                      hygiene: hygiene,
+                                      atmosphere: atmosphere,
+                                      finalScore: finalScore,
+                                    );
+
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(pageContext).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '\uD3C9\uC810\uC774 \uC131\uACF5\uC801\uC73C\uB85C \uB4F1\uB85D\uB418\uC5C8\uC2B5\uB2C8\uB2E4!',
+                                      style: GoogleFonts.notoSans(),
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3267A2),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: Text(
+                                "\uB4F1\uB85D",
+                                style: GoogleFonts.notoSans(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ],
+              ),
             );
           },
         );
