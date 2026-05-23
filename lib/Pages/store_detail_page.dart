@@ -822,7 +822,16 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                   };
                                   ScaffoldMessenger.of(pageContext)
                                       .showSnackBar(
-                                    SnackBar(content: Text(message)),
+                                    SnackBar(
+                                      content: Text(message),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: const EdgeInsets.fromLTRB(
+                                        16,
+                                        0,
+                                        16,
+                                        96,
+                                      ),
+                                    ),
                                   );
                                   return;
                                 }
@@ -836,6 +845,12 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                     ),
                                     backgroundColor: Colors.green,
                                     behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.fromLTRB(
+                                      16,
+                                      0,
+                                      16,
+                                      96,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),

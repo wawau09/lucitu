@@ -45,38 +45,30 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
       throw const RatingSubmissionException('loginRequired');
     }
 
-    final userId = user.id;
-
-    // Find the current store reviews in state
-    List<dynamic> currentReviews = [];
-    state.whenData((stores) {
-      try {
-        final store = stores.firstWhere((s) => s.id == storeId);
-        currentReviews = store.reviews ?? [];
-      } catch (_) {}
-    });
-
-    if (_hasUserReview(currentReviews, userId)) {
-      throw const RatingSubmissionException('alreadyRated');
-    }
-
-    final newReview = {
-      'user_id': userId,
-      'drink': drink,
-      'hygiene': hygiene,
-      'atmosphere': atmosphere,
-      'final': finalScore,
-      'created_at': DateTime.now().toIso8601String(),
-    };
-
-    final updatedReviews = List<dynamic>.from(currentReviews)..add(newReview);
-
+    final List<dynamic> updatedReviews;
     try {
-      await _client
-          .from('stores')
-          .update({'reviews': updatedReviews})
-          .eq('id', storeId);
+      final result = await _client.rpc(
+        'submit_store_rating',
+        params: {
+          'p_store_id': storeId,
+          'p_drink': drink,
+          'p_hygiene': hygiene,
+          'p_atmosphere': atmosphere,
+          'p_final': finalScore,
+        },
+      );
+
+      if (result is! List) {
+        throw const RatingSubmissionException('saveFailed');
+      }
+
+      updatedReviews = List<dynamic>.from(result);
     } catch (e) {
+      if (e is RatingSubmissionException) rethrow;
+      if (e is PostgrestException &&
+          e.message.toLowerCase().contains('alreadyrated')) {
+        throw const RatingSubmissionException('alreadyRated');
+      }
       throw const RatingSubmissionException('saveFailed');
     }
 
