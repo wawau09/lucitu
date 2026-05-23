@@ -1,17 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:google_fonts/google_fonts.dart';
-import 'package:placelist/DB/store_database.dart';
 import 'package:placelist/DB/store.dart';
-import 'package:placelist/supabase_config.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/Pages/store_detail_page.dart';
-import 'package:placelist/widgets/category_section.dart';
+import 'package:placelist/data/category_data.dart';
+import 'package:placelist/providers/category_provider.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
-import 'package:placelist/providers/category_provider.dart';
-import 'package:placelist/data/category_data.dart';
+import 'package:placelist/providers/stores_provider.dart';
+import 'package:placelist/supabase_config.dart';
+import 'package:placelist/widgets/category_section.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -21,17 +20,8 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  final StoreDatabase storesDatabase = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
-  int _reloadToken = 0;
   String _searchQuery = '';
-  late Future<List<Store>> _storesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _storesFuture = storesDatabase.getStores();
-  }
 
   Future<String> _getMainImageUrl(Store store) async {
     if (store.imageUrl != null && store.imageUrl!.isNotEmpty) {
@@ -41,13 +31,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (store.imagePath != null && store.imagePath!.isNotEmpty) {
       return storage.getPublicUrl(store.imagePath!);
     }
-    final path = '${store.folderName}/1.jpeg';
-    return storage.getPublicUrl(path);
+    return storage.getPublicUrl('${store.folderName}/1.jpeg');
   }
 
   @override
   Widget build(BuildContext context) {
     final selectedCategories = ref.watch(selectedCategoriesProvider);
+    final storesAsync = ref.watch(storesProvider);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -55,7 +46,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 검색창
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Container(
@@ -72,13 +62,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     });
                   },
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
-                    prefixIconConstraints: const BoxConstraints(
-                      minWidth: 32,
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Colors.grey,
+                      size: 20,
                     ),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 32),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 11),
-                    hintText: "카페 이름을 검색해보세요",
+                    hintText: "\uCE74\uD398 \uC774\uB984\uC744 \uAC80\uC0C9\uD574\uBCF4\uC138\uC694",
                     hintStyle: GoogleFonts.notoSans(
                       color: Colors.grey,
                       fontSize: 14,
@@ -88,33 +80,34 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 ),
               ),
             ),
-            // Category Filter Section
             const CategoryFilterSection(),
             const SizedBox(height: 12),
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
             Expanded(
-              child: FutureBuilder<List<Store>>(
-                key: ValueKey(_reloadToken),
-                future: _storesFuture,
-                builder: (context, snapshot) {
-                  List<Store> stores = snapshot.data ?? [];
-                  
+              child: storesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) =>
+                    Center(child: Text("\uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4: $err")),
+                data: (storesList) {
+                  var stores = List<Store>.from(storesList);
+
                   if (_searchQuery.isNotEmpty) {
-                    stores = stores.where((store) =>
-                        store.name.toLowerCase().contains(_searchQuery.toLowerCase())
-                    ).toList();
+                    stores = stores
+                        .where(
+                          (store) => store.name
+                              .toLowerCase()
+                              .contains(_searchQuery.toLowerCase()),
+                        )
+                        .toList();
                   }
 
                   if (selectedCategories.isNotEmpty) {
                     stores = stores.where((store) {
                       final storeCats = getStoreCategories(store);
-                      return ref.read(selectedCategoriesProvider.notifier).matchesAny(storeCats);
+                      return ref
+                          .read(selectedCategoriesProvider.notifier)
+                          .matchesAny(storeCats);
                     }).toList();
-                  }
-
-                  if (snapshot.connectionState == ConnectionState.waiting &&
-                      stores.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (stores.isEmpty) {
@@ -131,7 +124,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  // 당근마켓 스타일의 리스트 뷰
   Widget _buildCafeList(List<Store> stores) {
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
@@ -149,7 +141,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => StoreDetailPage(store: store)),
+              MaterialPageRoute(
+                builder: (context) => StoreDetailPage(store: store),
+              ),
             );
           },
           child: Padding(
@@ -157,7 +151,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 왼쪽 이미지
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: SizedBox(
@@ -180,7 +173,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // 오른쪽 정보
                 Expanded(
                   child: SizedBox(
                     height: 130,
@@ -198,11 +190,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        // 평점 위치를 카페명 밑으로 이동
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 16),
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               (store.rating ?? 0.0).toStringAsFixed(1),
@@ -213,11 +208,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              "•  ${store.location ?? '위치 정보 없음'}",
-                              style: GoogleFonts.notoSans(
-                                fontSize: 14,
-                                color: Colors.grey[600],
+                            Expanded(
+                              child: Text(
+                                store.location ?? '\uC704\uCE58 \uC815\uBCF4 \uC5C6\uC74C',
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -226,27 +225,41 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         Consumer(
                           builder: (context, ref, child) {
                             final favoriteIds = ref.watch(favoritesProvider);
-                            final isFavorited = store.id != null && favoriteIds.contains(store.id);
+                            final isFavorited = store.id != null &&
+                                favoriteIds.contains(store.id);
 
                             return Align(
                               alignment: Alignment.bottomRight,
                               child: IconButton(
                                 onPressed: () {
-                                  final user = Supabase.instance.client.auth.currentUser;
+                                  final user =
+                                      Supabase.instance.client.auth.currentUser;
                                   if (user == null) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('찜 기능을 사용하려면 로그인이 필요합니다.')),
+                                      const SnackBar(
+                                        content: Text(
+                                          '\uCC1C \uAE30\uB2A5\uC744 \uC0AC\uC6A9\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
+                                        ),
+                                      ),
                                     );
-                                    ref.read(navigationProvider.notifier).setIndex(2);
+                                    ref
+                                        .read(navigationProvider.notifier)
+                                        .setIndex(2);
                                     return;
                                   }
                                   if (store.id != null) {
-                                    ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
+                                    ref
+                                        .read(favoritesProvider.notifier)
+                                        .toggleFavorite(store.id!);
                                   }
                                 },
                                 icon: Icon(
-                                  isFavorited ? Icons.favorite : Icons.favorite_border,
-                                  color: isFavorited ? Colors.redAccent : Colors.grey[400],
+                                  isFavorited
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isFavorited
+                                      ? Colors.redAccent
+                                      : Colors.grey[400],
                                   size: 20,
                                 ),
                                 padding: EdgeInsets.zero,
@@ -275,7 +288,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           Icon(Icons.storefront_outlined, size: 80, color: Colors.grey[200]),
           const SizedBox(height: 16),
           Text(
-            "아직 등록된 카페가 없네요!",
+            "\uC544\uC9C1 \uB4F1\uB85D\uB41C \uCE74\uD398\uAC00 \uC5C6\uB124\uC694!",
             style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 15),
           ),
         ],

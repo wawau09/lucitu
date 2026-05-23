@@ -9,6 +9,7 @@ class Store {
   double? rating;
   double? latitude;
   double? longitude;
+  List<dynamic>? reviews;
 
   Store({
     this.id,
@@ -21,7 +22,36 @@ class Store {
     this.rating,
     this.latitude,
     this.longitude,
+    this.reviews,
   });
+
+  Store copyWith({
+    String? id,
+    String? name,
+    String? folderName,
+    int? imageId,
+    String? imageUrl,
+    String? imagePath,
+    String? location,
+    double? rating,
+    double? latitude,
+    double? longitude,
+    List<dynamic>? reviews,
+  }) {
+    return Store(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      folderName: folderName ?? this.folderName,
+      imageId: imageId ?? this.imageId,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imagePath: imagePath ?? this.imagePath,
+      location: location ?? this.location,
+      rating: rating ?? this.rating,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      reviews: reviews ?? this.reviews,
+    );
+  }
 
   factory Store.fromMap(Map<String, dynamic> map) {
     final dynamic rawId = map['id'];
@@ -45,9 +75,30 @@ class Store {
         ? map['image_id'] as int
         : int.tryParse(map['image_id']?.toString() ?? '');
     
-    final double? resolvedRating = map['rating'] is num 
+    final List<dynamic>? resolvedReviews = map['reviews'] is List
+        ? map['reviews'] as List<dynamic>
+        : null;
+
+    double? resolvedRating = map['rating'] is num 
         ? (map['rating'] as num).toDouble() 
         : double.tryParse(map['rating']?.toString() ?? '');
+
+    if (resolvedReviews != null && resolvedReviews.isNotEmpty) {
+      double totalFinal = 0.0;
+      int count = 0;
+      for (var rev in resolvedReviews) {
+        if (rev is Map) {
+          final val = rev['final'] ?? rev['finalScore'];
+          if (val is num) {
+            totalFinal += val.toDouble();
+            count++;
+          }
+        }
+      }
+      if (count > 0) {
+        resolvedRating = totalFinal / count;
+      }
+    }
 
     final double? resolvedLat = map['latitude'] is num 
         ? (map['latitude'] as num).toDouble() 
@@ -68,6 +119,7 @@ class Store {
       rating: resolvedRating,
       latitude: resolvedLat,
       longitude: resolvedLng,
+      reviews: resolvedReviews,
     );
   }
 
@@ -82,6 +134,7 @@ class Store {
       if (rating != null) 'rating': rating,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
+      if (reviews != null) 'reviews': reviews,
     };
   }
 }

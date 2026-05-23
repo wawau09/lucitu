@@ -7,26 +7,19 @@ import 'package:placelist/Pages/store_detail_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
+import 'package:placelist/providers/stores_provider.dart';
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
   @override
-  State<SearchPage> createState() => Search();
+  ConsumerState<SearchPage> createState() => Search();
 }
 
-class Search extends State<SearchPage> {
+class Search extends ConsumerState<SearchPage> {
   final storesDatabase = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
   final TextEditingController _searchController = TextEditingController();
-  List<Store> _filteredStores = [];
-  late Future<List<Store>> _storesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _storesFuture = storesDatabase.getStores();
-  }
 
   Future<String> getImageUrl(Store store) async {
     if (store.imageUrl != null && store.imageUrl!.isNotEmpty) {
@@ -208,18 +201,6 @@ class Search extends State<SearchPage> {
     ),
   );
 
-  void _filterStores(String query, List<Store> stores) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredStores = stores;
-      } else {
-        _filteredStores = stores.where((store) =>
-            store.name.toLowerCase().contains(query.toLowerCase())
-        ).toList();
-      }
-    });
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -228,77 +209,80 @@ class Search extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final storesAsync = ref.watch(storesProvider);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
-        child: FutureBuilder<List<Store>>(
-        future: _storesFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final stores = snapshot.data!;
-          
-          if (_filteredStores.isEmpty && _searchController.text.isEmpty) {
-            _filteredStores = stores;
-          }
+        child: storesAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text("에러: $err")),
+          data: (stores) {
+            final query = _searchController.text;
+            final filteredStores = query.isEmpty
+                ? stores
+                : stores.where((store) =>
+                    store.name.toLowerCase().contains(query.toLowerCase())
+                  ).toList();
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (query) => _filterStores(query, stores),
-                  decoration: InputDecoration(
-                    hintText: '가게 이름으로 검색...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) {
+                      setState(() {});
+                    },
+                    decoration: InputDecoration(
+                      hintText: '가게 이름으로 검색...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[100],
                     ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
                   ),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _filteredStores.isEmpty
-                      ? Center(
-                          child: Text(
-                            _searchController.text.isEmpty 
-                                ? '가게가 없습니다' 
-                                : '검색 결과가 없습니다',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: filteredStores.isEmpty
+                        ? Center(
+                            child: Text(
+                              query.isEmpty 
+                                  ? '가게가 없습니다' 
+                                  : '검색 결과가 없습니다',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
                             ),
+                          )
+                        : GridView.builder(
+                            itemCount: filteredStores.length,
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 250, 
+                              childAspectRatio: 0.8,   
+                              crossAxisSpacing: 16,    
+                              mainAxisSpacing: 16,     
+                            ),
+                            itemBuilder: (context, index) {
+                              return buildCard(filteredStores[index]); 
+                            },
                           ),
-                        )
-                      : GridView.builder(
-                          itemCount: _filteredStores.length,
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 250, 
-                            childAspectRatio: 0.8,   
-                            crossAxisSpacing: 16,    
-                            mainAxisSpacing: 16,     
-                          ),
-                          itemBuilder: (context, index) {
-                            return buildCard(_filteredStores[index]); 
-                          },
-                        ),
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
-    ),
-   );
+    );
   }
 }

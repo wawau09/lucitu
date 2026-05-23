@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../DB/store.dart';
+import 'stores_provider.dart';
 
 final favoritesProvider = StateNotifierProvider<FavoritesNotifier, Set<String>>((ref) {
   return FavoritesNotifier();
@@ -77,15 +78,18 @@ class FavoritesNotifier extends StateNotifier<Set<String>> {
 }
 
 // 찜한 스토어 객체 목록을 가져오는 프로바이더 (추가 기능용)
-final favoritedStoresProvider = FutureProvider<List<Store>>((ref) async {
-  final supabase = Supabase.instance.client;
-  final user = supabase.auth.currentUser;
-  if (user == null) return [];
+final favoritedStoresProvider = Provider<AsyncValue<List<Store>>>((ref) {
+  final favoriteIds = ref.watch(favoritesProvider);
+  final storesAsync = ref.watch(storesProvider);
 
-  final List<dynamic> data = await supabase
-      .from('favorites')
-      .select('stores(*)')
-      .eq('user_id', user.id);
-
-  return data.map((item) => Store.fromMap(item['stores'])).toList();
+  return storesAsync.when(
+    data: (stores) {
+      final favorited = stores
+          .where((store) => store.id != null && favoriteIds.contains(store.id))
+          .toList();
+      return AsyncValue.data(favorited);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (err, stack) => AsyncValue.error(err, stack),
+  );
 });
