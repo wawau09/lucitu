@@ -17,7 +17,43 @@ class StoreDatabase {
 
   Future<List<Store>> getStores() async {
     final List<dynamic> rows = await _client.from(_table).select().order('id');
-    return rows.map((row) => Store.fromMap(row as Map<String, dynamic>)).toList();
+    final storesById = <String, Map<String, dynamic>>{};
+
+    for (final row in rows) {
+      final map = Map<String, dynamic>.from(row as Map);
+      final id = map['id']?.toString();
+      if (id != null) {
+        map['reviews'] = <dynamic>[];
+        storesById[id] = map;
+      }
+    }
+
+    try {
+      final List<dynamic> reviewRows = await _client
+          .from('store_reviews')
+          .select('store_id, user_id, drink, hygiene, atmosphere, final_score, created_at')
+          .order('created_at');
+
+      for (final row in reviewRows) {
+        final review = Map<String, dynamic>.from(row as Map);
+        final storeId = review['store_id']?.toString();
+        final store = storesById[storeId];
+        if (store == null) continue;
+
+        (store['reviews'] as List<dynamic>).add({
+          'user_id': review['user_id'],
+          'drink': review['drink'],
+          'hygiene': review['hygiene'],
+          'atmosphere': review['atmosphere'],
+          'final': review['final_score'],
+          'created_at': review['created_at'],
+        });
+      }
+    } catch (e) {
+      // The rating table may not exist until the Supabase SQL is applied.
+    }
+
+    return storesById.values.map(Store.fromMap).toList();
   }
 
   Future<void> updateStore(Store oldStore, String newName) async {
