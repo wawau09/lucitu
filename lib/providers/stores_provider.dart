@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../DB/store.dart';
 import '../DB/store_database.dart';
@@ -29,55 +27,7 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
     state = const AsyncValue.loading();
     try {
       final dbStores = await _db.getStores();
-      final prefs = await SharedPreferences.getInstance();
-
-      final List<Store> mergedStores = [];
-      for (var store in dbStores) {
-        if (store.id == null) {
-          mergedStores.add(store);
-          continue;
-        }
-
-        final key = 'local_reviews_${store.id}';
-        final localJsonList = prefs.getStringList(key) ?? [];
-        final List<dynamic> localReviews = localJsonList
-            .map((str) => jsonDecode(str))
-            .toList();
-
-        // Deduplicate using created_at as key
-        final Map<String, Map<String, dynamic>> allReviewsMap = {};
-
-        if (store.reviews != null) {
-          for (var rev in store.reviews!) {
-            if (rev is Map) {
-              final keyStr = rev['created_at']?.toString() ?? rev.hashCode.toString();
-              allReviewsMap[keyStr] = Map<String, dynamic>.from(rev);
-            }
-          }
-        }
-
-        for (var rev in localReviews) {
-          if (rev is Map) {
-            final keyStr = rev['created_at']?.toString() ?? rev.hashCode.toString();
-            allReviewsMap[keyStr] = Map<String, dynamic>.from(rev);
-          }
-        }
-
-        final mergedList = allReviewsMap.values.toList();
-
-        // Sort reviews by created_at ascending
-        mergedList.sort((a, b) {
-          final timeA = a['created_at']?.toString() ?? '';
-          final timeB = b['created_at']?.toString() ?? '';
-          return timeA.compareTo(timeB);
-        });
-
-        // Reconstruct the store to recalculate rating
-        final storeMap = store.toMap()..['reviews'] = mergedList;
-        mergedStores.add(Store.fromMap(storeMap..['id'] = store.id));
-      }
-
-      state = AsyncValue.data(mergedStores);
+      state = AsyncValue.data(dbStores);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
@@ -121,28 +71,16 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
 
     final updatedReviews = List<dynamic>.from(currentReviews)..add(newReview);
 
-    // 1. Update SharedPreferences first for instant and reliable local storage
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'local_reviews_$storeId';
-      final localJsonList = prefs.getStringList(key) ?? [];
-      localJsonList.add(jsonEncode(newReview));
-      await prefs.setStringList(key, localJsonList);
-    } catch (e) {
-      print('Failed to save review locally: $e');
-    }
-
-    // 2. Try to update Supabase
     try {
       await _client
           .from('stores')
           .update({'reviews': updatedReviews})
           .eq('id', storeId);
     } catch (e) {
-      print('Failed to update Supabase reviews: $e (This is expected if RLS is enabled)');
+      throw const RatingSubmissionException('saveFailed');
     }
 
-    // 3. Refresh state locally to avoid needing a full network fetch
+    // Refresh state after the DB write succeeds.
     state.whenData((stores) {
       final updatedStores = stores.map((store) {
         if (store.id == storeId) {
