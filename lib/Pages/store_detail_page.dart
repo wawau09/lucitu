@@ -816,7 +816,9 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                     'alreadyRated' =>
                                       '\uC774\uBBF8 \uC774 \uCE74\uD398\uC5D0 \uD3C9\uC810\uC744 \uB0A8\uACBC\uC2B5\uB2C8\uB2E4.',
                                     'saveFailed' =>
-                                      '\uD3C9\uC810 \uC800\uC7A5\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.',
+                                      e.detail == null
+                                          ? '\uD3C9\uC810 \uC800\uC7A5\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.'
+                                          : '\uD3C9\uC810 \uC800\uC7A5 \uC2E4\uD328: ${e.detail}',
                                     _ =>
                                       '\uD3C9\uC810\uC744 \uB9E4\uAE30\uB824\uBA74 \uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
                                   };

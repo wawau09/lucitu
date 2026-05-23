@@ -20,7 +20,7 @@ begin
     raise exception 'loginRequired';
   end if;
 
-  select coalesce(reviews, '[]'::jsonb)
+  select coalesce(reviews::jsonb, '[]'::jsonb)
     into v_reviews
     from public.stores
     where id::text = p_store_id

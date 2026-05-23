@@ -69,7 +69,10 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
           e.message.toLowerCase().contains('alreadyrated')) {
         throw const RatingSubmissionException('alreadyRated');
       }
-      throw const RatingSubmissionException('saveFailed');
+      if (e is PostgrestException) {
+        throw RatingSubmissionException('saveFailed', e.message);
+      }
+      throw RatingSubmissionException('saveFailed', e.toString());
     }
 
     // Refresh state after the DB write succeeds.
@@ -98,8 +101,9 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
 
 class RatingSubmissionException implements Exception {
   final String code;
+  final String? detail;
 
-  const RatingSubmissionException(this.code);
+  const RatingSubmissionException(this.code, [this.detail]);
 }
 
 final storesProvider =
