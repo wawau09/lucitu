@@ -13,6 +13,18 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
   final StoreDatabase _db = StoreDatabase();
   final SupabaseClient _client = Supabase.instance.client;
 
+  bool hasUserRatedStore(String storeId, String userId) {
+    final stores = state.valueOrNull;
+    if (stores == null) return false;
+
+    try {
+      final store = stores.firstWhere((s) => s.id == storeId);
+      return _hasUserReview(store.reviews, userId);
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> fetchStores() async {
     state = const AsyncValue.loading();
     try {
@@ -78,13 +90,12 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
     required double atmosphere,
     required double finalScore,
   }) async {
-    final newReview = {
-      'drink': drink,
-      'hygiene': hygiene,
-      'atmosphere': atmosphere,
-      'final': finalScore,
-      'created_at': DateTime.now().toIso8601String(),
-    };
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw const RatingSubmissionException('loginRequired');
+    }
+
+    final userId = user.id;
 
     // Find the current store reviews in state
     List<dynamic> currentReviews = [];
@@ -94,6 +105,19 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
         currentReviews = store.reviews ?? [];
       } catch (_) {}
     });
+
+    if (_hasUserReview(currentReviews, userId)) {
+      throw const RatingSubmissionException('alreadyRated');
+    }
+
+    final newReview = {
+      'user_id': userId,
+      'drink': drink,
+      'hygiene': hygiene,
+      'atmosphere': atmosphere,
+      'final': finalScore,
+      'created_at': DateTime.now().toIso8601String(),
+    };
 
     final updatedReviews = List<dynamic>.from(currentReviews)..add(newReview);
 
@@ -130,6 +154,22 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
       state = AsyncValue.data(updatedStores);
     });
   }
+
+  bool _hasUserReview(List<dynamic>? reviews, String userId) {
+    if (reviews == null) return false;
+
+    return reviews.any((review) {
+      if (review is! Map) return false;
+      final reviewUserId = review['user_id'] ?? review['userId'];
+      return reviewUserId?.toString() == userId;
+    });
+  }
+}
+
+class RatingSubmissionException implements Exception {
+  final String code;
+
+  const RatingSubmissionException(this.code);
 }
 
 final storesProvider =

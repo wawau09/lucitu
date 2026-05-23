@@ -464,6 +464,12 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
 
   Widget _buildRatingSection(BuildContext context, Store store) {
     final stats = _RatingStats.fromReviews(store.reviews);
+    final user = Supabase.instance.client.auth.currentUser;
+    final hasRated = store.id != null &&
+        user != null &&
+        ref
+            .read(storesProvider.notifier)
+            .hasUserRatedStore(store.id!, user.id);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,12 +586,18 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: store.id == null
+                  onPressed: store.id == null || hasRated
                       ? null
                       : () => _showRatingDialog(context, store.id!),
                   icon: const Icon(Icons.rate_review_outlined, size: 18),
                   label: Text(
-                    stats.count == 0 ? "\uCCAB \uD3C9\uC810 \uB9E4\uAE30\uAE30" : "\uD3C9\uC810 \uCC38\uC5EC\uD558\uAE30",
+                    hasRated
+                        ? "\uC774\uBBF8 \uD3C9\uC810\uC744 \uB0A8\uACBC\uC2B5\uB2C8\uB2E4"
+                        : user == null
+                            ? "\uB85C\uADF8\uC778 \uD6C4 \uD3C9\uC810 \uB9E4\uAE30\uAE30"
+                            : stats.count == 0
+                                ? "\uCCAB \uD3C9\uC810 \uB9E4\uAE30\uAE30"
+                                : "\uD3C9\uC810 \uCC38\uC5EC\uD558\uAE30",
                     style: GoogleFonts.notoSans(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -659,6 +671,15 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
       );
       ref.read(navigationProvider.notifier).setIndex(2);
       Navigator.pop(context);
+      return;
+    }
+
+    if (ref
+        .read(storesProvider.notifier)
+        .hasUserRatedStore(storeId, user.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('\uC774\uBBF8 \uC774 \uCE74\uD398\uC5D0 \uD3C9\uC810\uC744 \uB0A8\uACBC\uC2B5\uB2C8\uB2E4.')),
+      );
       return;
     }
 
@@ -779,15 +800,27 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                   ),
                                 );
 
-                                await ref
-                                    .read(storesProvider.notifier)
-                                    .submitRating(
-                                      storeId: storeId,
-                                      drink: drink,
-                                      hygiene: hygiene,
-                                      atmosphere: atmosphere,
-                                      finalScore: finalScore,
-                                    );
+                                try {
+                                  await ref
+                                      .read(storesProvider.notifier)
+                                      .submitRating(
+                                        storeId: storeId,
+                                        drink: drink,
+                                        hygiene: hygiene,
+                                        atmosphere: atmosphere,
+                                        finalScore: finalScore,
+                                      );
+                                } on RatingSubmissionException catch (e) {
+                                  if (!mounted) return;
+                                  final message = e.code == 'alreadyRated'
+                                      ? '\uC774\uBBF8 \uC774 \uCE74\uD398\uC5D0 \uD3C9\uC810\uC744 \uB0A8\uACBC\uC2B5\uB2C8\uB2E4.'
+                                      : '\uD3C9\uC810\uC744 \uB9E4\uAE30\uB824\uBA74 \uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.';
+                                  ScaffoldMessenger.of(pageContext)
+                                      .showSnackBar(
+                                    SnackBar(content: Text(message)),
+                                  );
+                                  return;
+                                }
 
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(pageContext).showSnackBar(
