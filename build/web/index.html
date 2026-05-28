@@ -55,6 +55,19 @@
         scaleControl: false,
       };
       var map = new naver.maps.Map(element, mapOptions);
+
+      // Prevent event propagation to stop parent page scroll in Flutter Web
+      var stopEvent = function(e) {
+        e.stopPropagation();
+      };
+      element.addEventListener('wheel', stopEvent, { passive: true });
+      element.addEventListener('touchmove', stopEvent, { passive: true });
+      element.addEventListener('touchstart', stopEvent, { passive: true });
+      element.addEventListener('touchend', stopEvent, { passive: true });
+      element.addEventListener('pointerdown', stopEvent, { passive: true });
+      element.addEventListener('pointermove', stopEvent, { passive: true });
+      element.addEventListener('pointerup', stopEvent, { passive: true });
+
       var marker = new naver.maps.Marker({
         position: new naver.maps.LatLng(lat, lng),
         map: map

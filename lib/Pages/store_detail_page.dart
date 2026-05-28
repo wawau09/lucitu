@@ -30,6 +30,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
   late Future<List<String>> _imagesFuture;
   double? _latitude;
   double? _longitude;
+  ScrollPhysics? _scrollPhysics;
 
   @override
   void initState() {
@@ -117,6 +118,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
       ),
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
+        physics: _scrollPhysics,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -414,48 +416,66 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
         ),
         const SizedBox(height: 12),
         if (kIsWeb)
-          Container(
-            height: 250,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: getWebMap(_latitude!, _longitude!, store.name),
+          MouseRegion(
+            onEnter: (_) => setState(() => _scrollPhysics = const NeverScrollableScrollPhysics()),
+            onExit: (_) => setState(() => _scrollPhysics = null),
+            child: Listener(
+              onPointerDown: (_) => setState(() => _scrollPhysics = const NeverScrollableScrollPhysics()),
+              onPointerUp: (_) => setState(() => _scrollPhysics = null),
+              onPointerCancel: (_) => setState(() => _scrollPhysics = null),
+              child: Container(
+                height: 250,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: getWebMap(_latitude!, _longitude!, store.name),
+                ),
+              ),
             ),
           )
         else
-          Container(
-            height: 250,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: NaverMap(
-                options: NaverMapViewOptions(
-                  initialCameraPosition: NCameraPosition(
-                    target: NLatLng(_latitude!, _longitude!),
-                    zoom: 15,
-                  ),
-                  locationButtonEnable: false,
-                  indoorEnable: true,
-                  consumeSymbolTapEvents: false,
+          MouseRegion(
+            onEnter: (_) => setState(() => _scrollPhysics = const NeverScrollableScrollPhysics()),
+            onExit: (_) => setState(() => _scrollPhysics = null),
+            child: Listener(
+              onPointerDown: (_) => setState(() => _scrollPhysics = const NeverScrollableScrollPhysics()),
+              onPointerUp: (_) => setState(() => _scrollPhysics = null),
+              onPointerCancel: (_) => setState(() => _scrollPhysics = null),
+              child: Container(
+                height: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
-                forceGesture: true,
-                onMapReady: (controller) {
-                  final marker = NMarker(
-                    id: store.id ?? 'marker',
-                    position: NLatLng(_latitude!, _longitude!),
-                  );
-                  controller.addOverlayAll({marker});
-                  final infoWindow =
-                      NInfoWindow.onMarker(id: marker.info.id, text: store.name);
-                  marker.openInfoWindow(infoWindow);
-                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: NaverMap(
+                    options: NaverMapViewOptions(
+                      initialCameraPosition: NCameraPosition(
+                        target: NLatLng(_latitude!, _longitude!),
+                        zoom: 15,
+                      ),
+                      locationButtonEnable: false,
+                      indoorEnable: true,
+                      consumeSymbolTapEvents: false,
+                    ),
+                    forceGesture: true,
+                    onMapReady: (controller) {
+                      final marker = NMarker(
+                        id: store.id ?? 'marker',
+                        position: NLatLng(_latitude!, _longitude!),
+                      );
+                      controller.addOverlayAll({marker});
+                      final infoWindow =
+                          NInfoWindow.onMarker(id: marker.info.id, text: store.name);
+                      marker.openInfoWindow(infoWindow);
+                    },
+                  ),
+                ),
               ),
             ),
           ),
