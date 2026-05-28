@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -445,6 +445,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   indoorEnable: true,
                   consumeSymbolTapEvents: false,
                 ),
+                forceGesture: true,
                 onMapReady: (controller) {
                   final marker = NMarker(
                     id: store.id ?? 'marker',
