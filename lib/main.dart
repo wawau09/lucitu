@@ -151,7 +151,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                   items: const [
                     BottomNavigationBarItem(
                       icon: Icon(Icons.event_note_rounded),
-                      label: 'Plan',
+                      label: '\uC77C\uC815',
                     ),
                     BottomNavigationBarItem(
                       icon: Icon(Icons.home_rounded),

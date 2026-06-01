@@ -1,0 +1,91 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:placelist/DB/plan.dart';
+import 'package:placelist/DB/plan_database.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class PlansNotifier extends StateNotifier<AsyncValue<List<PlanSummary>>> {
+  PlansNotifier() : super(const AsyncValue.loading()) {
+    _init();
+  }
+
+  final PlanDatabase _db = PlanDatabase();
+  final SupabaseClient _client = Supabase.instance.client;
+
+  void _init() {
+    _client.auth.onAuthStateChange.listen((data) {
+      if (data.session?.user == null) {
+        state = const AsyncValue.data([]);
+      } else {
+        refresh();
+      }
+    });
+
+    if (_client.auth.currentUser == null) {
+      state = const AsyncValue.data([]);
+    } else {
+      refresh();
+    }
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    try {
+      final plans = await _db.getVisiblePlans();
+      state = AsyncValue.data(plans);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  Future<PlanSummary> createPlan({
+    required String name,
+    required DateTime planDate,
+  }) async {
+    final created = await _db.createPlan(name: name, planDate: planDate);
+    await refresh();
+    return created;
+  }
+
+  Future<void> deletePlan(String planId) async {
+    await _db.deletePlan(planId);
+    await refresh();
+  }
+
+  Future<PlanDetail> getPlanDetail(String planId) {
+    return _db.getPlanDetail(planId);
+  }
+
+  Future<void> addCollaborator({
+    required String planId,
+    required String email,
+  }) async {
+    await _db.addCollaborator(planId: planId, email: email);
+    await refresh();
+  }
+
+  Future<void> removeCollaborator({
+    required String planId,
+    required String email,
+  }) async {
+    await _db.removeCollaborator(planId: planId, email: email);
+    await refresh();
+  }
+
+  Future<void> addPlanItem({
+    required String planId,
+    required PlanDraft draft,
+  }) async {
+    await _db.addPlanItem(planId: planId, draft: draft);
+    await refresh();
+  }
+
+  Future<void> deletePlanItem(String itemId) async {
+    await _db.deletePlanItem(itemId);
+    await refresh();
+  }
+}
+
+final plansProvider =
+    StateNotifierProvider<PlansNotifier, AsyncValue<List<PlanSummary>>>((ref) {
+  return PlansNotifier();
+});
