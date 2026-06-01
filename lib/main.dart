@@ -102,7 +102,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationProvider);
-    final List<Widget> screens = [const SearchPage(), const MainScreen(), const AccountPage()];
+    final List<Widget> screens = [const PlanPage(), const MainScreen(), const AccountPage()];
 
     return MaterialApp(
       navigatorKey: navigatorKey,
@@ -150,8 +150,8 @@ class _MyAppState extends ConsumerState<MyApp> {
                   },
                   items: const [
                     BottomNavigationBarItem(
-                      icon: Icon(Icons.search_rounded),
-                      label: 'Search',
+                      icon: Icon(Icons.event_note_rounded),
+                      label: 'Plan',
                     ),
                     BottomNavigationBarItem(
                       icon: Icon(Icons.home_rounded),
