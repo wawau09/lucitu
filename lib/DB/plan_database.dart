@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:placelist/DB/plan.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -90,17 +88,13 @@ class PlanDatabase {
       throw const PostgrestException(message: 'loginRequired');
     }
 
-    final code = _buildPlanCode(planDate);
-    final row = await _client
-        .from(_plansTable)
-        .insert({
-          'owner_id': user.id,
-          'name': name.trim(),
-          'plan_date': _dateString(planDate),
-          'plan_code': code,
-        })
-        .select('id,name,plan_date,plan_code,owner_id,item_count')
-        .single();
+    final row = await _client.rpc(
+      'create_plan_entry',
+      params: {
+        'p_name': name.trim(),
+        'p_plan_date': _dateString(planDate),
+      },
+    );
 
     return PlanSummary.fromMap(
       Map<String, dynamic>.from(row as Map),
@@ -206,13 +200,6 @@ class PlanDatabase {
         ? (value as num).toInt()
         : int.tryParse(value?.toString() ?? '');
     return (current ?? -1) + 1;
-  }
-
-  String _buildPlanCode(DateTime date) {
-    final datePart =
-        '${date.year.toString().substring(2)}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
-    final randomPart = Random().nextInt(36 * 36 * 36 * 36).toRadixString(36).toUpperCase().padLeft(4, '0');
-    return 'PL-$datePart-$randomPart';
   }
 
   String _dateString(DateTime date) {

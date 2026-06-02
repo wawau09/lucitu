@@ -246,3 +246,41 @@ drop trigger if exists trg_plan_collaborators_touch_delete on public.plan_collab
 create trigger trg_plan_collaborators_touch_delete
 after delete on public.plan_collaborators
 for each row execute function public.touch_plan_from_collaborators();
+
+create or replace function public.create_plan_entry(
+  p_name text,
+  p_plan_date date
+)
+returns public.plans
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_plan public.plans;
+begin
+  if v_user_id is null then
+    raise exception 'loginRequired';
+  end if;
+
+  insert into public.plans (
+    owner_id,
+    name,
+    plan_date,
+    plan_code
+  )
+  values (
+    v_user_id,
+    btrim(p_name),
+    p_plan_date,
+    'PL-' || to_char(p_plan_date, 'YYMMDD') || '-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 4))
+  )
+  returning * into v_plan;
+
+  return v_plan;
+end;
+$$;
+
+revoke all on function public.create_plan_entry(text, date) from public;
+grant execute on function public.create_plan_entry(text, date) to authenticated;
