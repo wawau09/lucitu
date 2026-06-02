@@ -33,24 +33,8 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => _buildErrorState(err.toString()),
           data: (plans) {
-            _syncInitialSelection(plans);
-
             if (user == null) {
               return _buildLoggedOutState();
-            }
-
-            final selectedExists =
-                _selectedPlanId != null && plans.any((plan) => plan.id == _selectedPlanId);
-
-            if (!selectedExists && _selectedPlanId != null && plans.isNotEmpty) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted) return;
-                setState(() {
-                  _selectedPlanId = plans.first.id;
-                  _selectedPlanFuture =
-                      ref.read(plansProvider.notifier).getPlanDetail(plans.first.id);
-                });
-              });
             }
 
             return RefreshIndicator(
@@ -63,8 +47,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                   children: [
                     _buildHeader(context, user),
                     const SizedBox(height: 14),
-                    _buildSummaryRow(plans),
-                    const SizedBox(height: 18),
                     _buildSectionTitle(
                       title: '\uC800\uC7A5\uB41C \uC77C\uC815',
                       subtitle: '\uACC4\uC815\uC5D0 \uC800\uC7A5\uB41C \uAC1C\uBCC4 \uACC4\uD68D\uC744 \uBCFC \uC218 \uC788\uC5B4\uC694',
@@ -77,18 +59,8 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: _buildPlanCard(
                               plan: plan,
-                              isSelected: plan.id == _selectedPlanId,
                             ),
                           )),
-                    const SizedBox(height: 8),
-                    if (_selectedPlanId != null) ...[
-                      _buildSectionTitle(
-                        title: '\uC120\uD0DD\uD55C \uC77C\uC815',
-                        subtitle: '\uC77C\uC815, \uC911\uAC04 \uC7A5\uC18C, \uC2DC\uAC04\uC744 \uD558\uB098\uB85C \uAD00\uB9AC\uD569\uB2C8\uB2E4',
-                      ),
-                      const SizedBox(height: 12),
-                      _buildSelectedPlanDetail(),
-                    ],
                   ],
                 ),
               ),
@@ -310,78 +282,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
-  Widget _buildSummaryRow(List<PlanSummary> plans) {
-    final sharedCount = plans.where((plan) => plan.sharedWithMe).length;
-    final totalItems = plans.fold<int>(0, (sum, plan) => sum + plan.itemCount);
-
-    return Row(
-      children: [
-        Expanded(
-          child: _buildSummaryCard(
-            label: '\uC800\uC7A5\uB41C \uC77C\uC815',
-            value: '${plans.length}',
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildSummaryCard(
-            label: '\uACF5\uC720 \uC77C\uC815',
-            value: '$sharedCount',
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildSummaryCard(
-            label: '\uD56D\uBAA9 \uC218',
-            value: '$totalItems',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCard({
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE9E2D9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.notoSans(
-              fontSize: 11,
-              color: const Color(0xFF6B7280),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: GoogleFonts.notoSans(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF111827),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSectionTitle({
     required String title,
     required String subtitle,
@@ -464,16 +364,15 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
   Widget _buildPlanCard({
     required PlanSummary plan,
-    required bool isSelected,
   }) {
-    final borderColor = isSelected ? const Color(0xFF3267A2) : const Color(0xFFE8E1D9);
-
     return InkWell(
       onTap: () {
-        setState(() {
-          _selectedPlanId = plan.id;
-          _selectedPlanFuture = ref.read(plansProvider.notifier).getPlanDetail(plan.id);
-        });
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PlanDetailPage(planId: plan.id),
+          ),
+        );
       },
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
@@ -482,11 +381,11 @@ class _PlanPageState extends ConsumerState<PlanPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: borderColor, width: isSelected ? 1.5 : 1),
+          border: Border.all(color: const Color(0xFFE8E1D9)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isSelected ? 0.08 : 0.04),
-              blurRadius: isSelected ? 18 : 14,
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 14,
               offset: const Offset(0, 8),
             ),
           ],
@@ -574,20 +473,15 @@ class _PlanPageState extends ConsumerState<PlanPage> {
             const SizedBox(height: 12),
             Row(
               children: [
-                _buildMiniStat(icon: Icons.list_alt_rounded, label: '\uD56D\uBAA9', value: '${plan.itemCount}'),
-                const SizedBox(width: 10),
-                _buildMiniStat(
-                  icon: plan.sharedWithMe ? Icons.group_rounded : Icons.person_rounded,
-                  label: plan.sharedWithMe ? '\uACF5\uC720' : '\uC18C\uC720',
-                  value: plan.sharedWithMe ? '\uACF5\uC720' : '\uB0B4',
-                ),
                 const Spacer(),
                 TextButton(
                   onPressed: () {
-                    setState(() {
-                      _selectedPlanId = plan.id;
-                      _selectedPlanFuture = ref.read(plansProvider.notifier).getPlanDetail(plan.id);
-                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PlanDetailPage(planId: plan.id),
+                      ),
+                    );
                   },
                   child: Text(
                     '\uC5F4\uAE30',
@@ -1745,6 +1639,1000 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     setState(() {
       _selectedPlanFuture = ref.read(plansProvider.notifier).getPlanDetail(planId);
     });
+  }
+
+  String _formatDate(DateTime date) {
+    const weekDays = ['\uC77C', '\uC6D4', '\uD654', '\uC218', '\uBAA9', '\uAE08', '\uD1A0'];
+    return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')} (${weekDays[date.weekday % 7]})';
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _formatItemTime(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '\uC2DC\uAC04 \uBBF8\uC815';
+    if (raw.length >= 5) return raw.substring(0, 5);
+    return raw;
+  }
+}
+
+class PlanDetailPage extends ConsumerStatefulWidget {
+  const PlanDetailPage({super.key, required this.planId});
+
+  final String planId;
+
+  @override
+  ConsumerState<PlanDetailPage> createState() => _PlanDetailPageState();
+}
+
+class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
+  Future<PlanDetail>? _detailFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _detailFuture = ref.read(plansProvider.notifier).getPlanDetail(widget.planId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F5F2),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF6F5F2),
+        foregroundColor: const Color(0xFF111827),
+        elevation: 0,
+        title: Text(
+          '\uC77C\uC815 \uC0C1\uC138',
+          style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
+        ),
+      ),
+      body: FutureBuilder<PlanDetail>(
+        future: _detailFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError || !snapshot.hasData) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  '\uC77C\uC815\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.',
+                  style: GoogleFonts.notoSans(color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          final detail = snapshot.data!;
+          final itemPlaces = detail.items
+              .map((item) => item.placeName?.trim())
+              .whereType<String>()
+              .where((place) => place.isNotEmpty)
+              .toSet()
+              .toList();
+
+          return RefreshIndicator(
+            onRefresh: _refreshPlan,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildPlanHeader(detail),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildPill(
+                        label: detail.plan.planCode,
+                        background: const Color(0xFFF8FAFC),
+                        foreground: const Color(0xFF374151),
+                      ),
+                      _buildPill(
+                        label: detail.plan.isOwner ? '\uC18C\uC720\uC790' : '\uACF5\uC720 \uCC38\uC5EC\uC790',
+                        background: detail.plan.isOwner ? const Color(0xFFF5F7FB) : const Color(0xFFF0F6FF),
+                        foreground: detail.plan.isOwner ? const Color(0xFF374151) : const Color(0xFF2F5E8F),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showAddItemDialog(detail.plan.id),
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: Text(
+                            '\uD56D\uBAA9 \uCD94\uAC00',
+                            style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3267A2),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: detail.plan.isOwner ? () => _showAddCollaboratorDialog(detail.plan.id) : null,
+                          icon: const Icon(Icons.group_add_rounded, size: 18),
+                          label: Text(
+                            '\uACF5\uC720',
+                            style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF3267A2),
+                            side: const BorderSide(color: Color(0xFF3267A2)),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDetailSection(
+                    title: '\uC77C\uC815',
+                    child: detail.items.isEmpty
+                        ? _buildDetailEmptyState(
+                            icon: Icons.calendar_today_outlined,
+                            message: '\uC544\uC9C1 \uC77C\uC815 \uD56D\uBAA9\uC774 \uC5C6\uC5B4\uC694.',
+                          )
+                        : Column(
+                            children: detail.items
+                                .map(
+                                  (item) => _buildScheduleRow(
+                                    item,
+                                    onDelete: () => _confirmDeleteItem(detail.plan.id, item),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDetailSection(
+                    title: '\uC911\uAC04\uC5D0 \uB4E4\uB9B4 \uC7A5\uC18C',
+                    child: itemPlaces.isEmpty
+                        ? _buildDetailEmptyState(
+                            icon: Icons.place_outlined,
+                            message: '\uC911\uAC04\uC7A5\uC18C\uAC00 \uC544\uC9C1 \uC5C6\uC5B4\uC694.',
+                          )
+                        : Column(
+                            children: itemPlaces
+                                .map(
+                                  (place) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: _buildPlaceChip(place),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDetailSection(
+                    title: '\uC2DC\uAC04\uBCC4',
+                    child: detail.items.isEmpty
+                        ? _buildDetailEmptyState(
+                            icon: Icons.schedule_outlined,
+                            message: '\uC2DC\uAC04 \uAE30\uBC18 \uC77C\uC815\uC774 \uC544\uC9C1 \uC5C6\uC5B4\uC694.',
+                          )
+                        : Column(
+                            children: detail.items.map((item) => _buildTimelineRow(item)).toList(),
+                          ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDetailSection(
+                    title: '\uACF5\uB3D9 \uC791\uC5C5\uC790',
+                    child: _buildCollaboratorSection(detail),
+                  ),
+                  if (detail.plan.isOwner) ...[
+                    const SizedBox(height: 14),
+                    TextButton.icon(
+                      onPressed: () => _confirmDeletePlan(detail.plan),
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      label: Text(
+                        '\uC774 \uC77C\uC815 \uC0AD\uC81C',
+                        style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFB45309),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPlanHeader(PlanDetail detail) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2F5E8F), Color(0xFF86A8C8)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2F5E8F).withValues(alpha: 0.18),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      detail.plan.name,
+                      style: GoogleFonts.notoSans(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '\uB0A0\uC9DC: ${_formatDate(detail.plan.planDate)}',
+                      style: GoogleFonts.notoSans(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.calendar_month_rounded, color: Colors.white),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '\uBCF5\uC0AC \uAC00\uB2A5\uD55C \uC77C\uC815 \uCF54\uB4DC: ${detail.plan.planCode}',
+            style: GoogleFonts.notoSans(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPill({
+    required String label,
+    required Color background,
+    required Color foreground,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.notoSans(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: foreground,
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _detailDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: const Color(0xFFE8E1D9)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailSection({
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDFCFB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE9E2D9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.notoSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailEmptyState({
+    required IconData icon,
+    required String message,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8E1D9)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: const Color(0xFFB3B9C4)),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: GoogleFonts.notoSans(
+              fontSize: 13,
+              color: const Color(0xFF6B7280),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScheduleRow(PlanItem item, {required VoidCallback onDelete}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE8E1D9)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 64,
+              child: Text(
+                _formatItemTime(item.startTime),
+                style: GoogleFonts.notoSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF3267A2),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: const BoxDecoration(
+                color: Color(0xFF3267A2),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: GoogleFonts.notoSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if ((item.placeName ?? '').isNotEmpty)
+                    Text(
+                      item.placeName!,
+                      style: GoogleFonts.notoSans(
+                        fontSize: 13,
+                        color: const Color(0xFF6B7280),
+                      ),
+                    ),
+                  if ((item.note ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      item.note!,
+                      style: GoogleFonts.notoSans(
+                        fontSize: 12,
+                        color: const Color(0xFF8A8F98),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: onDelete,
+              icon: const Icon(Icons.close_rounded, size: 18),
+              color: const Color(0xFFB45309),
+              tooltip: '\uC0AD\uC81C',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceChip(String place) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8E1D9)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.location_on_rounded, size: 18, color: Color(0xFF3267A2)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              place,
+              style: GoogleFonts.notoSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF111827),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineRow(PlanItem item) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 64,
+            child: Text(
+              _formatItemTime(item.startTime),
+              style: GoogleFonts.notoSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF3267A2),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(top: 4),
+            decoration: const BoxDecoration(
+              color: Color(0xFF3267A2),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE8E1D9)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: GoogleFonts.notoSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.placeName != null && item.placeName!.isNotEmpty ? item.placeName! : '\uC7A5\uC18C \uC5C6\uC74C',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 13,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCollaboratorSection(PlanDetail detail) {
+    if (detail.plan.isOwner) {
+      if (detail.collaborators.isEmpty) {
+        return _buildDetailEmptyState(
+          icon: Icons.group_outlined,
+          message: '\uC544\uC9C1 \uB4F1\uB85D\uB41C \uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uC5C6\uC5B4\uC694.',
+        );
+      }
+
+      return Column(
+        children: detail.collaborators
+            .map(
+              (member) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFE8E1D9)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person_rounded, color: Color(0xFF3267A2), size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          member.email,
+                          style: GoogleFonts.notoSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF111827),
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: member.isSelf ? null : () => _confirmRemoveCollaborator(detail.plan.id, member.email),
+                        child: Text(
+                          member.isSelf ? '\uB098' : '\uC0AD\uC81C',
+                          style: GoogleFonts.notoSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      );
+    }
+
+    if (detail.collaborators.any((member) => member.isSelf)) {
+      return _buildDetailEmptyState(
+        icon: Icons.group_rounded,
+        message: '\uC774 \uC77C\uC815\uC5D0 \uACF5\uC720 \uCC38\uC5EC \uC911\uC785\uB2C8\uB2E4.',
+      );
+    }
+
+    return _buildDetailEmptyState(
+      icon: Icons.group_outlined,
+      message: '\uACF5\uB3D9 \uC791\uC5C5\uC790 \uC815\uBCF4\uB97C \uBCFC \uC218 \uC5C6\uC5B4\uC694.',
+    );
+  }
+
+  Future<void> _refreshPlan() async {
+    setState(() {
+      _detailFuture = ref.read(plansProvider.notifier).getPlanDetail(widget.planId);
+    });
+  }
+
+  Future<void> _showAddItemDialog(String planId) async {
+    final titleController = TextEditingController();
+    final placeController = TextEditingController();
+    final noteController = TextEditingController();
+    TimeOfDay? selectedTime;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Text(
+                '\uD56D\uBAA9 \uCD94\uAC00',
+                style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
+              ),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(labelText: '\uC81C\uBAA9'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: placeController,
+                        decoration: const InputDecoration(labelText: '\uC7A5\uC18C'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: noteController,
+                        decoration: const InputDecoration(labelText: '\uBA54\uBAA8'),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              selectedTime == null ? '\uC2DC\uAC04 \uC5C6\uC74C' : _formatTimeOfDay(selectedTime!),
+                              style: GoogleFonts.notoSans(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: selectedTime ?? TimeOfDay.now(),
+                              );
+                              if (picked == null) return;
+                              setDialogState(() {
+                                selectedTime = picked;
+                              });
+                            },
+                            child: const Text('\uC2DC\uAC04 \uC120\uD0DD'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('\uCDE8\uC18C'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3267A2),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('\uCD94\uAC00'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result != true || !mounted) return;
+
+    final title = titleController.text.trim();
+    final place = placeController.text.trim();
+    final note = noteController.text.trim();
+    titleController.dispose();
+    placeController.dispose();
+    noteController.dispose();
+    if (title.isEmpty) return;
+
+    try {
+      await ref.read(plansProvider.notifier).addPlanItem(
+            planId: planId,
+            draft: PlanDraft(
+              title: title,
+              placeName: place.isEmpty ? null : place,
+              note: note.isEmpty ? null : note,
+              startTime: selectedTime == null ? null : _formatTimeOfDay(selectedTime!),
+            ),
+          );
+      await _refreshPlan();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '\uD56D\uBAA9\uC774 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
+            style: GoogleFonts.notoSans(),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('\uD56D\uBAA9 \uCD94\uAC00 \uC2E4\uD328: $e')),
+      );
+    }
+  }
+
+  Future<void> _showAddCollaboratorDialog(String planId) async {
+    final emailController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(
+            '\uACF5\uB3D9 \uC791\uC5C5\uC790 \uCD94\uAC00',
+            style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
+          ),
+          content: SizedBox(
+            width: 400,
+            child: TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('\uCDE8\uC18C'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3267A2),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('\uCD94\uAC00'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != true || !mounted) {
+      emailController.dispose();
+      return;
+    }
+
+    final email = emailController.text.trim();
+    emailController.dispose();
+    if (email.isEmpty) return;
+
+    try {
+      await ref.read(plansProvider.notifier).addCollaborator(planId: planId, email: email);
+      await _refreshPlan();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '\uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
+            style: GoogleFonts.notoSans(),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('\uCD94\uAC00 \uC2E4\uD328: $e')),
+      );
+    }
+  }
+
+  Future<void> _confirmDeletePlan(PlanSummary plan) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(
+            '\uC77C\uC815 \uC0AD\uC81C',
+            style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            '\u201C${plan.name}\u201D\uC744 \uC815\uB9D0 \uC0AD\uC81C\uD560\uAE4C\uC694?',
+            style: GoogleFonts.notoSans(height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('\uCDE8\uC18C'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB45309),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('\uC0AD\uC81C'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (ok != true) return;
+
+    try {
+      await ref.read(plansProvider.notifier).deletePlan(plan.id);
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            '\uC77C\uC815\uC774 \uC0AD\uC81C\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
+            style: GoogleFonts.notoSans(),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('\uC0AD\uC81C \uC2E4\uD328: $e')),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteItem(String planId, PlanItem item) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(
+            '\uD56D\uBAA9 \uC0AD\uC81C',
+            style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            '\u201C${item.title}\u201D\uC744 \uC9C0\uC6B8\uAE4C\uC694?',
+            style: GoogleFonts.notoSans(height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('\uCDE8\uC18C'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB45309),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('\uC0AD\uC81C'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (ok != true) return;
+
+    try {
+      await ref.read(plansProvider.notifier).deletePlanItem(item.id);
+      await _refreshPlan();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '\uD56D\uBAA9\uC774 \uC0AD\uC81C\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
+            style: GoogleFonts.notoSans(),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('\uC0AD\uC81C \uC2E4\uD328: $e')),
+      );
+    }
+  }
+
+  Future<void> _confirmRemoveCollaborator(String planId, String email) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(
+            '\uACF5\uB3D9 \uC791\uC5C5\uC790 \uC0AD\uC81C',
+            style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            '\u201C$email\u201D\uC744 \uBCF8\uB2E4\uACE0 \uC0AD\uC81C\uD560\uAE4C\uC694?',
+            style: GoogleFonts.notoSans(height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('\uCDE8\uC18C'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB45309),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('\uC0AD\uC81C'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (ok != true) return;
+
+    try {
+      await ref.read(plansProvider.notifier).removeCollaborator(planId: planId, email: email);
+      await _refreshPlan();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '\uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uC81C\uAC70\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
+            style: GoogleFonts.notoSans(),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('\uC0AD\uC81C \uC2E4\uD328: $e')),
+      );
+    }
   }
 
   String _formatDate(DateTime date) {
