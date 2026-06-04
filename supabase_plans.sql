@@ -284,3 +284,62 @@ $$;
 
 revoke all on function public.create_plan_entry(text, date) from public;
 grant execute on function public.create_plan_entry(text, date) to authenticated;
+
+create or replace function public.join_plan_by_code(
+  p_plan_code text
+)
+returns public.plans
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_plan public.plans;
+begin
+  if v_user_id is null then
+    raise exception 'loginRequired';
+  end if;
+
+  if btrim(coalesce(p_plan_code, '')) = '' then
+    raise exception 'planCodeRequired';
+  end if;
+
+  select *
+    into v_plan
+    from public.plans
+   where upper(plan_code) = upper(btrim(p_plan_code))
+   limit 1;
+
+  if not found then
+    raise exception 'planNotFound';
+  end if;
+
+  if v_plan.owner_id = v_user_id then
+    return v_plan;
+  end if;
+
+  if v_email = '' then
+    raise exception 'emailRequired';
+  end if;
+
+  insert into public.plan_collaborators (
+    plan_id,
+    collaborator_email,
+    role
+  )
+  values (
+    v_plan.id,
+    v_email,
+    'editor'
+  )
+  on conflict (plan_id, collaborator_email)
+  do update set role = excluded.role;
+
+  return v_plan;
+end;
+$$;
+
+revoke all on function public.join_plan_by_code(text) from public;
+grant execute on function public.join_plan_by_code(text) to authenticated;

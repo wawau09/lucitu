@@ -149,25 +149,25 @@ class PlanDatabase {
     await _client.from(_itemsTable).delete().eq('id', itemId);
   }
 
-  Future<void> addCollaborator({
-    required String planId,
-    required String email,
+  Future<PlanSummary> joinPlanByCode({
+    required String planCode,
   }) async {
     final user = _user;
     if (user == null) {
       throw const PostgrestException(message: 'loginRequired');
     }
 
-    final normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail.isEmpty) {
-      return;
-    }
+    final row = await _client.rpc(
+      'join_plan_by_code',
+      params: {
+        'p_plan_code': planCode.trim(),
+      },
+    );
 
-    await _client.from(_collaboratorsTable).upsert({
-      'plan_id': planId,
-      'collaborator_email': normalizedEmail,
-      'role': 'editor',
-    }, onConflict: 'plan_id,collaborator_email');
+    return PlanSummary.fromMap(
+      Map<String, dynamic>.from(row as Map),
+      currentUserId: user.id,
+    );
   }
 
   Future<void> removeCollaborator({

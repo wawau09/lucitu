@@ -26,46 +26,75 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     final plansAsync = ref.watch(plansProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F5F2),
+      backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
-        child: plansAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => _buildErrorState(err.toString()),
-          data: (plans) {
-            if (user == null) {
-              return _buildLoggedOutState();
-            }
-
-            return RefreshIndicator(
-              onRefresh: () => ref.read(plansProvider.notifier).refresh(),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(context, user),
-                    const SizedBox(height: 14),
-                    _buildSectionTitle(
-                      title: '\uC800\uC7A5\uB41C \uC77C\uC815',
-                      subtitle: '\uACC4\uC815\uC5D0 \uC800\uC7A5\uB41C \uAC1C\uBCC4 \uACC4\uD68D\uC744 \uBCFC \uC218 \uC788\uC5B4\uC694',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '내 일정',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
-                    const SizedBox(height: 12),
-                    if (plans.isEmpty)
-                      _buildEmptyPlansCard()
-                    else
-                      ...plans.map((plan) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _buildPlanCard(
-                              plan: plan,
-                            ),
-                          )),
-                  ],
-                ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.black87),
+                        onPressed: () => ref.read(plansProvider.notifier).refresh(),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add, color: Colors.black87),
+                        onPressed: _showCreatePlanDialog,
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            );
-          },
+            ),
+            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            Expanded(
+              child: plansAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => _buildErrorState(err.toString()),
+                data: (plans) {
+                  if (user == null) {
+                    return _buildLoggedOutState();
+                  }
+
+                  if (plans.isEmpty) {
+                    return _buildEmptyPlansCard();
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () => ref.read(plansProvider.notifier).refresh(),
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 100),
+                      itemCount: plans.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        height: 1,
+                        indent: 16,
+                        endIndent: 16,
+                        color: Color(0xFFEEEEEE),
+                      ),
+                      itemBuilder: (context, index) {
+                        return _buildPlanCard(plan: plans[index]);
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -73,70 +102,25 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
   Widget _buildLoggedOutState() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xFFE8E1D9)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.event_note_outlined, size: 80, color: Colors.grey[200]),
+          const SizedBox(height: 16),
+          Text(
+            "일정을 보려면 로그인이 필요합니다.",
+            style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 15),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.event_note_rounded, size: 54, color: Color(0xFF3267A2)),
-              const SizedBox(height: 14),
-              Text(
-                '\uC77C\uC815\uC744 \uBCF4\uB824\uBA74 \uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4',
-                style: GoogleFonts.notoSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF111827),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '\uACC4\uC815\uC5D0 \uC800\uC7A5\uB41C \uACC4\uD68D\uACFC \uACF5\uC720 \uC77C\uC815\uC744 \uC5F4\uB78C\uD560 \uC218 \uC788\uC5B4\uC694.',
-                style: GoogleFonts.notoSans(
-                  fontSize: 14,
-                  color: const Color(0xFF6B7280),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ref.read(navigationProvider.notifier).setIndex(2);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3267A2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    '\uACC4\uC815 \uD0ED \uC774\uB3D9',
-                    style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => ref.read(navigationProvider.notifier).setIndex(2),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black87,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('로그인 하러 가기'),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -154,208 +138,25 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, User user) {
-    final metadataName = user.userMetadata?['full_name']?.toString().trim();
-    final displayName =
-        metadataName != null && metadataName.isNotEmpty ? metadataName : user.email ?? '\uC0AC\uC6A9\uC790';
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF2F5E8F), Color(0xFF86A8C8)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2F5E8F).withValues(alpha: 0.18),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '\uB0B4 \uC77C\uC815',
-                      style: GoogleFonts.notoSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.88),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '\uACC4\uC815\uC5D0 \uC800\uC7A5\uB41C \uC77C\uC815\uC744 \uD55C \uC7A5\uBA74\uC5D0 \uB9AC\uD2A8\uD569\uB2C8\uB2E4',
-                      style: GoogleFonts.notoSans(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(Icons.calendar_month_rounded, color: Colors.white),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            '\uBCC4\uBA85: $displayName',
-            style: GoogleFonts.notoSans(
-              fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.85),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _buildHeaderChip(
-                icon: Icons.add_rounded,
-                label: '\uC0C8 \uC77C\uC815',
-                onTap: _showCreatePlanDialog,
-              ),
-              const SizedBox(width: 10),
-              _buildHeaderChip(
-                icon: Icons.refresh_rounded,
-                label: '\uC0C8\uB85C\uACE0\uCE68',
-                onTap: () => ref.read(plansProvider.notifier).refresh(),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderChip({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: 18),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: GoogleFonts.notoSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle({
-    required String title,
-    required String subtitle,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.notoSans(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: GoogleFonts.notoSans(
-            fontSize: 13,
-            color: const Color(0xFF6B7280),
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildEmptyPlansCard() {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE8E1D9)),
-      ),
+    return Center(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.event_busy_rounded, size: 42, color: Color(0xFFB3B9C4)),
-          const SizedBox(height: 12),
+          Icon(Icons.event_busy_outlined, size: 80, color: Colors.grey[200]),
+          const SizedBox(height: 16),
           Text(
-            '\uC544\uC9C1 \uC800\uC7A5\uB41C \uC77C\uC815\uC774 \uC5C6\uC5B4\uC694',
-            style: GoogleFonts.notoSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF111827),
-            ),
+            "아직 등록된 일정이 없네요!",
+            style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 15),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '\uC0C8 \uC77C\uC815\uC744 \uB9CC\uB4E4\uACE0 \uC77C\uC815\uACFC \uC7A5\uC18C, \uC2DC\uAC04\uC744 \uB123\uC5B4\uBCF4\uC138\uC694.',
-            style: GoogleFonts.notoSans(
-              fontSize: 13,
-              color: const Color(0xFF6B7280),
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 14),
-          ElevatedButton.icon(
+          const SizedBox(height: 16),
+          ElevatedButton(
             onPressed: _showCreatePlanDialog,
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: Text(
-              '\uC77C\uC815 \uB9CC\uB4E4\uAE30',
-              style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
-            ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3267A2),
+              backgroundColor: Colors.black87,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
             ),
+            child: const Text('새 일정 만들기'),
           ),
         ],
       ),
@@ -374,134 +175,100 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(24),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE8E1D9)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3267A2).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.event_note_rounded, color: Color(0xFF3267A2)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              plan.name,
-                              style: GoogleFonts.notoSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF111827),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 100,
+                height: 100,
+                color: Colors.grey[100],
+                child: Icon(Icons.event_note, size: 40, color: Colors.grey[400]),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: SizedBox(
+                height: 100,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            plan.name,
+                            style: GoogleFonts.notoSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          if (plan.sharedWithMe)
-                            _buildPill(
-                              label: '\uACF5\uC720\uC911',
-                              background: const Color(0xFFF0F6FF),
-                              foreground: const Color(0xFF2F5E8F),
-                            )
-                          else
-                            _buildPill(
-                              label: '\uB0B4 \uC77C\uC815',
-                              background: const Color(0xFFF5F7FB),
-                              foreground: const Color(0xFF374151),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _formatDate(plan.planDate),
-                        style: GoogleFonts.notoSans(
-                          fontSize: 13,
-                          color: const Color(0xFF6B7280),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE8E1D9)),
-              ),
-              child: Text(
-                plan.planCode,
-                style: GoogleFonts.notoSans(
-                  fontSize: 12,
-                  letterSpacing: 1.1,
-                  color: const Color(0xFF6B7280),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Spacer(),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PlanDetailPage(planId: plan.id),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    '\uC5F4\uAE30',
-                    style: GoogleFonts.notoSans(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF3267A2),
+                        if (plan.sharedWithMe)
+                          _buildPill(
+                            label: '공유중',
+                            background: const Color(0xFFF0F6FF),
+                            foreground: const Color(0xFF2F5E8F),
+                          )
+                        else
+                          _buildPill(
+                            label: '내 일정',
+                            background: const Color(0xFFF5F7FB),
+                            foreground: const Color(0xFF374151),
+                          ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(Icons.calendar_today, color: Colors.grey[600], size: 14),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            _formatDate(plan.planDate),
+                            style: GoogleFonts.notoSans(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Text(
+                          '코드: ${plan.planCode}',
+                          style: GoogleFonts.notoSans(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (plan.isOwner)
+                          IconButton(
+                            onPressed: () => _confirmDeletePlan(plan),
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          )
+                        else
+                          const SizedBox(height: 20),
+                      ],
+                    ),
+                  ],
                 ),
-                if (plan.isOwner) ...[
-                  const SizedBox(width: 4),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _confirmDeletePlan(plan),
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    color: const Color(0xFFB45309),
-                    tooltip: '\uC0AD\uC81C',
-                  ),
-                ],
-              ],
+              ),
             ),
           ],
         ),
@@ -703,12 +470,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: detail.plan.isOwner
-                          ? () => _showAddCollaboratorDialog(detail.plan.id)
-                          : null,
+                      onPressed: () => _showJoinByCodeDialog(),
                       icon: const Icon(Icons.group_add_rounded, size: 18),
                       label: Text(
-                        '\uACF5\uC720',
+                        '\uCF54\uB4DC\uB85C \uCC38\uAC00',
                         style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
                       ),
                       style: OutlinedButton.styleFrom(
@@ -1382,15 +1147,15 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     }
   }
 
-  Future<void> _showAddCollaboratorDialog(String planId) async {
-    final emailController = TextEditingController();
+  Future<void> _showJoinByCodeDialog() async {
+    final codeController = TextEditingController();
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
-            '\uACF5\uB3D9 \uC791\uC5C5\uC790 \uCD94\uAC00',
+            '\uCF54\uB4DC\uB85C \uCC38\uAC00',
             style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
           ),
           content: SizedBox(
@@ -1399,15 +1164,16 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: emailController,
+                  controller: codeController,
                   decoration: const InputDecoration(
-                    labelText: '\uC774\uBA54\uC77C',
-                    hintText: 'friend@example.com',
+                    labelText: '\uC77C\uC815 \uCF54\uB4DC',
+                    hintText: 'PL-260603-ABCD',
                   ),
+                  textCapitalization: TextCapitalization.characters,
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  '\uC774\uBA54\uC77C\uB85C \uACF5\uC720\uD558\uBA74 \uB2E4\uB978 \uACC4\uC815\uC5D0\uC11C\uB3C4 \uC774 \uC77C\uC815\uC744 \uBCFC \uC218 \uC788\uC5B4\uC694.',
+                  '\uC77C\uC815 \uCF54\uB4DC\uB97C \uC785\uB825\uD558\uBA74 \uD604\uC7AC \uB85C\uADF8\uC778 \uACC4\uC815\uC774 \uACF5\uB3D9 \uC791\uC5C5\uC790\uB85C \uCD94\uAC00\uB429\uB2C8\uB2E4.',
                   style: GoogleFonts.notoSans(
                     fontSize: 13,
                     color: const Color(0xFF6B7280),
@@ -1428,7 +1194,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                 backgroundColor: const Color(0xFF3267A2),
                 foregroundColor: Colors.white,
               ),
-              child: const Text('\uCD08\uB300'),
+              child: const Text('\uCC38\uAC00'),
             ),
           ],
         );
@@ -1436,22 +1202,22 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
 
     if (result != true || !mounted) {
-      emailController.dispose();
+      codeController.dispose();
       return;
     }
 
-    final email = emailController.text.trim();
-    emailController.dispose();
-    if (email.isEmpty) return;
+    final planCode = codeController.text.trim();
+    codeController.dispose();
+    if (planCode.isEmpty) return;
 
     try {
-      await ref.read(plansProvider.notifier).addCollaborator(planId: planId, email: email);
-      _reloadSelectedPlan(planId);
+      await ref.read(plansProvider.notifier).joinPlanByCode(planCode: planCode);
+      await ref.read(plansProvider.notifier).refresh();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '\uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
+            '\uC77C\uC815\uC5D0 \uCC38\uAC00\uD588\uC2B5\uB2C8\uB2E4.',
             style: GoogleFonts.notoSans(),
           ),
           behavior: SnackBarBehavior.floating,
@@ -1460,7 +1226,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('\uACF5\uC720 \uCD94\uAC00 \uC2E4\uD328: $e')),
+        SnackBar(content: Text('\uCC38\uAC00 \uC2E4\uD328: $e')),
       );
     }
   }
@@ -1769,10 +1535,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: detail.plan.isOwner ? () => _showAddCollaboratorDialog(detail.plan.id) : null,
+                          onPressed: () => _showJoinByCodeDialog(),
                           icon: const Icon(Icons.group_add_rounded, size: 18),
                           label: Text(
-                            '\uACF5\uC720',
+                            '\uCF54\uB4DC\uB85C \uCC38\uAC00',
                             style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
                           ),
                           style: OutlinedButton.styleFrom(
@@ -1788,55 +1554,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  _buildDetailSection(
-                    title: '\uC77C\uC815',
-                    child: detail.items.isEmpty
-                        ? _buildDetailEmptyState(
-                            icon: Icons.calendar_today_outlined,
-                            message: '\uC544\uC9C1 \uC77C\uC815 \uD56D\uBAA9\uC774 \uC5C6\uC5B4\uC694.',
-                          )
-                        : Column(
-                            children: detail.items
-                                .map(
-                                  (item) => _buildScheduleRow(
-                                    item,
-                                    onDelete: () => _confirmDeleteItem(detail.plan.id, item),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildDetailSection(
-                    title: '\uC911\uAC04\uC5D0 \uB4E4\uB9B4 \uC7A5\uC18C',
-                    child: itemPlaces.isEmpty
-                        ? _buildDetailEmptyState(
-                            icon: Icons.place_outlined,
-                            message: '\uC911\uAC04\uC7A5\uC18C\uAC00 \uC544\uC9C1 \uC5C6\uC5B4\uC694.',
-                          )
-                        : Column(
-                            children: itemPlaces
-                                .map(
-                                  (place) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: _buildPlaceChip(place),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildDetailSection(
-                    title: '\uC2DC\uAC04\uBCC4',
-                    child: detail.items.isEmpty
-                        ? _buildDetailEmptyState(
-                            icon: Icons.schedule_outlined,
-                            message: '\uC2DC\uAC04 \uAE30\uBC18 \uC77C\uC815\uC774 \uC544\uC9C1 \uC5C6\uC5B4\uC694.',
-                          )
-                        : Column(
-                            children: detail.items.map((item) => _buildTimelineRow(item)).toList(),
-                          ),
-                  ),
+                  _buildHorizontalTimelineBar(detail),
                   const SizedBox(height: 14),
                   _buildDetailSection(
                     title: '\uACF5\uB3D9 \uC791\uC5C5\uC790',
@@ -1971,6 +1689,143 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           offset: const Offset(0, 8),
         ),
       ],
+    );
+  }
+
+  Widget _buildHorizontalTimelineBar(PlanDetail detail) {
+    // Generate hours from 06:00 to 24:00
+    final hours = List.generate(19, (index) => index + 6); // 6 to 24
+
+    return _buildDetailSection(
+      title: '타임라인',
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: hours.map((hour) {
+            final timeString = '${hour.toString().padLeft(2, '0')}:00';
+            
+            // Find items for this hour
+            final itemsInHour = detail.items.where((item) {
+              if (item.startTime == null || item.startTime!.isEmpty) return false;
+              // Format is usually HH:mm. Parse it:
+              final parts = item.startTime!.split(':');
+              if (parts.isNotEmpty) {
+                final itemHour = int.tryParse(parts[0]);
+                return itemHour == hour;
+              }
+              return false;
+            }).toList();
+
+            return InkWell(
+              onTap: () {
+                _showAddItemDialog(
+                  detail.plan.id,
+                  initialTime: TimeOfDay(hour: hour, minute: 0),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 140, // Fixed width for each hour slot to allow text to fit nicely
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                child: Column(
+                  children: [
+                    Text(
+                      timeString,
+                      style: GoogleFonts.notoSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // The timeline line with a node
+                    Row(
+                      children: [
+                        Expanded(child: Container(height: 2, color: const Color(0xFFE5E7EB))),
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: itemsInHour.isNotEmpty ? const Color(0xFF3267A2) : const Color(0xFFD1D5DB),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Expanded(child: Container(height: 2, color: const Color(0xFFE5E7EB))),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // The items
+                    if (itemsInHour.isEmpty)
+                      Container(
+                        height: 60,
+                        alignment: Alignment.center,
+                        child: Icon(Icons.add, color: Colors.grey[300], size: 24),
+                      )
+                    else
+                      Column(
+                        children: itemsInHour.map((item) {
+                          return Stack(
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(bottom: 6),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F6FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.title,
+                                      style: GoogleFonts.notoSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF1E3A8A),
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (item.placeName != null && item.placeName!.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.placeName!,
+                                        style: GoogleFonts.notoSans(
+                                          fontSize: 11,
+                                          color: const Color(0xFF3B82F6),
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              Positioned(
+                                top: 2,
+                                right: 2,
+                                child: IconButton(
+                                  icon: const Icon(Icons.close, size: 14, color: Color(0xFF1E3A8A)),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _confirmDeleteItem(detail.plan.id, item),
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
@@ -2278,11 +2133,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     });
   }
 
-  Future<void> _showAddItemDialog(String planId) async {
+  Future<void> _showAddItemDialog(String planId, {TimeOfDay? initialTime}) async {
     final titleController = TextEditingController();
     final placeController = TextEditingController();
     final noteController = TextEditingController();
-    TimeOfDay? selectedTime;
+    TimeOfDay? selectedTime = initialTime;
 
     final result = await showDialog<bool>(
       context: context,
@@ -2402,23 +2257,26 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     }
   }
 
-  Future<void> _showAddCollaboratorDialog(String planId) async {
-    final emailController = TextEditingController();
+  Future<void> _showJoinByCodeDialog() async {
+    final codeController = TextEditingController();
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
-            '\uACF5\uB3D9 \uC791\uC5C5\uC790 \uCD94\uAC00',
+            '\uCF54\uB4DC\uB85C \uCC38\uAC00',
             style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
           ),
           content: SizedBox(
             width: 400,
             child: TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
+              controller: codeController,
+              decoration: const InputDecoration(
+                labelText: '\uC77C\uC815 \uCF54\uB4DC',
+                hintText: 'PL-260603-ABCD',
+              ),
+              textCapitalization: TextCapitalization.characters,
             ),
           ),
           actions: [
@@ -2432,7 +2290,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 backgroundColor: const Color(0xFF3267A2),
                 foregroundColor: Colors.white,
               ),
-              child: const Text('\uCD94\uAC00'),
+              child: const Text('\uCC38\uAC00'),
             ),
           ],
         );
@@ -2440,22 +2298,22 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
 
     if (result != true || !mounted) {
-      emailController.dispose();
+      codeController.dispose();
       return;
     }
 
-    final email = emailController.text.trim();
-    emailController.dispose();
-    if (email.isEmpty) return;
+    final planCode = codeController.text.trim();
+    codeController.dispose();
+    if (planCode.isEmpty) return;
 
     try {
-      await ref.read(plansProvider.notifier).addCollaborator(planId: planId, email: email);
+      await ref.read(plansProvider.notifier).joinPlanByCode(planCode: planCode);
       await _refreshPlan();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '\uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
+            '\uC77C\uC815\uC5D0 \uCC38\uAC00\uD588\uC2B5\uB2C8\uB2E4.',
             style: GoogleFonts.notoSans(),
           ),
           behavior: SnackBarBehavior.floating,
@@ -2463,9 +2321,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('\uCD94\uAC00 \uC2E4\uD328: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('\uCC38\uAC00 \uC2E4\uD328: $e')));
     }
   }
 

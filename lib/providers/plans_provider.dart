@@ -55,12 +55,12 @@ class PlansNotifier extends StateNotifier<AsyncValue<List<PlanSummary>>> {
     return _db.getPlanDetail(planId);
   }
 
-  Future<void> addCollaborator({
-    required String planId,
-    required String email,
+  Future<PlanSummary> joinPlanByCode({
+    required String planCode,
   }) async {
-    await _db.addCollaborator(planId: planId, email: email);
+    final joined = await _db.joinPlanByCode(planCode: planCode);
     await refresh();
+    return joined;
   }
 
   Future<void> removeCollaborator({
