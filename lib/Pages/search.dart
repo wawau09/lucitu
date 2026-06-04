@@ -1445,26 +1445,30 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F5F2),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF6F5F2),
-        foregroundColor: const Color(0xFF111827),
-        elevation: 0,
-        title: Text(
-          '\uC77C\uC815 \uC0C1\uC138',
-          style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
-        ),
-      ),
-      body: FutureBuilder<PlanDetail>(
-        future: _detailFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return FutureBuilder<PlanDetail>(
+      future: _detailFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFF6F5F2),
+            appBar: AppBar(
+              backgroundColor: const Color(0xFFF6F5F2),
+              foregroundColor: const Color(0xFF111827),
+              elevation: 0,
+            ),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
 
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFF6F5F2),
+            appBar: AppBar(
+              backgroundColor: const Color(0xFFF6F5F2),
+              foregroundColor: const Color(0xFF111827),
+              elevation: 0,
+            ),
+            body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
@@ -1473,18 +1477,30 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                   textAlign: TextAlign.center,
                 ),
               ),
-            );
-          }
+            ),
+          );
+        }
 
-          final detail = snapshot.data!;
-          final itemPlaces = detail.items
-              .map((item) => item.placeName?.trim())
-              .whereType<String>()
-              .where((place) => place.isNotEmpty)
-              .toSet()
-              .toList();
+        final detail = snapshot.data!;
+        final itemPlaces = detail.items
+            .map((item) => item.placeName?.trim())
+            .whereType<String>()
+            .where((place) => place.isNotEmpty)
+            .toSet()
+            .toList();
 
-          return RefreshIndicator(
+        return Scaffold(
+          backgroundColor: const Color(0xFFF6F5F2),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFFF6F5F2),
+            foregroundColor: const Color(0xFF111827),
+            elevation: 0,
+            title: Text(
+              detail.plan.name,
+              style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
+            ),
+          ),
+          body: RefreshIndicator(
             onRefresh: _refreshPlan,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -1492,8 +1508,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildPlanHeader(detail),
-                  const SizedBox(height: 14),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -1580,79 +1594,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildPlanHeader(PlanDetail detail) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF2F5E8F), Color(0xFF86A8C8)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2F5E8F).withValues(alpha: 0.18),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      detail.plan.name,
-                      style: GoogleFonts.notoSans(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '\uB0A0\uC9DC: ${_formatDate(detail.plan.planDate)}',
-                      style: GoogleFonts.notoSans(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.85),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(Icons.calendar_month_rounded, color: Colors.white),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            '\uBCF5\uC0AC \uAC00\uB2A5\uD55C \uC77C\uC815 \uCF54\uB4DC: ${detail.plan.planCode}',
-            style: GoogleFonts.notoSans(
-              fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.85),
-            ),
-          ),
-        ],
-      ),
-    );
+      );
   }
 
   Widget _buildPill({
@@ -1698,133 +1640,131 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
     return _buildDetailSection(
       title: '타임라인',
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: hours.map((hour) {
-            final timeString = '${hour.toString().padLeft(2, '0')}:00';
-            
-            // Find items for this hour
-            final itemsInHour = detail.items.where((item) {
-              if (item.startTime == null || item.startTime!.isEmpty) return false;
-              // Format is usually HH:mm. Parse it:
-              final parts = item.startTime!.split(':');
-              if (parts.isNotEmpty) {
-                final itemHour = int.tryParse(parts[0]);
-                return itemHour == hour;
-              }
-              return false;
-            }).toList();
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: hours.map((hour) {
+          final timeString = '${hour.toString().padLeft(2, '0')}:00';
+          
+          // Find items for this hour
+          final itemsInHour = detail.items.where((item) {
+            if (item.startTime == null || item.startTime!.isEmpty) return false;
+            // Format is usually HH:mm. Parse it:
+            final parts = item.startTime!.split(':');
+            if (parts.isNotEmpty) {
+              final itemHour = int.tryParse(parts[0]);
+              return itemHour == hour;
+            }
+            return false;
+          }).toList();
 
-            return InkWell(
-              onTap: () {
-                _showAddItemDialog(
-                  detail.plan.id,
-                  initialTime: TimeOfDay(hour: hour, minute: 0),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 140, // Fixed width for each hour slot to allow text to fit nicely
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                child: Column(
-                  children: [
-                    Text(
+          return InkWell(
+            onTap: () {
+              _showAddItemDialog(
+                detail.plan.id,
+                initialTime: TimeOfDay(hour: hour, minute: 0),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Time
+                  SizedBox(
+                    width: 48,
+                    child: Text(
                       timeString,
                       style: GoogleFonts.notoSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF6B7280),
                       ),
+                      textAlign: TextAlign.right,
                     ),
-                    const SizedBox(height: 8),
-                    // The timeline line with a node
-                    Row(
-                      children: [
-                        Expanded(child: Container(height: 2, color: const Color(0xFFE5E7EB))),
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: itemsInHour.isNotEmpty ? const Color(0xFF3267A2) : const Color(0xFFD1D5DB),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        Expanded(child: Container(height: 2, color: const Color(0xFFE5E7EB))),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // The items
-                    if (itemsInHour.isEmpty)
+                  ),
+                  const SizedBox(width: 14),
+                  // Timeline node and vertical line
+                  Column(
+                    children: [
                       Container(
-                        height: 60,
-                        alignment: Alignment.center,
-                        child: Icon(Icons.add, color: Colors.grey[300], size: 24),
-                      )
-                    else
-                      Column(
-                        children: itemsInHour.map((item) {
-                          return Stack(
-                            children: [
-                              Container(
-                                width: double.infinity,
-                                margin: const EdgeInsets.only(bottom: 6),
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF0F6FF),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFBFDBFE)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.title,
-                                      style: GoogleFonts.notoSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF1E3A8A),
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (item.placeName != null && item.placeName!.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        item.placeName!,
-                                        style: GoogleFonts.notoSans(
-                                          fontSize: 11,
-                                          color: const Color(0xFF3B82F6),
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                              Positioned(
-                                top: 2,
-                                right: 2,
-                                child: IconButton(
-                                  icon: const Icon(Icons.close, size: 14, color: Color(0xFF1E3A8A)),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () => _confirmDeleteItem(detail.plan.id, item),
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
+                        width: 12,
+                        height: 12,
+                        margin: const EdgeInsets.only(top: 4),
+                        decoration: BoxDecoration(
+                          color: itemsInHour.isNotEmpty ? const Color(0xFF3267A2) : const Color(0xFFD1D5DB),
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  // Items
+                  Expanded(
+                    child: itemsInHour.isEmpty
+                        ? Container(
+                            height: 32,
+                            alignment: Alignment.centerLeft,
+                            child: Icon(Icons.add, color: Colors.grey[300], size: 20),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: itemsInHour.map((item) {
+                              return Stack(
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 6),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF0F6FF),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.title,
+                                          style: GoogleFonts.notoSans(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF1E3A8A),
+                                          ),
+                                        ),
+                                        if (item.placeName != null && item.placeName!.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.placeName!,
+                                            style: GoogleFonts.notoSans(
+                                              fontSize: 12,
+                                              color: const Color(0xFF3B82F6),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.close, size: 16, color: Color(0xFF1E3A8A)),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: () => _confirmDeleteItem(detail.plan.id, item),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                  ),
+                ],
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
