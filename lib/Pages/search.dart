@@ -1144,11 +1144,12 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     }
   }
 
-  Future<void> _showAddItemDialog(String planId) async {
+  Future<void> _showAddItemDialog(String planId, {TimeOfDay? initialTime}) async {
     final titleController = TextEditingController();
     final placeController = TextEditingController();
     final noteController = TextEditingController();
-    TimeOfDay? selectedTime;
+    TimeOfDay? selectedStartTime = initialTime;
+    TimeOfDay? selectedEndTime;
 
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -1191,40 +1192,113 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       ),
                       const SizedBox(height: 20),
                       TextField(
-                        controller: placeController,
+                        controller: titleController,
                         decoration: const InputDecoration(
-                          labelText: '\uC7A5\uC18C',
+                          labelText: '\uC77C\uC815\uBA85',
+                          hintText: '\uC77C\uC815 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694',
+                          prefixIcon: Icon(Icons.event_note_outlined),
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              selectedTime == null
-                                  ? '\uC2DC\uAC04 \uC5C6\uC74C'
-                                  : _formatTimeOfDay(selectedTime!),
-                              style: GoogleFonts.notoSans(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              final picked = await showTimePicker(
-                                context: sheetContext,
-                                initialTime: selectedTime ?? TimeOfDay.now(),
-                              );
-                              if (picked == null) return;
-                              setDialogState(() {
-                                selectedTime = picked;
-                              });
-                            },
-                            child: const Text('\uC2DC\uAC04 \uC120\uD0DD'),
-                          ),
-                        ],
+                      TextField(
+                        controller: placeController,
+                        decoration: const InputDecoration(
+                          labelText: '\uC7A5\uC18C',
+                          hintText: '\uC7A5\uC18C\uB97C \uC785\uB825\uD558\uC138\uC694 (\uC120\uD0DD)',
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                        ),
                       ),
                       const SizedBox(height: 12),
+                      // Start time row
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time, size: 18, color: Color(0xFF3267A2)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                selectedStartTime == null
+                                    ? '\uC2DC\uC791 \uC2DC\uAC04'
+                                    : _formatTimeOfDay(selectedStartTime!),
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 14,
+                                  color: selectedStartTime == null
+                                      ? Colors.grey
+                                      : const Color(0xFF111827),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: sheetContext,
+                                  initialTime: selectedStartTime ?? TimeOfDay.now(),
+                                );
+                                if (picked == null) return;
+                                setDialogState(() {
+                                  selectedStartTime = picked;
+                                });
+                              },
+                              child: Text(
+                                selectedStartTime == null ? '\uC120\uD0DD' : '\uBCC0\uACBD',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // End time row
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time_filled, size: 18, color: Color(0xFF9CA3AF)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                selectedEndTime == null
+                                    ? '\uC885\uB8CC \uC2DC\uAC04'
+                                    : _formatTimeOfDay(selectedEndTime!),
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 14,
+                                  color: selectedEndTime == null
+                                      ? Colors.grey
+                                      : const Color(0xFF111827),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: sheetContext,
+                                  initialTime: selectedEndTime ?? selectedStartTime ?? TimeOfDay.now(),
+                                );
+                                if (picked == null) return;
+                                setDialogState(() {
+                                  selectedEndTime = picked;
+                                });
+                              },
+                              child: Text(
+                                selectedEndTime == null ? '\uC120\uD0DD' : '\uBCC0\uACBD',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -1282,14 +1356,14 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       return;
     }
 
+    final title = titleController.text.trim();
     final place = placeController.text.trim();
-    if (place.isEmpty) {
+    if (title.isEmpty && place.isEmpty) {
       titleController.dispose();
       placeController.dispose();
       noteController.dispose();
       return;
     }
-    final title = place;
 
     try {
       await ref
@@ -1297,12 +1371,15 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           .addPlanItem(
             planId: planId,
             draft: PlanDraft(
-              title: title,
-              placeName: placeController.text.trim(),
+              title: title.isNotEmpty ? title : place,
+              placeName: place.isNotEmpty ? place : null,
               note: noteController.text.trim(),
-              startTime: selectedTime == null
+              startTime: selectedStartTime == null
                   ? null
-                  : _formatTimeOfDay(selectedTime!),
+                  : _formatTimeOfDay(selectedStartTime!),
+              endTime: selectedEndTime == null
+                  ? null
+                  : _formatTimeOfDay(selectedEndTime!),
             ),
           );
       _reloadSelectedPlan(planId);
@@ -1839,7 +1916,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     final hours = List.generate(19, (index) => index + 6); // 6 to 24
 
     return _buildDetailSection(
-      title: '타임라인',
+      title: '\uD0C0\uC784\uB77C\uC778',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: hours.map((hour) {
@@ -1848,7 +1925,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           // Find items for this hour
           final itemsInHour = detail.items.where((item) {
             if (item.startTime == null || item.startTime!.isEmpty) return false;
-            // Format is usually HH:mm. Parse it:
             final parts = item.startTime!.split(':');
             if (parts.isNotEmpty) {
               final itemHour = int.tryParse(parts[0]);
@@ -1866,7 +1942,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             },
             borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1876,41 +1952,35 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     child: Text(
                       timeString,
                       style: GoogleFonts.notoSans(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF6B7280),
                       ),
                       textAlign: TextAlign.right,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  // Timeline node and vertical line
-                  Column(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        margin: const EdgeInsets.only(top: 4),
-                        decoration: BoxDecoration(
-                          color: itemsInHour.isNotEmpty
-                              ? const Color(0xFF3267A2)
-                              : const Color(0xFFD1D5DB),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 12),
+                  // Clock icon instead of circle dot
+                  Icon(
+                    itemsInHour.isNotEmpty
+                        ? Icons.schedule
+                        : Icons.schedule_outlined,
+                    size: 16,
+                    color: itemsInHour.isNotEmpty
+                        ? const Color(0xFF3267A2)
+                        : const Color(0xFFD1D5DB),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   // Items
                   Expanded(
                     child: itemsInHour.isEmpty
                         ? Container(
-                            height: 32,
+                            height: 28,
                             alignment: Alignment.centerLeft,
                             child: Icon(
                               Icons.add,
                               color: Colors.grey[300],
-                              size: 20,
+                              size: 18,
                             ),
                           )
                         : Column(
@@ -1921,7 +1991,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                   Container(
                                     width: double.infinity,
                                     margin: const EdgeInsets.only(bottom: 6),
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFF0F6FF),
                                       borderRadius: BorderRadius.circular(12),
@@ -1929,39 +2002,36 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                         color: const Color(0xFFBFDBFE),
                                       ),
                                     ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          item.title,
-                                          style: GoogleFonts.notoSans(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: const Color(0xFF1E3A8A),
-                                          ),
-                                        ),
-                                        if (item.placeName != null &&
-                                            item.placeName!.isNotEmpty) ...[
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            item.placeName!,
+                                        Expanded(
+                                          child: Text(
+                                            item.title,
                                             style: GoogleFonts.notoSans(
-                                              fontSize: 12,
-                                              color: const Color(0xFF3B82F6),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF1E3A8A),
                                             ),
                                           ),
-                                        ],
+                                        ),
+                                        if (item.endTime != null && item.endTime!.isNotEmpty)
+                                          Text(
+                                            '~ ${item.endTime}',
+                                            style: GoogleFonts.notoSans(
+                                              fontSize: 11,
+                                              color: const Color(0xFF6B7280),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
                                   Positioned(
-                                    top: 4,
-                                    right: 4,
+                                    top: 2,
+                                    right: 2,
                                     child: IconButton(
                                       icon: const Icon(
                                         Icons.close,
-                                        size: 16,
+                                        size: 14,
                                         color: Color(0xFF1E3A8A),
                                       ),
                                       padding: EdgeInsets.zero,
@@ -2299,7 +2369,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     final titleController = TextEditingController();
     final placeController = TextEditingController();
     final noteController = TextEditingController();
-    TimeOfDay? selectedTime = initialTime;
+    TimeOfDay? selectedStartTime = initialTime;
+    TimeOfDay? selectedEndTime;
 
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -2342,40 +2413,111 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       ),
                       const SizedBox(height: 20),
                       TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(
+                          labelText: '\uC77C\uC815\uBA85',
+                          hintText: '\uC77C\uC815 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694',
+                          prefixIcon: Icon(Icons.event_note_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
                         controller: placeController,
                         decoration: const InputDecoration(
                           labelText: '\uC7A5\uC18C',
+                          hintText: '\uC7A5\uC18C\uB97C \uC785\uB825\uD558\uC138\uC694 (\uC120\uD0DD)',
+                          prefixIcon: Icon(Icons.location_on_outlined),
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              selectedTime == null
-                                  ? '\uC2DC\uAC04 \uC5C6\uC74C'
-                                  : _formatTimeOfDay(selectedTime!),
-                              style: GoogleFonts.notoSans(
-                                fontWeight: FontWeight.w600,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time, size: 18, color: Color(0xFF3267A2)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                selectedStartTime == null
+                                    ? '\uC2DC\uC791 \uC2DC\uAC04'
+                                    : _formatTimeOfDay(selectedStartTime!),
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 14,
+                                  color: selectedStartTime == null
+                                      ? Colors.grey
+                                      : const Color(0xFF111827),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              final picked = await showTimePicker(
-                                context: sheetContext,
-                                initialTime: selectedTime ?? TimeOfDay.now(),
-                              );
-                              if (picked == null) return;
-                              setDialogState(() {
-                                selectedTime = picked;
-                              });
-                            },
-                            child: const Text('\uC2DC\uAC04 \uC120\uD0DD'),
-                          ),
-                        ],
+                            TextButton(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: sheetContext,
+                                  initialTime: selectedStartTime ?? TimeOfDay.now(),
+                                );
+                                if (picked == null) return;
+                                setDialogState(() {
+                                  selectedStartTime = picked;
+                                });
+                              },
+                              child: Text(
+                                selectedStartTime == null ? '\uC120\uD0DD' : '\uBCC0\uACBD',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time_filled, size: 18, color: Color(0xFF9CA3AF)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                selectedEndTime == null
+                                    ? '\uC885\uB8CC \uC2DC\uAC04'
+                                    : _formatTimeOfDay(selectedEndTime!),
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 14,
+                                  color: selectedEndTime == null
+                                      ? Colors.grey
+                                      : const Color(0xFF111827),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: sheetContext,
+                                  initialTime: selectedEndTime ?? selectedStartTime ?? TimeOfDay.now(),
+                                );
+                                if (picked == null) return;
+                                setDialogState(() {
+                                  selectedEndTime = picked;
+                                });
+                              },
+                              child: Text(
+                                selectedEndTime == null ? '\uC120\uD0DD' : '\uBCC0\uACBD',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -2433,14 +2575,12 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       return;
     }
 
+    final title = titleController.text.trim();
     final place = placeController.text.trim();
     titleController.dispose();
     placeController.dispose();
     noteController.dispose();
-    if (place.isEmpty) return;
-
-    final title = place;
-    final note = "";
+    if (title.isEmpty && place.isEmpty) return;
 
     try {
       await ref
@@ -2448,12 +2588,15 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           .addPlanItem(
             planId: planId,
             draft: PlanDraft(
-              title: title,
-              placeName: place.isEmpty ? null : place,
-              note: note.isEmpty ? null : note,
-              startTime: selectedTime == null
+              title: title.isNotEmpty ? title : place,
+              placeName: place.isNotEmpty ? place : null,
+              note: null,
+              startTime: selectedStartTime == null
                   ? null
-                  : _formatTimeOfDay(selectedTime!),
+                  : _formatTimeOfDay(selectedStartTime!),
+              endTime: selectedEndTime == null
+                  ? null
+                  : _formatTimeOfDay(selectedEndTime!),
             ),
           );
       await _refreshPlan();
@@ -2474,6 +2617,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       );
     }
   }
+
+
 
   Future<void> _showJoinByCodeDialog() async {
     final codeController = TextEditingController();
