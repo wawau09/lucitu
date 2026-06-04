@@ -370,12 +370,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
         }
 
         final detail = snapshot.data!;
-        final itemPlaces = detail.items
-            .map((item) => item.placeName?.trim())
-            .whereType<String>()
-            .where((place) => place.isNotEmpty)
-            .toSet()
-            .toList();
 
         return Container(
           padding: const EdgeInsets.all(18),
@@ -521,26 +515,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                                 item,
                                 onDelete: () =>
                                     _confirmDeleteItem(detail.plan.id, item),
-                              ),
-                            )
-                            .toList(),
-                      ),
-              ),
-              const SizedBox(height: 14),
-              _buildDetailSection(
-                title: '\uC911\uAC04\uC5D0 \uB4E4\uB9B4 \uC7A5\uC18C',
-                child: itemPlaces.isEmpty
-                    ? _buildDetailEmptyState(
-                        icon: Icons.place_outlined,
-                        message:
-                            '\uC911\uAC04\uC7A5\uC18C\uAC00 \uC544\uC9C1 \uC5C6\uC5B4\uC694.',
-                      )
-                    : Column(
-                        children: itemPlaces
-                            .map(
-                              (place) => Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: _buildPlaceChip(place),
                               ),
                             )
                             .toList(),
@@ -697,14 +671,14 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if ((item.placeName ?? '').isNotEmpty)
-                    Text(
-                      item.placeName!,
-                      style: GoogleFonts.notoSans(
-                        fontSize: 13,
-                        color: const Color(0xFF6B7280),
-                      ),
+                  Text(
+                    item.title,
+                    style: GoogleFonts.notoSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF111827),
                     ),
+                  ),
                   if ((item.note ?? '').isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
@@ -726,38 +700,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceChip(String place) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8E1D9)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.location_on_rounded,
-            size: 18,
-            color: Color(0xFF3267A2),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              place,
-              style: GoogleFonts.notoSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF111827),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -802,9 +744,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.placeName != null && item.placeName!.isNotEmpty
-                        ? item.placeName!
-                        : '\uC7A5\uC18C \uC5C6\uC74C',
+                    item.title,
                     style: GoogleFonts.notoSans(
                       fontSize: 13,
                       color: const Color(0xFF6B7280),
@@ -1146,7 +1086,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
   Future<void> _showAddItemDialog(String planId, {TimeOfDay? initialTime}) async {
     final titleController = TextEditingController();
-    final placeController = TextEditingController();
     final noteController = TextEditingController();
     TimeOfDay? selectedStartTime = initialTime;
     TimeOfDay? selectedEndTime;
@@ -1197,15 +1136,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                           labelText: '\uC77C\uC815\uBA85',
                           hintText: '\uC77C\uC815 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694',
                           prefixIcon: Icon(Icons.event_note_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: placeController,
-                        decoration: const InputDecoration(
-                          labelText: '\uC7A5\uC18C',
-                          hintText: '\uC7A5\uC18C\uB97C \uC785\uB825\uD558\uC138\uC694 (\uC120\uD0DD)',
-                          prefixIcon: Icon(Icons.location_on_outlined),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1351,16 +1281,13 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
     if (result != true || !mounted) {
       titleController.dispose();
-      placeController.dispose();
       noteController.dispose();
       return;
     }
 
     final title = titleController.text.trim();
-    final place = placeController.text.trim();
-    if (title.isEmpty && place.isEmpty) {
+    if (title.isEmpty) {
       titleController.dispose();
-      placeController.dispose();
       noteController.dispose();
       return;
     }
@@ -1371,8 +1298,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           .addPlanItem(
             planId: planId,
             draft: PlanDraft(
-              title: title.isNotEmpty ? title : place,
-              placeName: place.isNotEmpty ? place : null,
+              title: title,
               note: noteController.text.trim(),
               startTime: selectedStartTime == null
                   ? null
@@ -1400,9 +1326,8 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       );
     } finally {
       titleController.dispose();
-      placeController.dispose();
       noteController.dispose();
-    }
+      return;}
   }
 
   Future<void> _showJoinByCodeDialog() async {
@@ -2150,14 +2075,14 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if ((item.placeName ?? '').isNotEmpty)
-                    Text(
-                      item.placeName!,
-                      style: GoogleFonts.notoSans(
-                        fontSize: 13,
-                        color: const Color(0xFF6B7280),
-                      ),
+                  Text(
+                    item.title,
+                    style: GoogleFonts.notoSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF111827),
                     ),
+                  ),
                   if ((item.note ?? '').isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
@@ -2255,9 +2180,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.placeName != null && item.placeName!.isNotEmpty
-                        ? item.placeName!
-                        : '\uC7A5\uC18C \uC5C6\uC74C',
+                    item.title,
                     style: GoogleFonts.notoSans(
                       fontSize: 13,
                       color: const Color(0xFF6B7280),
@@ -2367,7 +2290,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     TimeOfDay? initialTime,
   }) async {
     final titleController = TextEditingController();
-    final placeController = TextEditingController();
     final noteController = TextEditingController();
     TimeOfDay? selectedStartTime = initialTime;
     TimeOfDay? selectedEndTime;
@@ -2418,15 +2340,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           labelText: '\uC77C\uC815\uBA85',
                           hintText: '\uC77C\uC815 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694',
                           prefixIcon: Icon(Icons.event_note_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: placeController,
-                        decoration: const InputDecoration(
-                          labelText: '\uC7A5\uC18C',
-                          hintText: '\uC7A5\uC18C\uB97C \uC785\uB825\uD558\uC138\uC694 (\uC120\uD0DD)',
-                          prefixIcon: Icon(Icons.location_on_outlined),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -2570,17 +2483,14 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
     if (result != true || !mounted) {
       titleController.dispose();
-      placeController.dispose();
       noteController.dispose();
       return;
     }
 
     final title = titleController.text.trim();
-    final place = placeController.text.trim();
     titleController.dispose();
-    placeController.dispose();
     noteController.dispose();
-    if (title.isEmpty && place.isEmpty) return;
+    if (title.isEmpty) return;
 
     try {
       await ref
@@ -2588,8 +2498,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           .addPlanItem(
             planId: planId,
             draft: PlanDraft(
-              title: title.isNotEmpty ? title : place,
-              placeName: place.isNotEmpty ? place : null,
+              title: title,
               note: null,
               startTime: selectedStartTime == null
                   ? null

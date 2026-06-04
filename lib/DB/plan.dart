@@ -74,7 +74,6 @@ class PlanItem {
     required this.planId,
     required this.title,
     required this.sortOrder,
-    this.placeName,
     this.startTime,
     this.endTime,
     this.note,
@@ -84,7 +83,6 @@ class PlanItem {
   final String planId;
   final String title;
   final int sortOrder;
-  final String? placeName;
   final String? startTime;
   final String? endTime;
   final String? note;
@@ -94,7 +92,6 @@ class PlanItem {
       id: map['id']?.toString() ?? '',
       planId: map['plan_id']?.toString() ?? '',
       title: map['title']?.toString() ?? '\uBBF8\uC815\uC758 \uC77C\uC815',
-      placeName: map['place_name']?.toString(),
       startTime: map['start_time']?.toString(),
       endTime: map['end_time']?.toString(),
       note: map['note']?.toString(),
@@ -120,14 +117,12 @@ class PlanDetail {
 class PlanDraft {
   PlanDraft({
     required this.title,
-    this.placeName,
     this.startTime,
     this.endTime,
     this.note,
   });
 
   final String title;
-  final String? placeName;
   final String? startTime;
   final String? endTime;
   final String? note;
