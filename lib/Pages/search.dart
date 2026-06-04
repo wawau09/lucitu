@@ -2446,6 +2446,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      TextField(
+                        controller: noteController,
+                        decoration: const InputDecoration(
+                          labelText: '\uBA54\uBAA8',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
