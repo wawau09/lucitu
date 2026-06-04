@@ -1227,25 +1227,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       ),
                       const SizedBox(height: 20),
                       TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: '\uC81C\uBAA9',
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
                         controller: placeController,
                         decoration: const InputDecoration(
                           labelText: '\uC7A5\uC18C',
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: noteController,
-                        decoration: const InputDecoration(
-                          labelText: '\uBA54\uBAA8',
-                        ),
-                        maxLines: 2,
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -1333,13 +1318,14 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       return;
     }
 
-    final title = titleController.text.trim();
-    if (title.isEmpty) {
+    final place = placeController.text.trim();
+    if (place.isEmpty) {
       titleController.dispose();
       placeController.dispose();
       noteController.dispose();
       return;
     }
+    final title = place;
 
     try {
       await ref
@@ -2433,23 +2419,9 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       ),
                       const SizedBox(height: 20),
                       TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: '\uC81C\uBAA9',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
                         controller: placeController,
                         decoration: const InputDecoration(
                           labelText: '\uC7A5\uC18C',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: noteController,
-                        decoration: const InputDecoration(
-                          labelText: '\uBA54\uBAA8',
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -2538,13 +2510,14 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       return;
     }
 
-    final title = titleController.text.trim();
     final place = placeController.text.trim();
-    final note = noteController.text.trim();
     titleController.dispose();
     placeController.dispose();
     noteController.dispose();
-    if (title.isEmpty) return;
+    if (place.isEmpty) return;
+    
+    final title = place;
+    final note = "";
 
     try {
       await ref
