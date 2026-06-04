@@ -713,21 +713,13 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.title,
-                    style: GoogleFonts.notoSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
                   if ((item.placeName ?? '').isNotEmpty)
                     Text(
                       item.placeName!,
                       style: GoogleFonts.notoSans(
-                        fontSize: 13,
-                        color: const Color(0xFF6B7280),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF111827),
                       ),
                     ),
                   if ((item.note ?? '').isNotEmpty) ...[
@@ -827,21 +819,13 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.title,
-                    style: GoogleFonts.notoSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
                     item.placeName != null && item.placeName!.isNotEmpty
                         ? item.placeName!
                         : '\uC7A5\uC18C \uC5C6\uC74C',
                     style: GoogleFonts.notoSans(
-                      fontSize: 13,
-                      color: const Color(0xFF6B7280),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF111827),
                     ),
                   ),
                 ],
@@ -2137,21 +2121,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.title,
-                    style: GoogleFonts.notoSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
                   if ((item.placeName ?? '').isNotEmpty)
                     Text(
                       item.placeName!,
                       style: GoogleFonts.notoSans(
-                        fontSize: 13,
-                        color: const Color(0xFF6B7280),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF111827),
                       ),
                     ),
                   if ((item.note ?? '').isNotEmpty) ...[
@@ -2251,21 +2227,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.title,
-                    style: GoogleFonts.notoSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
                     item.placeName != null && item.placeName!.isNotEmpty
                         ? item.placeName!
                         : '\uC7A5\uC18C \uC5C6\uC74C',
                     style: GoogleFonts.notoSans(
-                      fontSize: 13,
-                      color: const Color(0xFF6B7280),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF111827),
                     ),
                   ),
                 ],
