@@ -1636,46 +1636,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     }
   }
 
-  void _showItemDetails(PlanItem item, String planId) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (item.startTime != null)
-                Text(
-                  '시간: ${_formatItemTime(item.startTime)}' +
-                      (item.endTime != null ? ' ~ ${_formatItemTime(item.endTime)}' : ''),
-                  style: const TextStyle(fontSize: 14),
-                ),
-              if (item.note != null && item.note!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text('메모: ${item.note}', style: const TextStyle(fontSize: 14)),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _confirmDeleteItem(planId, item);
-              },
-              child: const Text('삭제', style: TextStyle(color: Colors.red)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('닫기'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _reloadSelectedPlan(String planId) {
     setState(() {
       _selectedPlanFuture = ref
@@ -2868,6 +2828,46 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('\uC0AD\uC81C \uC2E4\uD328: $e')));
     }
+  }
+
+  void _showItemDetails(PlanItem item, String planId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (item.startTime != null)
+                Text(
+                  '시간: ${_formatItemTime(item.startTime)}' +
+                      (item.endTime != null ? ' ~ ${_formatItemTime(item.endTime)}' : ''),
+                  style: const TextStyle(fontSize: 14),
+                ),
+              if (item.note != null && item.note!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('메모: ${item.note}', style: const TextStyle(fontSize: 14)),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _confirmDeleteItem(planId, item);
+              },
+              child: const Text('삭제', style: TextStyle(color: Colors.red)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('닫기'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String _formatDate(DateTime date) {
