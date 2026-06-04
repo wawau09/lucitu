@@ -7,14 +7,6 @@ import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/plans_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Widget _buildAddItemIconButton({required VoidCallback onPressed}) {
-  return IconButton(
-    onPressed: onPressed,
-    icon: const Icon(Icons.add, color: Colors.black87),
-    tooltip: '항목 추가',
-  );
-}
-
 class PlanPage extends ConsumerStatefulWidget {
   const PlanPage({super.key});
 
@@ -456,8 +448,24 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _buildAddItemIconButton(
-                    onPressed: () => _showAddItemDialog(detail.plan.id),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showAddItemDialog(detail.plan.id),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: Text(
+                        '\uD56D\uBAA9 \uCD94\uAC00',
+                        style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3267A2),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1098,23 +1106,46 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     final noteController = TextEditingController();
     TimeOfDay? selectedTime;
 
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) {
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: Text(
-                '\uD56D\uBAA9 \uCD94\uAC00',
-                style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
-              ),
-              content: SizedBox(
-                width: 420,
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  20,
+                  24,
+                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                ),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        '\uD56D\uBAA9 \uCD94\uAC00',
+                        style: GoogleFonts.notoSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       TextField(
                         controller: titleController,
                         decoration: const InputDecoration(labelText: '\uC81C\uBAA9'),
@@ -1144,7 +1175,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                           TextButton(
                             onPressed: () async {
                               final picked = await showTimePicker(
-                                context: context,
+                                context: sheetContext,
                                 initialTime: selectedTime ?? TimeOfDay.now(),
                               );
                               if (picked == null) return;
@@ -1156,24 +1187,45 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(false),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey[700],
+                                side: BorderSide(color: Colors.grey.shade300),
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text('\uCDE8\uC18C'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3267A2),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text('\uC800\uC7A5'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('\uCDE8\uC18C'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3267A2),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('\uC800\uC7A5'),
-                ),
-              ],
             );
           },
         );
@@ -1585,8 +1637,24 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 children: [
                   Row(
                     children: [
-                      _buildAddItemIconButton(
-                        onPressed: () => _showAddItemDialog(detail.plan.id),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showAddItemDialog(detail.plan.id),
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: Text(
+                            '항목 추가',
+                            style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3267A2),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -2130,23 +2198,46 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     final noteController = TextEditingController();
     TimeOfDay? selectedTime = initialTime;
 
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) {
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: Text(
-                '\uD56D\uBAA9 \uCD94\uAC00',
-                style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
-              ),
-              content: SizedBox(
-                width: 420,
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  20,
+                  24,
+                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                ),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        '\uD56D\uBAA9 \uCD94\uAC00',
+                        style: GoogleFonts.notoSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       TextField(
                         controller: titleController,
                         decoration: const InputDecoration(labelText: '\uC81C\uBAA9'),
@@ -2173,7 +2264,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           TextButton(
                             onPressed: () async {
                               final picked = await showTimePicker(
-                                context: context,
+                                context: sheetContext,
                                 initialTime: selectedTime ?? TimeOfDay.now(),
                               );
                               if (picked == null) return;
@@ -2185,31 +2276,57 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(false),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey[700],
+                                side: BorderSide(color: Colors.grey.shade300),
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text('\uCDE8\uC18C'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3267A2),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text('\uCD94\uAC00'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('\uCDE8\uC18C'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3267A2),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('\uCD94\uAC00'),
-                ),
-              ],
             );
           },
         );
       },
     );
 
-    if (result != true || !mounted) return;
+    if (result != true || !mounted) {
+      titleController.dispose();
+      placeController.dispose();
+      noteController.dispose();
+      return;
+    }
 
     final title = titleController.text.trim();
     final place = placeController.text.trim();
