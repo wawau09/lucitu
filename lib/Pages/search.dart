@@ -53,7 +53,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.add, color: Colors.black87),
-                        onPressed: _showCreatePlanDialog,
+                        onPressed: _showPlanActionChooser,
                       ),
                     ],
                   ),
@@ -902,6 +902,95 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     });
   }
 
+  void _showPlanActionChooser() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  '일정 추가',
+                  style: GoogleFonts.notoSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.add_rounded, color: Color(0xFF3267A2)),
+                  ),
+                  title: Text(
+                    '새 일정 만들기',
+                    style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    '새로운 일정을 직접 생성합니다',
+                    style: GoogleFonts.notoSans(fontSize: 12, color: Colors.grey),
+                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showCreatePlanDialog();
+                  },
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.group_add_rounded, color: Color(0xFFD97706)),
+                  ),
+                  title: Text(
+                    '코드로 참가',
+                    style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    '공유받은 일정 코드를 입력하여 참가합니다',
+                    style: GoogleFonts.notoSans(fontSize: 12, color: Colors.grey),
+                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showJoinByCodeDialog();
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _showCreatePlanDialog() async {
     final nameController = TextEditingController();
     DateTime selectedDate = DateTime.now();
@@ -1482,12 +1571,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         }
 
         final detail = snapshot.data!;
-        final itemPlaces = detail.items
-            .map((item) => item.placeName?.trim())
-            .whereType<String>()
-            .where((place) => place.isNotEmpty)
-            .toSet()
-            .toList();
 
         return Scaffold(
           backgroundColor: const Color(0xFFF6F5F2),
@@ -1508,23 +1591,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildPill(
-                        label: detail.plan.planCode,
-                        background: const Color(0xFFF8FAFC),
-                        foreground: const Color(0xFF374151),
-                      ),
-                      _buildPill(
-                        label: detail.plan.isOwner ? '\uC18C\uC720\uC790' : '\uACF5\uC720 \uCC38\uC5EC\uC790',
-                        background: detail.plan.isOwner ? const Color(0xFFF5F7FB) : const Color(0xFFF0F6FF),
-                        foreground: detail.plan.isOwner ? const Color(0xFF374151) : const Color(0xFF2F5E8F),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
                   Row(
                     children: [
                       Expanded(
@@ -1532,7 +1598,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           onPressed: () => _showAddItemDialog(detail.plan.id),
                           icon: const Icon(Icons.add_rounded, size: 18),
                           label: Text(
-                            '\uD56D\uBAA9 \uCD94\uAC00',
+                            '항목 추가',
                             style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -1549,10 +1615,18 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => _showJoinByCodeDialog(),
-                          icon: const Icon(Icons.group_add_rounded, size: 18),
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: detail.plan.planCode));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('코드가 복사되었습니다: ${detail.plan.planCode}', style: GoogleFonts.notoSans()),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.copy_rounded, size: 18),
                           label: Text(
-                            '\uCF54\uB4DC\uB85C \uCC38\uAC00',
+                            '코드 복사',
                             style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
                           ),
                           style: OutlinedButton.styleFrom(
