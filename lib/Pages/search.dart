@@ -1592,9 +1592,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 ],
               ),
             ),
-          );
-        },
-      );
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildPill({
