@@ -57,7 +57,7 @@ class PlanDatabase {
 
     final itemRows = await _client
         .from(_itemsTable)
-        .select('id,plan_id,title,place_name,start_time,end_time,note,sort_order')
+        .select('id,plan_id,title,place_name,start_time,note,sort_order')
         .eq('plan_id', planId)
         .order('sort_order');
 
@@ -123,7 +123,6 @@ class PlanDatabase {
     final nextOrder = await _nextSortOrder(planId);
     final placeName = draft.placeName?.trim();
     final startTime = draft.startTime?.trim();
-    final endTime = draft.endTime?.trim();
     final note = draft.note?.trim();
     final row = await _client
         .from(_itemsTable)
@@ -132,11 +131,10 @@ class PlanDatabase {
           'title': draft.title.trim(),
           'place_name': placeName == null || placeName.isEmpty ? null : placeName,
           'start_time': startTime == null || startTime.isEmpty ? null : startTime,
-          'end_time': endTime == null || endTime.isEmpty ? null : endTime,
           'note': note == null || note.isEmpty ? null : note,
           'sort_order': nextOrder,
         })
-        .select('id,plan_id,title,place_name,start_time,end_time,note,sort_order')
+        .select('id,plan_id,title,place_name,start_time,note,sort_order')
         .single();
 
     return PlanItem.fromMap(Map<String, dynamic>.from(row as Map));
