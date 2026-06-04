@@ -681,16 +681,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       color: const Color(0xFF111827),
                     ),
                   ),
-                  if ((item.note ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      item.note!,
-                      style: GoogleFonts.notoSans(
-                        fontSize: 12,
-                        color: const Color(0xFF8A8F98),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -1088,7 +1078,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
   Future<void> _showAddItemDialog(String planId, {TimeOfDay? initialTime}) async {
     final titleController = TextEditingController();
-    final noteController = TextEditingController();
     TimeOfDay? selectedStartTime = initialTime;
     TimeOfDay? selectedEndTime;
 
@@ -1283,14 +1272,12 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
     if (result != true || !mounted) {
       titleController.dispose();
-      noteController.dispose();
       return;
     }
 
     final title = titleController.text.trim();
     if (title.isEmpty) {
       titleController.dispose();
-      noteController.dispose();
       return;
     }
 
@@ -1301,7 +1288,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
             planId: planId,
             draft: PlanDraft(
               title: title,
-              note: noteController.text.trim(),
               startTime: selectedStartTime == null
                   ? null
                   : _formatTimeOfDay(selectedStartTime!),
@@ -1328,7 +1314,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       );
     } finally {
       titleController.dispose();
-      noteController.dispose();
       return;}
   }
 
@@ -1348,10 +1333,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       (item.endTime != null ? ' ~ ${_formatItemTime(item.endTime)}' : ''),
                   style: const TextStyle(fontSize: 14),
                 ),
-              if (item.note != null && item.note!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text('메모: ${item.note}', style: const TextStyle(fontSize: 14)),
-              ],
             ],
           ),
           actions: [
@@ -2138,16 +2119,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       color: const Color(0xFF111827),
                     ),
                   ),
-                  if ((item.note ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      item.note!,
-                      style: GoogleFonts.notoSans(
-                        fontSize: 12,
-                        color: const Color(0xFF8A8F98),
-                      ),
-                    ),
-                  ],
+
                 ],
               ),
             ),
@@ -2345,7 +2317,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     TimeOfDay? initialTime,
   }) async {
     final titleController = TextEditingController();
-    final noteController = TextEditingController();
     TimeOfDay? selectedStartTime = initialTime;
     TimeOfDay? selectedEndTime;
 
@@ -2538,13 +2509,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
     if (result != true || !mounted) {
       titleController.dispose();
-      noteController.dispose();
       return;
     }
 
     final title = titleController.text.trim();
     titleController.dispose();
-    noteController.dispose();
     if (title.isEmpty) return;
 
     try {
@@ -2554,7 +2523,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             planId: planId,
             draft: PlanDraft(
               title: title,
-              note: null,
               startTime: selectedStartTime == null
                   ? null
                   : _formatTimeOfDay(selectedStartTime!),
@@ -2846,10 +2814,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       (item.endTime != null ? ' ~ ${_formatItemTime(item.endTime)}' : ''),
                   style: const TextStyle(fontSize: 14),
                 ),
-              if (item.note != null && item.note!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text('메모: ${item.note}', style: const TextStyle(fontSize: 14)),
-              ],
             ],
           ),
           actions: [

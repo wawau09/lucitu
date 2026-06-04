@@ -123,17 +123,15 @@ class PlanDatabase {
 
     final nextOrder = await _nextSortOrder(planId);
     final startTime = draft.startTime?.trim();
-    final note = draft.note?.trim();
     final row = await _client
         .from(_itemsTable)
         .insert({
           'plan_id': planId,
           'title': draft.title.trim(),
           'start_time': startTime == null || startTime.isEmpty ? null : startTime,
-          'note': note == null || note.isEmpty ? null : note,
           'sort_order': nextOrder,
         })
-        .select('id,plan_id,title,start_time,note,sort_order')
+        .select('id,plan_id,title,start_time,sort_order')
         .single();
 
     return PlanItem.fromMap(Map<String, dynamic>.from(row as Map));
