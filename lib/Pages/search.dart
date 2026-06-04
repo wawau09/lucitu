@@ -7,6 +7,14 @@ import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/plans_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+Widget _buildAddItemIconButton({required VoidCallback onPressed}) {
+  return IconButton(
+    onPressed: onPressed,
+    icon: const Icon(Icons.add, color: Colors.black87),
+    tooltip: '항목 추가',
+  );
+}
+
 class PlanPage extends ConsumerStatefulWidget {
   const PlanPage({super.key});
 
@@ -448,24 +456,8 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showAddItemDialog(detail.plan.id),
-                      icon: const Icon(Icons.add_rounded, size: 18),
-                      label: Text(
-                        '\uD56D\uBAA9 \uCD94\uAC00',
-                        style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3267A2),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
+                  _buildAddItemIconButton(
+                    onPressed: () => _showAddItemDialog(detail.plan.id),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1593,24 +1585,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 children: [
                   Row(
                     children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showAddItemDialog(detail.plan.id),
-                          icon: const Icon(Icons.add_rounded, size: 18),
-                          label: Text(
-                            '항목 추가',
-                            style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3267A2),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
+                      _buildAddItemIconButton(
+                        onPressed: () => _showAddItemDialog(detail.plan.id),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
