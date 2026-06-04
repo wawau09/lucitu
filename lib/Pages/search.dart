@@ -6,6 +6,7 @@ import 'package:placelist/DB/plan.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/plans_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:placelist/widgets/clock_schedule.dart';
 
 class PlanPage extends ConsumerStatefulWidget {
   const PlanPage({super.key});
@@ -529,10 +530,11 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                         message:
                             '\uC2DC\uAC04 \uAE30\uBC18 \uC77C\uC815\uC774 \uC544\uC9C1 \uC5C6\uC5B4\uC694.',
                       )
-                    : Column(
-                        children: detail.items
-                            .map((item) => _buildTimelineRow(item))
-                            .toList(),
+                    : ClockScheduleWidget(
+                        items: detail.items,
+                        onItemTap: (item) {
+                          _showItemDetails(item, detail.plan.id);
+                        },
                       ),
               ),
               const SizedBox(height: 14),
@@ -1328,6 +1330,46 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       titleController.dispose();
       noteController.dispose();
       return;}
+  }
+
+  void _showItemDetails(PlanItem item, String planId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (item.startTime != null)
+                Text(
+                  '시간: ${_formatItemTime(item.startTime)}' +
+                      (item.endTime != null ? ' ~ ${_formatItemTime(item.endTime)}' : ''),
+                  style: const TextStyle(fontSize: 14),
+                ),
+              if (item.note != null && item.note!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('메모: ${item.note}', style: const TextStyle(fontSize: 14)),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _confirmDeleteItem(planId, item);
+              },
+              child: const Text('삭제', style: TextStyle(color: Colors.red)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('닫기'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _showJoinByCodeDialog() async {
