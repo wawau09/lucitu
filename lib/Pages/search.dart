@@ -752,48 +752,48 @@ class _PlanPageState extends ConsumerState<PlanPage> {
   }
 
   Widget _buildCollaboratorSection(PlanDetail detail) {
-    if (detail.plan.isOwner) {
-      if (detail.collaborators.isEmpty) {
-        return _buildDetailEmptyState(
-          icon: Icons.group_outlined,
-          message:
-              '\uC544\uC9C1 \uB4F1\uB85D\uB41C \uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uC5C6\uC5B4\uC694.',
-        );
-      }
+    if (detail.collaborators.isEmpty) {
+      return _buildDetailEmptyState(
+        icon: Icons.group_outlined,
+        message:
+            '\uC544\uC9C1 \uB4F1\uB85D\uB41C \uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uC5C6\uC5B4\uC694.',
+      );
+    }
 
-      return Column(
-        children: detail.collaborators
-            .map(
-              (member) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 13,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFE8E1D9)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.person_rounded,
-                        color: Color(0xFF3267A2),
-                        size: 18,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          member.name,
-                          style: GoogleFonts.notoSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF111827),
-                          ),
+    return Column(
+      children: detail.collaborators
+          .map(
+            (member) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 13,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE8E1D9)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.person_rounded,
+                      color: Color(0xFF3267A2),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        member.name,
+                        style: GoogleFonts.notoSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF111827),
                         ),
                       ),
+                    ),
+                    if (detail.plan.isOwner)
                       TextButton(
                         onPressed: member.isSelf
                             ? null
@@ -808,28 +808,22 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                      )
+                    else if (member.isSelf)
+                      Text(
+                        '\uB098',
+                        style: GoogleFonts.notoSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF3267A2),
+                        ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
-            )
-            .toList(),
-      );
-    }
-
-    if (detail.collaborators.any((member) => member.isSelf)) {
-      return _buildDetailEmptyState(
-        icon: Icons.group_rounded,
-        message:
-            '\uC774 \uC77C\uC815\uC5D0 \uACF5\uC720 \uCC38\uC5EC \uC911\uC785\uB2C8\uB2E4.',
-      );
-    }
-
-    return _buildDetailEmptyState(
-      icon: Icons.group_outlined,
-      message:
-          '\uACF5\uB3D9 \uC791\uC5C5\uC790 \uC815\uBCF4\uB97C \uBCFC \uC218 \uC5C6\uC5B4\uC694.',
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -2223,48 +2217,48 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   }
 
   Widget _buildCollaboratorSection(PlanDetail detail) {
-    if (detail.plan.isOwner) {
-      if (detail.collaborators.isEmpty) {
-        return _buildDetailEmptyState(
-          icon: Icons.group_outlined,
-          message:
-              '\uC544\uC9C1 \uB4F1\uB85D\uB41C \uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uC5C6\uC5B4\uC694.',
-        );
-      }
+    if (detail.collaborators.isEmpty) {
+      return _buildDetailEmptyState(
+        icon: Icons.group_outlined,
+        message:
+            '\uC544\uC9C1 \uB4F1\uB85D\uB41C \uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uC5C6\uC5B4\uC694.',
+      );
+    }
 
-      return Column(
-        children: detail.collaborators
-            .map(
-              (member) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 13,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFE8E1D9)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.person_rounded,
-                        color: Color(0xFF3267A2),
-                        size: 18,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          member.name,
-                          style: GoogleFonts.notoSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF111827),
-                          ),
+    return Column(
+      children: detail.collaborators
+          .map(
+            (member) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 13,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE8E1D9)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.person_rounded,
+                      color: Color(0xFF3267A2),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        member.name,
+                        style: GoogleFonts.notoSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF111827),
                         ),
                       ),
+                    ),
+                    if (detail.plan.isOwner)
                       TextButton(
                         onPressed: member.isSelf
                             ? null
@@ -2279,28 +2273,22 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                      )
+                    else if (member.isSelf)
+                      Text(
+                        '\uB098',
+                        style: GoogleFonts.notoSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF3267A2),
+                        ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
-            )
-            .toList(),
-      );
-    }
-
-    if (detail.collaborators.any((member) => member.isSelf)) {
-      return _buildDetailEmptyState(
-        icon: Icons.group_rounded,
-        message:
-            '\uC774 \uC77C\uC815\uC5D0 \uACF5\uC720 \uCC38\uC5EC \uC911\uC785\uB2C8\uB2E4.',
-      );
-    }
-
-    return _buildDetailEmptyState(
-      icon: Icons.group_outlined,
-      message:
-          '\uACF5\uB3D9 \uC791\uC5C5\uC790 \uC815\uBCF4\uB97C \uBCFC \uC218 \uC5C6\uC5B4\uC694.',
+            ),
+          )
+          .toList(),
     );
   }
 
