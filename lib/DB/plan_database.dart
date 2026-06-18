@@ -15,14 +15,52 @@ class PlanDatabase {
     final user = _user;
     if (user == null) return [];
 
-    final rows = await _client
+    final email = user.email?.toLowerCase();
+    
+    // 1. Get plan IDs where the user is a collaborator
+    List<String> collaboratorPlanIds = [];
+    if (email != null && email.isNotEmpty) {
+      final collabs = await _client
+          .from(_collaboratorsTable)
+          .select('plan_id')
+          .eq('collaborator_email', email);
+      collaboratorPlanIds = collabs.map((row) => row['plan_id'] as String).toList();
+    }
+
+    // 2. Fetch plans where user is owner
+    final ownerRows = await _client
         .from(_plansTable)
         .select('id,name,plan_date,plan_code,owner_id,item_count,created_at,updated_at')
-        .order('updated_at', ascending: false);
+        .eq('owner_id', user.id);
 
-    return rows
+    // 3. Fetch plans where user is collaborator
+    List<dynamic> collabRows = [];
+    if (collaboratorPlanIds.isNotEmpty) {
+      collabRows = await _client
+          .from(_plansTable)
+          .select('id,name,plan_date,plan_code,owner_id,item_count,created_at,updated_at')
+          .inFilter('id', collaboratorPlanIds);
+    }
+
+    // 4. Combine and deduplicate
+    final Map<String, Map<String, dynamic>> allRows = {};
+    for (final row in [...ownerRows, ...collabRows]) {
+      final mapRow = Map<String, dynamic>.from(row as Map);
+      allRows[mapRow['id'].toString()] = mapRow;
+    }
+
+    final combinedList = allRows.values.toList();
+    
+    // 5. Sort by updated_at descending
+    combinedList.sort((a, b) {
+      final dateA = DateTime.tryParse(a['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final dateB = DateTime.tryParse(b['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return dateB.compareTo(dateA);
+    });
+
+    return combinedList
         .map((row) => PlanSummary.fromMap(
-              Map<String, dynamic>.from(row as Map),
+              row,
               currentUserId: user.id,
             ))
         .toList();
