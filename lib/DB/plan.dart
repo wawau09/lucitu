@@ -5,6 +5,7 @@ class PlanSummary {
     required this.planDate,
     required this.planCode,
     required this.ownerId,
+    required this.ownerName,
     required this.isOwner,
     required this.sharedWithMe,
     required this.itemCount,
@@ -15,6 +16,7 @@ class PlanSummary {
   final DateTime planDate;
   final String planCode;
   final String ownerId;
+  final String ownerName;
   final bool isOwner;
   final bool sharedWithMe;
   final int itemCount;
@@ -31,6 +33,7 @@ class PlanSummary {
           DateTime.now(),
       planCode: map['plan_code']?.toString() ?? '',
       ownerId: ownerId,
+      ownerName: map['owner_name']?.toString() ?? '',
       isOwner: ownerId == currentUserId,
       sharedWithMe: ownerId != currentUserId,
       itemCount: map['item_count'] is num
@@ -43,12 +46,14 @@ class PlanSummary {
 class PlanCollaborator {
   PlanCollaborator({
     required this.email,
+    required this.name,
     required this.role,
     required this.createdAt,
     this.isSelf = false,
   });
 
   final String email;
+  final String name;
   final String role;
   final DateTime createdAt;
   final bool isSelf;
@@ -60,6 +65,7 @@ class PlanCollaborator {
     final email = map['collaborator_email']?.toString() ?? '';
     return PlanCollaborator(
       email: email,
+      name: map['collaborator_name']?.toString() ?? email,
       role: map['role']?.toString() ?? 'editor',
       createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.now(),

@@ -786,7 +786,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          member.email,
+                          member.name,
                           style: GoogleFonts.notoSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -2257,7 +2257,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          member.email,
+                          member.name,
                           style: GoogleFonts.notoSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,

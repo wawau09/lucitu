@@ -58,6 +58,20 @@ class PlanDatabase {
       return dateB.compareTo(dateA);
     });
 
+    // 6. Fetch owner names from profiles table
+    final ownerIds = combinedList.map((row) => row['owner_id'] as String).toSet().toList();
+    if (ownerIds.isNotEmpty) {
+      try {
+        final profiles = await _client.from('profiles').select('id, full_name').inFilter('id', ownerIds);
+        final profileMap = {for (var p in profiles) p['id'] as String: p['full_name'] as String?};
+        for (var row in combinedList) {
+          row['owner_name'] = profileMap[row['owner_id']];
+        }
+      } catch (e) {
+        // If profiles table doesn't exist yet, ignore
+      }
+    }
+
     return combinedList
         .map((row) => PlanSummary.fromMap(
               row,
@@ -82,6 +96,15 @@ class PlanDatabase {
       throw const PostgrestException(message: 'planNotFound');
     }
 
+    try {
+      final profile = await _client.from('profiles').select('full_name').eq('id', planRow['owner_id']).maybeSingle();
+      if (profile != null) {
+        planRow['owner_name'] = profile['full_name'];
+      }
+    } catch (e) {
+      // Ignore if profiles table is missing
+    }
+
     final plan = PlanSummary.fromMap(
       Map<String, dynamic>.from(planRow as Map),
       currentUserId: user.id,
@@ -98,7 +121,19 @@ class PlanDatabase {
         .select()
         .eq('plan_id', planId);
 
-
+    // Fetch collaborator names
+    final emails = collaboratorRows.map((r) => r['collaborator_email'] as String).toList();
+    if (emails.isNotEmpty) {
+      try {
+        final profiles = await _client.from('profiles').select('email, full_name').inFilter('email', emails);
+        final profileMap = {for (var p in profiles) p['email'] as String: p['full_name'] as String?};
+        for (var row in collaboratorRows) {
+          row['collaborator_name'] = profileMap[row['collaborator_email']];
+        }
+      } catch (e) {
+        // Ignore if profiles table is missing
+      }
+    }
 
     final currentEmail = user.email?.toLowerCase();
 
