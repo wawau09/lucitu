@@ -18,6 +18,8 @@ class _TermsAgreementSheetState extends State<TermsAgreementSheet>
 
   late AnimationController _buttonAnimController;
   late Animation<double> _buttonScaleAnim;
+  
+  final _nameController = TextEditingController();
 
   @override
   void initState() {
@@ -29,15 +31,20 @@ class _TermsAgreementSheetState extends State<TermsAgreementSheet>
     _buttonScaleAnim = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _buttonAnimController, curve: Curves.easeInOut),
     );
+    _nameController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _buttonAnimController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
   bool get _allAgreed => _agreeTerms && _agreePrivacy;
+  bool get _canSubmit => _allAgreed && _nameController.text.trim().isNotEmpty;
 
   void _toggleAll(bool? value) {
     setState(() {
@@ -186,6 +193,33 @@ class _TermsAgreementSheetState extends State<TermsAgreementSheet>
           ),
           const SizedBox(height: 12),
 
+          // Name Input Field
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: '사용할 이름 (닉네임)',
+                labelStyle: GoogleFonts.notoSans(color: Colors.grey[600]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFF3267A2), width: 1.5),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              style: GoogleFonts.notoSans(fontSize: 15, color: Colors.black87),
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // Scrollable content
           Flexible(
             child: SingleChildScrollView(
@@ -248,16 +282,16 @@ class _TermsAgreementSheetState extends State<TermsAgreementSheet>
               ],
             ),
             child: GestureDetector(
-              onTapDown: _allAgreed
+              onTapDown: _canSubmit
                   ? (_) => _buttonAnimController.forward()
                   : null,
-              onTapUp: _allAgreed
+              onTapUp: _canSubmit
                   ? (_) {
                       _buttonAnimController.reverse();
-                      Navigator.pop(context, true);
+                      Navigator.pop(context, _nameController.text.trim());
                     }
                   : null,
-              onTapCancel: _allAgreed
+              onTapCancel: _canSubmit
                   ? () => _buttonAnimController.reverse()
                   : null,
               child: ScaleTransition(
@@ -268,16 +302,16 @@ class _TermsAgreementSheetState extends State<TermsAgreementSheet>
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    gradient: _allAgreed
+                    gradient: _canSubmit
                         ? const LinearGradient(
                             colors: [Color(0xFF3267A2), Color(0xFF4A8BD4)],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           )
                         : null,
-                    color: _allAgreed ? null : Colors.grey[200],
+                    color: _canSubmit ? null : Colors.grey[200],
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: _allAgreed
+                    boxShadow: _canSubmit
                         ? [
                             BoxShadow(
                               color: const Color(0xFF3267A2).withValues(alpha: 0.3),
@@ -293,7 +327,7 @@ class _TermsAgreementSheetState extends State<TermsAgreementSheet>
                       style: GoogleFonts.notoSans(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: _allAgreed ? Colors.white : Colors.grey[400],
+                        color: _canSubmit ? Colors.white : Colors.grey[400],
                       ),
                     ),
                   ),
@@ -518,10 +552,10 @@ const String _privacyPolicyText = '''
 본 개인정보 처리방침은 시행일로부터 적용되며, 변경사항이 있는 경우 서비스 내 공지를 통해 안내합니다.
 ''';
 
-/// 약관 동의 바텀시트를 표시하고, 동의 결과를 반환합니다.
-/// 동의하면 true, 취소/닫으면 null 또는 false를 반환합니다.
-Future<bool?> showTermsAgreementSheet(BuildContext context) {
-  return showModalBottomSheet<bool>(
+/// 약관 동의 바텀시트를 표시하고, 닉네임과 함께 결과를 반환합니다.
+/// 동의하면 입력된 닉네임(String), 취소/닫으면 null을 반환합니다.
+Future<String?> showTermsAgreementSheet(BuildContext context) {
+  return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

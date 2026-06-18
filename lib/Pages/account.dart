@@ -14,147 +14,18 @@ class AccountPage extends StatefulWidget {
 class _AccountPageState extends State<AccountPage> {
   User? _user;
   bool _isLoading = false;
-  bool _isLoginMode = true;
-
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _setupNameController = TextEditingController();
-
-  String? _customName;
-  bool _isProfileLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _user = Supabase.instance.client.auth.currentUser;
-    if (_user != null) {
-      _fetchProfile();
-    }
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (mounted) {
         setState(() {
           _user = data.session?.user;
-          if (_user == null) {
-            _customName = null;
-            _isProfileLoaded = false;
-          }
         });
-        if (data.session?.user != null) {
-          _fetchProfile();
-        }
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _nameController.dispose();
-    _setupNameController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchProfile() async {
-    if (_user == null) return;
-    try {
-      final res = await Supabase.instance.client
-          .from('profiles')
-          .select('full_name')
-          .eq('id', _user!.id)
-          .maybeSingle();
-      
-      if (mounted) {
-        setState(() {
-          if (res != null && res['full_name'] != null && res['full_name'].toString().trim().isNotEmpty) {
-            _customName = res['full_name'];
-          } else {
-            _customName = null;
-          }
-          _isProfileLoaded = true;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isProfileLoaded = true;
-        });
-      }
-    }
-  }
-
-  Future<void> _saveSetupName() async {
-    final name = _setupNameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이름을 입력해주세요.')));
-      return;
-    }
-    setState(() => _isLoading = true);
-    await _updateProfile(_user!, name);
-    await _fetchProfile();
-    setState(() => _isLoading = false);
-  }
-
-  Future<void> _updateProfile(User user, String name) async {
-    final email = user.email;
-    if (email == null) return;
-    
-    try {
-      await Supabase.instance.client.from('profiles').upsert({
-        'id': user.id,
-        'email': email,
-        'full_name': name,
-      });
-    } catch (e) {
-      // Ignore if profiles table is not created yet
-    }
-  }
-
-  Future<void> _handleEmailAuth() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final name = _nameController.text.trim();
-
-    if (email.isEmpty || password.isEmpty || (!_isLoginMode && name.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('모든 필드를 입력해주세요.')),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      if (_isLoginMode) {
-        await Supabase.instance.client.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-      } else {
-        final res = await Supabase.instance.client.auth.signUp(
-          email: email,
-          password: password,
-        );
-        if (res.user != null) {
-          await _updateProfile(res.user!, name);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('가입이 완료되었습니다!')),
-            );
-          }
-        }
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류: $error')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -163,10 +34,14 @@ class _AccountPageState extends State<AccountPage> {
     });
 
     try {
+      // google_sign_in을 사용하지 않고 Supabase의 signInWithOAuth를 직접 사용합니다.
+      // 이 방식은 Supabase 대시보드에 구글 클라이언트 ID와 시크릿이 설정되어 있어야 합니다.
       await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
+        // Uri.base.origin을 사용하여 현재 도메인(Vercel 또는 localhost)으로 자동 리디렉션되도록 합니다.
         redirectTo: kIsWeb ? Uri.base.origin : 'io.supabase.placelist://login-callback',
       );
+
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -191,63 +66,7 @@ class _AccountPageState extends State<AccountPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: _user == null 
-            ? _buildLoggedOutView() 
-            : (!_isProfileLoaded 
-                ? const Center(child: CircularProgressIndicator()) 
-                : (_customName == null 
-                    ? _buildSetupProfileView() 
-                    : _buildLoggedInView())),
-      ),
-    );
-  }
-
-  Widget _buildSetupProfileView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.person_add_outlined, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              "이름 설정",
-              style: GoogleFonts.notoSans(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "앱에서 사용할 이름을 설정해주세요.",
-              style: GoogleFonts.notoSans(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 32),
-            TextField(
-              controller: _setupNameController,
-              decoration: InputDecoration(
-                labelText: '이름 (닉네임)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-            const SizedBox(height: 24),
-            if (_isLoading)
-              const CircularProgressIndicator()
-            else
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveSetupName,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3267A2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Text("시작하기", style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-              ),
-          ],
-        ),
+        child: _user == null ? _buildLoggedOutView() : _buildLoggedInView(),
       ),
     );
   }
@@ -267,7 +86,7 @@ class _AccountPageState extends State<AccountPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                _isLoginMode ? "로그인이 필요합니다" : "회원가입",
+                "로그인이 필요합니다",
                 style: GoogleFonts.notoSans(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -285,111 +104,31 @@ class _AccountPageState extends State<AccountPage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              
-              if (!_isLoginMode)
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: '이름 (닉네임)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                ),
-              if (!_isLoginMode) const SizedBox(height: 16),
-              
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: '이메일',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: '비밀번호',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 24),
-
               if (_isLoading)
                 const CircularProgressIndicator()
               else
-                Column(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _handleEmailAuth,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3267A2),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          _isLoginMode ? "로그인" : "가입하기",
-                          style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _handleGoogleSignIn,
+                    icon: const Icon(Icons.login, size: 20),
+                    label: Text(
+                      "구글로 로그인",
+                      style: GoogleFonts.notoSans(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _isLoginMode ? "계정이 없으신가요?" : "이미 계정이 있으신가요?",
-                          style: GoogleFonts.notoSans(color: Colors.grey[600]),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _isLoginMode = !_isLoginMode;
-                            });
-                          },
-                          child: Text(
-                            _isLoginMode ? "회원가입" : "로그인",
-                            style: GoogleFonts.notoSans(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF3267A2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 40),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _handleGoogleSignIn,
-                        icon: const Icon(Icons.login, size: 20),
-                        label: Text(
-                          "구글로 로그인",
-                          style: GoogleFonts.notoSans(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black87,
-                          elevation: 1,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(color: Colors.grey.shade300),
-                          ),
-                        ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black87,
+                      elevation: 1,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: Colors.grey.shade300),
                       ),
                     ),
-                  ],
+                  ),
                 ),
             ],
           ),
@@ -399,6 +138,9 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   Widget _buildLoggedInView() {
+    final metadata = _user!.userMetadata;
+    final String name = metadata?['full_name'] ?? _user!.email?.split('@').first ?? '사용자';
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -412,7 +154,7 @@ class _AccountPageState extends State<AccountPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            _customName ?? '사용자',
+            name,
             style: GoogleFonts.notoSans(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -461,4 +203,3 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 }
-

@@ -68,14 +68,19 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     _isShowingTerms = true;
 
-    final agreed = await showTermsAgreementSheet(ctx);
+    final name = await showTermsAgreementSheet(ctx);
 
-    if (agreed == true) {
-      // 동의함 → user_metadata에 기록
+    if (name != null && name.isNotEmpty) {
+      // 동의함 → user_metadata에 기록 및 profiles 테이블에 저장
       try {
         await Supabase.instance.client.auth.updateUser(
-          UserAttributes(data: {'terms_agreed': true}),
+          UserAttributes(data: {'terms_agreed': true, 'full_name': name}),
         );
+        await Supabase.instance.client.from('profiles').upsert({
+          'id': user.id,
+          'email': user.email ?? '',
+          'full_name': name,
+        });
       } catch (e) {
         debugPrint('약관 동의 메타데이터 업데이트 실패: $e');
       }
