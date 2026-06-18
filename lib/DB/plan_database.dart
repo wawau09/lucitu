@@ -192,15 +192,44 @@ class PlanDatabase {
       throw const PostgrestException(message: 'loginRequired');
     }
 
-    final row = await _client.rpc(
-      'join_plan_by_code',
-      params: {
-        'p_plan_code': planCode.trim(),
-      },
-    );
+    // 1. Find the plan by code
+    final planRows = await _client
+        .from(_plansTable)
+        .select('id,name,plan_date,plan_code,owner_id,item_count,created_at,updated_at')
+        .eq('plan_code', planCode.trim())
+        .limit(1);
+
+    if (planRows.isEmpty) {
+      throw const PostgrestException(message: 'invalidPlanCode', details: 'No plan found with this code');
+    }
+
+    final planRow = planRows.first;
+    final planId = planRow['id'] as String;
+
+    // 2. Insert into collaborators if not owner
+    if (planRow['owner_id'] != user.id) {
+      final email = user.email?.toLowerCase() ?? '';
+      if (email.isNotEmpty) {
+        // Check if already a collaborator to avoid duplicate key errors
+        final existing = await _client
+            .from(_collaboratorsTable)
+            .select('plan_id')
+            .eq('plan_id', planId)
+            .eq('collaborator_email', email)
+            .limit(1);
+
+        if (existing.isEmpty) {
+          await _client.from(_collaboratorsTable).insert({
+            'plan_id': planId,
+            'collaborator_email': email,
+            'role': 'editor', // Default role
+          });
+        }
+      }
+    }
 
     return PlanSummary.fromMap(
-      Map<String, dynamic>.from(row as Map),
+      Map<String, dynamic>.from(planRow as Map),
       currentUserId: user.id,
     );
   }
