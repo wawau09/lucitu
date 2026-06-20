@@ -2290,6 +2290,43 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
     final endTimeController = TextEditingController();
 
+    String? parseTimeStr(String text) {
+      text = text.trim();
+      if (text.isEmpty) return null;
+
+      if (text.contains(':')) {
+        final parts = text.split(':');
+        if (parts.length >= 2) {
+          final hStr = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
+          final mStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
+          final h = int.tryParse(hStr);
+          final m = int.tryParse(mStr);
+          if (h != null && m != null && h < 24 && m < 60) {
+            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+          }
+        }
+        return 'INVALID';
+      }
+
+      final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty) return 'INVALID';
+
+      int h, m;
+      if (digits.length <= 2) {
+        h = int.tryParse(digits) ?? 0;
+        m = 0;
+      } else if (digits.length == 3) {
+        h = int.tryParse(digits.substring(0, 1)) ?? 0;
+        m = int.tryParse(digits.substring(1)) ?? 0;
+      } else {
+        h = int.tryParse(digits.substring(0, 2)) ?? 0;
+        m = int.tryParse(digits.substring(2, 4)) ?? 0;
+      }
+
+      if (h >= 24 || m >= 60) return 'INVALID';
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    }
+
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -2383,8 +2420,19 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () =>
-                                  Navigator.of(sheetContext).pop(true),
+                              onPressed: () {
+                                final sParsed = parseTimeStr(startTimeController.text);
+                                final eParsed = parseTimeStr(endTimeController.text);
+                                if (sParsed == 'INVALID') {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('시작 시간을 올바르게 입력해주세요. (예: 1430)')));
+                                  return;
+                                }
+                                if (eParsed == 'INVALID') {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('종료 시간을 올바르게 입력해주세요. (예: 1530)')));
+                                  return;
+                                }
+                                Navigator.of(sheetContext).pop(true);
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF3267A2),
                                 foregroundColor: Colors.white,
@@ -2426,44 +2474,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       return;
     }
 
-    String? parseTimeStr(String text) {
-      text = text.trim();
-      if (text.isEmpty) return null;
-
-      if (text.contains(':')) {
-        final parts = text.split(':');
-        if (parts.length >= 2) {
-          final hStr = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
-          final mStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
-          final h = int.tryParse(hStr);
-          final m = int.tryParse(mStr);
-          if (h != null && m != null && h < 24 && m < 60) {
-            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-          }
-        }
-      }
-
-      final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (digits.isEmpty) return null;
-
-      int h, m;
-      if (digits.length <= 2) {
-        h = int.tryParse(digits) ?? 0;
-        m = 0;
-      } else if (digits.length == 3) {
-        h = int.tryParse(digits.substring(0, 1)) ?? 0;
-        m = int.tryParse(digits.substring(1)) ?? 0;
-      } else {
-        h = int.tryParse(digits.substring(0, 2)) ?? 0;
-        m = int.tryParse(digits.substring(2, 4)) ?? 0;
-      }
-
-      if (h >= 24 || m >= 60) return null;
-      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-    }
-
-    final sTime = parseTimeStr(startTimeController.text.trim());
-    final eTime = parseTimeStr(endTimeController.text.trim());
+    final sParsed = parseTimeStr(startTimeController.text);
+    final eParsed = parseTimeStr(endTimeController.text);
+    final sTime = sParsed == 'INVALID' ? null : sParsed;
+    final eTime = eParsed == 'INVALID' ? null : eParsed;
 
     try {
       await ref
