@@ -704,7 +704,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildTimelineRow(PlanItem item) {
@@ -2185,19 +2185,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                       ],
                                     ),
                                   ),
-                                  Positioned(
-                                    top: 2,
-                                    right: 2,
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.close,
-                                        size: 14,
-                                        color: Color(0xFF1E3A8A),
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                      onPressed: () => _confirmDeleteItem(
-                                    ),
+
                                     Positioned(
                                       top: 2,
                                       right: 2,
