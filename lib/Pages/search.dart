@@ -1072,8 +1072,12 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
   Future<void> _showAddItemDialog(String planId, {TimeOfDay? initialTime}) async {
     final titleController = TextEditingController();
-    TimeOfDay? selectedStartTime = initialTime;
-    TimeOfDay? selectedEndTime;
+    final startTimeController = TextEditingController(
+      text: initialTime != null
+          ? '${initialTime.hour.toString().padLeft(2, '0')}${initialTime.minute.toString().padLeft(2, '0')}'
+          : '',
+    );
+    final endTimeController = TextEditingController();
 
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -1125,94 +1129,32 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       ),
                       const SizedBox(height: 12),
                       // Start time row
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.access_time, size: 18, color: Color(0xFF3267A2)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                selectedStartTime == null
-                                    ? '\uC2DC\uC791 \uC2DC\uAC04'
-                                    : _formatTimeOfDay(selectedStartTime!),
-                                style: GoogleFonts.notoSans(
-                                  fontSize: 14,
-                                  color: selectedStartTime == null
-                                      ? Colors.grey
-                                      : const Color(0xFF111827),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                final picked = await showTimePicker(
-                                  context: sheetContext,
-                                  initialTime: selectedStartTime ?? TimeOfDay.now(),
-                                  initialEntryMode: TimePickerEntryMode.inputOnly,
-                                );
-                                if (picked == null) return;
-                                setDialogState(() {
-                                  selectedStartTime = picked;
-                                });
-                              },
-                              child: Text(
-                                selectedStartTime == null ? '\uC120\uD0DD' : '\uBCC0\uACBD',
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ),
-                          ],
+                      TextField(
+                        controller: startTimeController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        decoration: const InputDecoration(
+                          labelText: '시작 시간 (예: 1430)',
+                          hintText: '숫자 4자리 입력',
+                          prefixIcon: Icon(Icons.access_time, color: Color(0xFF3267A2)),
                         ),
                       ),
                       const SizedBox(height: 8),
                       // End time row
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.access_time_filled, size: 18, color: Color(0xFF9CA3AF)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                selectedEndTime == null
-                                    ? '\uC885\uB8CC \uC2DC\uAC04'
-                                    : _formatTimeOfDay(selectedEndTime!),
-                                style: GoogleFonts.notoSans(
-                                  fontSize: 14,
-                                  color: selectedEndTime == null
-                                      ? Colors.grey
-                                      : const Color(0xFF111827),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                final picked = await showTimePicker(
-                                  context: sheetContext,
-                                  initialTime: selectedEndTime ?? selectedStartTime ?? TimeOfDay.now(),
-                                  initialEntryMode: TimePickerEntryMode.inputOnly,
-                                );
-                                if (picked == null) return;
-                                setDialogState(() {
-                                  selectedEndTime = picked;
-                                });
-                              },
-                              child: Text(
-                                selectedEndTime == null ? '\uC120\uD0DD' : '\uBCC0\uACBD',
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ),
-                          ],
+                      TextField(
+                        controller: endTimeController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        decoration: const InputDecoration(
+                          labelText: '종료 시간 (선택, 예: 1530)',
+                          hintText: '숫자 4자리 입력',
+                          prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -1268,14 +1210,30 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
     if (result != true || !mounted) {
       titleController.dispose();
+      startTimeController.dispose();
+      endTimeController.dispose();
       return;
     }
 
     final title = titleController.text.trim();
     if (title.isEmpty) {
       titleController.dispose();
+      startTimeController.dispose();
+      endTimeController.dispose();
       return;
     }
+
+    String? parseTimeStr(String text) {
+      if (text.isEmpty) return null;
+      final padded = text.padLeft(4, '0');
+      final h = int.tryParse(padded.substring(0, 2));
+      final m = int.tryParse(padded.substring(2));
+      if (h == null || m == null || h >= 24 || m >= 60) return null;
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    }
+
+    final sTime = parseTimeStr(startTimeController.text.trim());
+    final eTime = parseTimeStr(endTimeController.text.trim());
 
     try {
       await ref
@@ -1284,12 +1242,8 @@ class _PlanPageState extends ConsumerState<PlanPage> {
             planId: planId,
             draft: PlanDraft(
               title: title,
-              startTime: selectedStartTime == null
-                  ? null
-                  : _formatTimeOfDay(selectedStartTime!),
-              endTime: selectedEndTime == null
-                  ? null
-                  : _formatTimeOfDay(selectedEndTime!),
+              startTime: sTime,
+              endTime: eTime,
             ),
           );
       _reloadSelectedPlan(planId);
@@ -1310,7 +1264,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       );
     } finally {
       titleController.dispose();
-      return;}
+      startTimeController.dispose();
+      endTimeController.dispose();
+      return;
+    }
   }
 
   void _showItemDetails(PlanItem item, String planId) {
