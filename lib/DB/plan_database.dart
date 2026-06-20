@@ -97,9 +97,10 @@ class PlanDatabase {
     }
 
     try {
-      final profile = await _client.from('profiles').select('full_name').eq('id', planRow['owner_id']).maybeSingle();
+      final profile = await _client.from('profiles').select('full_name, email').eq('id', planRow['owner_id']).maybeSingle();
       if (profile != null) {
         planRow['owner_name'] = profile['full_name'];
+        planRow['owner_email'] = profile['email'];
       }
     } catch (e) {
       // Ignore if profiles table is missing
@@ -137,16 +138,28 @@ class PlanDatabase {
 
     final currentEmail = user.email?.toLowerCase();
 
+    final ownerEmail = planRow['owner_email']?.toString() ?? '';
+    final ownerName = planRow['owner_name']?.toString() ?? '만든 사람';
+
+    final allCollaborators = [
+      PlanCollaborator(
+        email: ownerEmail,
+        name: ownerName,
+        role: 'owner',
+        createdAt: DateTime.tryParse(planRow['created_at']?.toString() ?? '') ?? DateTime.now(),
+        isSelf: currentEmail != null && ownerEmail.toLowerCase() == currentEmail,
+      ),
+      ...collaboratorRows.map(
+        (row) => PlanCollaborator.fromMap(
+          Map<String, dynamic>.from(row as Map),
+          currentEmail: currentEmail,
+        ),
+      ),
+    ];
+
     return PlanDetail(
       plan: plan,
-      collaborators: collaboratorRows
-          .map(
-            (row) => PlanCollaborator.fromMap(
-              Map<String, dynamic>.from(row as Map),
-              currentEmail: currentEmail,
-            ),
-          )
-          .toList(),
+      collaborators: allCollaborators,
       items: itemRows
           .map((row) => PlanItem.fromMap(Map<String, dynamic>.from(row as Map)))
           .toList(),

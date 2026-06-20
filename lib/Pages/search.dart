@@ -1154,6 +1154,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                                 final picked = await showTimePicker(
                                   context: sheetContext,
                                   initialTime: selectedStartTime ?? TimeOfDay.now(),
+                                  initialEntryMode: TimePickerEntryMode.inputOnly,
                                 );
                                 if (picked == null) return;
                                 setDialogState(() {
@@ -1199,6 +1200,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                                 final picked = await showTimePicker(
                                   context: sheetContext,
                                   initialTime: selectedEndTime ?? selectedStartTime ?? TimeOfDay.now(),
+                                  initialEntryMode: TimePickerEntryMode.inputOnly,
                                 );
                                 if (picked == null) return;
                                 setDialogState(() {
