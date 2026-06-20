@@ -516,6 +516,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                                 item,
                                 onDelete: () =>
                                     _confirmDeleteItem(detail.plan.id, item),
+                                planId: detail.plan.id,
                               ),
                             )
                             .toList(),
@@ -533,7 +534,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                     : ClockScheduleWidget(
                         items: detail.items,
                         onItemTap: (item) {
-                          _showItemDetails(item, detail.plan.id);
+                          _showEditItemDialog(item, detail.plan.id);
                         },
                       ),
               ),
@@ -634,17 +635,27 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
-  Widget _buildScheduleRow(PlanItem item, {required VoidCallback onDelete}) {
+  Widget _buildScheduleRow(PlanItem item, {required VoidCallback onDelete, required String planId}) {
+    Color? bgColor;
+    Color? borderColor;
+    if (item.color != null) {
+      final baseColor = Color(int.parse(item.color!.substring(1, 7), radix: 16) + 0xFF000000);
+      bgColor = baseColor.withOpacity(0.1);
+      borderColor = baseColor.withOpacity(0.3);
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE8E1D9)),
-        ),
-        child: Row(
+      child: GestureDetector(
+        onTap: () => _showEditItemDialog(item, planId),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: bgColor ?? Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor ?? const Color(0xFFE8E1D9)),
+          ),
+          child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
@@ -1078,6 +1089,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           : '',
     );
     final endTimeController = TextEditingController();
+    String? selectedColor;
 
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -1132,6 +1144,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       TextField(
                         controller: startTimeController,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [_TimeInputFormatter()],
                         decoration: const InputDecoration(
                           labelText: '시작 시간 (예: 1430 또는 14:30)',
                           hintText: '시간 입력',
@@ -1143,11 +1156,32 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       TextField(
                         controller: endTimeController,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [_TimeInputFormatter()],
                         decoration: const InputDecoration(
                           labelText: '종료 시간 (선택, 예: 1530 또는 15:30)',
                           hintText: '시간 입력',
                           prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        children: _planColors.map((c) {
+                          final isSelected = selectedColor == c;
+                          return GestureDetector(
+                            onTap: () => setDialogState(() => selectedColor = c),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: c == null ? Colors.grey[200] : Color(int.parse(c.substring(1, 7), radix: 16) + 0xFF000000),
+                                border: isSelected ? Border.all(color: Colors.black54, width: 2) : Border.all(color: Colors.transparent, width: 2),
+                              ),
+                              child: c == null ? const Icon(Icons.palette, size: 16, color: Colors.grey) : null,
+                            ),
+                          );
+                        }).toList(),
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -1263,19 +1297,11 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               title: title,
               startTime: sTime,
               endTime: eTime,
+              color: selectedColor,
             ),
           );
       _reloadSelectedPlan(planId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '\uD56D\uBAA9\uC774 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
-            style: GoogleFonts.notoSans(),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1289,40 +1315,231 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     }
   }
 
-  void _showItemDetails(PlanItem item, String planId) {
-    showDialog(
+  Future<void> _showEditItemDialog(PlanItem item, String planId) async {
+    final titleController = TextEditingController(text: item.title);
+    final startTimeController = TextEditingController(text: item.startTime?.replaceAll(':', '') ?? '');
+    final endTimeController = TextEditingController(text: item.endTime?.replaceAll(':', '') ?? '');
+    String? selectedColor = item.color;
+
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (item.startTime != null)
-                Text(
-                  '시간: ${_formatItemTime(item.startTime)}' +
-                      (item.endTime != null ? ' ~ ${_formatItemTime(item.endTime)}' : ''),
-                  style: const TextStyle(fontSize: 14),
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  20,
+                  24,
+                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
                 ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _confirmDeleteItem(planId, item);
-              },
-              child: const Text('삭제', style: TextStyle(color: Colors.red)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('닫기'),
-            ),
-          ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '항목 수정',
+                            style: GoogleFonts.notoSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF111827),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            onPressed: () {
+                              Navigator.of(sheetContext).pop(false);
+                              _confirmDeleteItem(planId, item);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(
+                          labelText: '일정명',
+                          hintText: '일정 이름을 입력하세요',
+                          prefixIcon: Icon(Icons.event_note_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: startTimeController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_TimeInputFormatter()],
+                        decoration: const InputDecoration(
+                          labelText: '시작 시간 (예: 1430)',
+                          hintText: '시간 입력',
+                          prefixIcon: Icon(Icons.access_time, color: Color(0xFF3267A2)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: endTimeController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_TimeInputFormatter()],
+                        decoration: const InputDecoration(
+                          labelText: '종료 시간 (선택, 예: 1530)',
+                          hintText: '시간 입력',
+                          prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        children: _planColors.map((c) {
+                          final isSelected = selectedColor == c;
+                          return GestureDetector(
+                            onTap: () => setDialogState(() => selectedColor = c),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: c == null ? Colors.grey[200] : Color(int.parse(c.substring(1, 7), radix: 16) + 0xFF000000),
+                                border: isSelected ? Border.all(color: Colors.black54, width: 2) : Border.all(color: Colors.transparent, width: 2),
+                              ),
+                              child: c == null ? const Icon(Icons.palette, size: 16, color: Colors.grey) : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(false),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey[700],
+                                side: BorderSide(color: Colors.grey.shade300),
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text('취소'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3267A2),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text('수정'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
+
+    if (result != true || !mounted) {
+      titleController.dispose();
+      startTimeController.dispose();
+      endTimeController.dispose();
+      return;
+    }
+
+    final title = titleController.text.trim();
+    if (title.isEmpty) {
+      titleController.dispose();
+      startTimeController.dispose();
+      endTimeController.dispose();
+      return;
+    }
+
+    String? parseTimeStr(String text) {
+      text = text.trim();
+      if (text.isEmpty) return null;
+
+      if (text.contains(':')) {
+        final parts = text.split(':');
+        if (parts.length >= 2) {
+          final hStr = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
+          final mStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
+          final h = int.tryParse(hStr);
+          final m = int.tryParse(mStr);
+          if (h != null && m != null && h < 24 && m < 60) {
+            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+          }
+        }
+      }
+
+      final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty) return null;
+
+      int h, m;
+      if (digits.length <= 2) {
+        h = int.tryParse(digits) ?? 0;
+        m = 0;
+      } else if (digits.length == 3) {
+        h = int.tryParse(digits.substring(0, 1)) ?? 0;
+        m = int.tryParse(digits.substring(1)) ?? 0;
+      } else {
+        h = int.tryParse(digits.substring(0, 2)) ?? 0;
+        m = int.tryParse(digits.substring(2, 4)) ?? 0;
+      }
+
+      if (h >= 24 || m >= 60) return null;
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    }
+
+    final sTime = parseTimeStr(startTimeController.text.trim());
+    final eTime = parseTimeStr(endTimeController.text.trim());
+
+    try {
+      await ref.read(plansProvider.notifier).updatePlanItem(
+            itemId: item.id,
+            draft: PlanDraft(
+              title: title,
+              startTime: sTime,
+              endTime: eTime,
+              color: selectedColor,
+            ),
+          );
+      _reloadSelectedPlan(planId);
+    } catch (e) {
+      if (!mounted) return;
+    } finally {
+      titleController.dispose();
+      startTimeController.dispose();
+      endTimeController.dispose();
+    }
   }
 
   Future<void> _showJoinByCodeDialog() async {
@@ -1919,23 +2136,33 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: itemsInHour.map((item) {
-                              return Stack(
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    margin: const EdgeInsets.only(bottom: 6),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF0F6FF),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: const Color(0xFFBFDBFE),
+                              Color? bgColor;
+                              Color? borderColor;
+                              if (item.color != null) {
+                                final baseColor = Color(int.parse(item.color!.substring(1, 7), radix: 16) + 0xFF000000);
+                                bgColor = baseColor.withOpacity(0.1);
+                                borderColor = baseColor.withOpacity(0.3);
+                              }
+                              
+                              return GestureDetector(
+                                onTap: () => _showEditItemDialog(item, detail.plan.id),
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      margin: const EdgeInsets.only(bottom: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
                                       ),
-                                    ),
-                                    child: Row(
+                                      decoration: BoxDecoration(
+                                        color: bgColor ?? const Color(0xFFF0F6FF),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: borderColor ?? const Color(0xFFBFDBFE),
+                                        ),
+                                      ),
+                                      child: Row(
                                       children: [
                                         Expanded(
                                           child: Text(
@@ -1970,12 +2197,26 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
                                       onPressed: () => _confirmDeleteItem(
-                                        detail.plan.id,
-                                        item,
+                                    ),
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.close,
+                                          size: 14,
+                                          color: Color(0xFF1E3A8A),
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        onPressed: () => _confirmDeleteItem(
+                                          detail.plan.id,
+                                          item,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               );
                             }).toList(),
                           ),
@@ -2289,6 +2530,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           : '',
     );
     final endTimeController = TextEditingController();
+    String? selectedColor;
 
     String? parseTimeStr(String text) {
       text = text.trim();
@@ -2380,6 +2622,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       TextField(
                         controller: startTimeController,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [_TimeInputFormatter()],
                         decoration: const InputDecoration(
                           labelText: '시작 시간 (예: 1430 또는 14:30)',
                           hintText: '시간 입력',
@@ -2391,11 +2634,32 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       TextField(
                         controller: endTimeController,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [_TimeInputFormatter()],
                         decoration: const InputDecoration(
                           labelText: '종료 시간 (선택, 예: 1530 또는 15:30)',
                           hintText: '시간 입력',
                           prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        children: _planColors.map((c) {
+                          final isSelected = selectedColor == c;
+                          return GestureDetector(
+                            onTap: () => setDialogState(() => selectedColor = c),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: c == null ? Colors.grey[200] : Color(int.parse(c.substring(1, 7), radix: 16) + 0xFF000000),
+                                border: isSelected ? Border.all(color: Colors.black54, width: 2) : Border.all(color: Colors.transparent, width: 2),
+                              ),
+                              child: c == null ? const Icon(Icons.palette, size: 16, color: Colors.grey) : null,
+                            ),
+                          );
+                        }).toList(),
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -2420,19 +2684,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () {
-                                final sParsed = parseTimeStr(startTimeController.text);
-                                final eParsed = parseTimeStr(endTimeController.text);
-                                if (sParsed == 'INVALID') {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('시작 시간을 올바르게 입력해주세요. (예: 1430)')));
-                                  return;
-                                }
-                                if (eParsed == 'INVALID') {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('종료 시간을 올바르게 입력해주세요. (예: 1530)')));
-                                  return;
-                                }
-                                Navigator.of(sheetContext).pop(true);
-                              },
+                              onPressed: () => Navigator.of(sheetContext).pop(true),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF3267A2),
                                 foregroundColor: Colors.white,
@@ -2488,24 +2740,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               title: title,
               startTime: sTime,
               endTime: eTime,
+              color: selectedColor,
             ),
           );
       await _refreshPlan();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '\uD56D\uBAA9\uC774 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
-            style: GoogleFonts.notoSans(),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('\uD56D\uBAA9 \uCD94\uAC00 \uC2E4\uD328: $e')),
-      );
     } finally {
       titleController.dispose();
       startTimeController.dispose();
@@ -2513,8 +2754,232 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       return;
     }
   }
+  Future<void> _showEditItemDialog(PlanItem item, String planId) async {
+    final titleController = TextEditingController(text: item.title);
+    final startTimeController = TextEditingController(text: item.startTime?.replaceAll(':', '') ?? '');
+    final endTimeController = TextEditingController(text: item.endTime?.replaceAll(':', '') ?? '');
+    String? selectedColor = item.color;
 
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  20,
+                  24,
+                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '항목 수정',
+                            style: GoogleFonts.notoSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF111827),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            onPressed: () {
+                              Navigator.of(sheetContext).pop(false);
+                              _confirmDeleteItem(planId, item);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(
+                          labelText: '일정명',
+                          hintText: '일정 이름을 입력하세요',
+                          prefixIcon: Icon(Icons.event_note_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: startTimeController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_TimeInputFormatter()],
+                        decoration: const InputDecoration(
+                          labelText: '시작 시간 (예: 1430)',
+                          hintText: '시간 입력',
+                          prefixIcon: Icon(Icons.access_time, color: Color(0xFF3267A2)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: endTimeController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_TimeInputFormatter()],
+                        decoration: const InputDecoration(
+                          labelText: '종료 시간 (선택, 예: 1530)',
+                          hintText: '시간 입력',
+                          prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        children: _planColors.map((c) {
+                          final isSelected = selectedColor == c;
+                          return GestureDetector(
+                            onTap: () => setDialogState(() => selectedColor = c),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: c == null ? Colors.grey[200] : Color(int.parse(c.substring(1, 7), radix: 16) + 0xFF000000),
+                                border: isSelected ? Border.all(color: Colors.black54, width: 2) : Border.all(color: Colors.transparent, width: 2),
+                              ),
+                              child: c == null ? const Icon(Icons.palette, size: 16, color: Colors.grey) : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(false),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey[700],
+                                side: BorderSide(color: Colors.grey.shade300),
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text('취소'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3267A2),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text('수정'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
 
+    if (result != true || !mounted) {
+      titleController.dispose();
+      startTimeController.dispose();
+      endTimeController.dispose();
+      return;
+    }
+
+    final title = titleController.text.trim();
+    if (title.isEmpty) {
+      titleController.dispose();
+      startTimeController.dispose();
+      endTimeController.dispose();
+      return;
+    }
+
+    String? parseTimeStr(String text) {
+      text = text.trim();
+      if (text.isEmpty) return null;
+
+      if (text.contains(':')) {
+        final parts = text.split(':');
+        if (parts.length >= 2) {
+          final hStr = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
+          final mStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
+          final h = int.tryParse(hStr);
+          final m = int.tryParse(mStr);
+          if (h != null && m != null && h < 24 && m < 60) {
+            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+          }
+        }
+      }
+
+      final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty) return null;
+
+      int h, m;
+      if (digits.length <= 2) {
+        h = int.tryParse(digits) ?? 0;
+        m = 0;
+      } else if (digits.length == 3) {
+        h = int.tryParse(digits.substring(0, 1)) ?? 0;
+        m = int.tryParse(digits.substring(1)) ?? 0;
+      } else {
+        h = int.tryParse(digits.substring(0, 2)) ?? 0;
+        m = int.tryParse(digits.substring(2, 4)) ?? 0;
+      }
+
+      if (h >= 24 || m >= 60) return null;
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    }
+
+    final sTime = parseTimeStr(startTimeController.text.trim());
+    final eTime = parseTimeStr(endTimeController.text.trim());
+
+    try {
+      await ref.read(plansProvider.notifier).updatePlanItem(
+            itemId: item.id,
+            draft: PlanDraft(
+              title: title,
+              startTime: sTime,
+              endTime: eTime,
+              color: selectedColor,
+            ),
+          );
+      await _refreshPlan();
+    } catch (e) {
+      if (!mounted) return;
+    } finally {
+      titleController.dispose();
+      startTimeController.dispose();
+      endTimeController.dispose();
+    }
+  }
 
   Future<void> _showJoinByCodeDialog() async {
     final codeController = TextEditingController();
@@ -2821,5 +3286,40 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     if (raw == null || raw.trim().isEmpty) return '\uC2DC\uAC04 \uBBF8\uC815';
     if (raw.length >= 5) return raw.substring(0, 5);
     return raw;
+  }
+}
+
+const List<String?> _planColors = [
+  null,
+  '#EF4444', // Red
+  '#F59E0B', // Amber
+  '#10B981', // Emerald
+  '#3B82F6', // Blue
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+];
+
+class _TimeInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+    if (text.isEmpty) return newValue;
+
+    if (!RegExp(r'^[0-9:]*$').hasMatch(text)) return oldValue;
+
+    final digits = text.replaceAll(':', '');
+    if (digits.length > 4) return oldValue;
+
+    if (digits.length >= 2) {
+      final h = int.tryParse(digits.substring(0, 2));
+      if (h != null && h >= 24) return oldValue;
+    }
+    if (digits.length == 4) {
+      final m = int.tryParse(digits.substring(2, 4));
+      if (m != null && m >= 60) return oldValue;
+    }
+
+    return newValue;
   }
 }

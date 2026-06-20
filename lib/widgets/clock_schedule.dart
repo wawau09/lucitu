@@ -117,8 +117,16 @@ class ClockSchedulePainter extends CustomPainter {
       var sweepAngle = ((end - start) / 24) * 2 * pi;
       if (sweepAngle < 0) sweepAngle += 2 * pi;
 
+      Color sliceColor;
+      if (item.color != null) {
+        sliceColor = Color(int.parse(item.color!.substring(1, 7), radix: 16) + 0xFF000000);
+      } else {
+        sliceColor = colors[colorIndex % colors.length];
+        colorIndex++;
+      }
+
       final slicePaint = Paint()
-        ..color = colors[colorIndex % colors.length].withOpacity(0.85)
+        ..color = sliceColor.withOpacity(0.85)
         ..style = PaintingStyle.fill;
         
       canvas.drawArc(
@@ -166,7 +174,6 @@ class ClockSchedulePainter extends CustomPainter {
         textPainter.paint(
             canvas, Offset(tx - textPainter.width / 2, ty - textPainter.height / 2));
       }
-      colorIndex++;
     }
 
     // Draw lines and ticks

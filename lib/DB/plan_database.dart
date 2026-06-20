@@ -209,18 +209,42 @@ class PlanDatabase {
 
     final nextOrder = await _nextSortOrder(planId);
     final startTime = draft.startTime?.trim();
+    final endTime = draft.endTime?.trim();
+    
     final row = await _client
         .from(_itemsTable)
         .insert({
           'plan_id': planId,
           'title': draft.title.trim(),
           'start_time': startTime == null || startTime.isEmpty ? null : startTime,
+          'end_time': endTime == null || endTime.isEmpty ? null : endTime,
+          'color': draft.color,
           'sort_order': nextOrder,
         })
-        .select('id,plan_id,title,start_time,sort_order')
+        .select('id,plan_id,title,start_time,end_time,color,sort_order')
         .single();
 
     return PlanItem.fromMap(Map<String, dynamic>.from(row as Map));
+  }
+
+  Future<void> updatePlanItem({
+    required String itemId,
+    required PlanDraft draft,
+  }) async {
+    final user = _user;
+    if (user == null) {
+      throw const PostgrestException(message: 'loginRequired');
+    }
+
+    final startTime = draft.startTime?.trim();
+    final endTime = draft.endTime?.trim();
+    
+    await _client.from(_itemsTable).update({
+      'title': draft.title.trim(),
+      'start_time': startTime == null || startTime.isEmpty ? null : startTime,
+      'end_time': endTime == null || endTime.isEmpty ? null : endTime,
+      'color': draft.color,
+    }).eq('id', itemId);
   }
 
   Future<void> deletePlanItem(String itemId) async {

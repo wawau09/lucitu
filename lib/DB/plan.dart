@@ -82,6 +82,7 @@ class PlanItem {
     required this.sortOrder,
     this.startTime,
     this.endTime,
+    this.color,
   });
 
   final String id;
@@ -90,6 +91,7 @@ class PlanItem {
   final int sortOrder;
   final String? startTime;
   final String? endTime;
+  final String? color;
 
   factory PlanItem.fromMap(Map<String, dynamic> map) {
     return PlanItem(
@@ -98,6 +100,7 @@ class PlanItem {
       title: map['title']?.toString() ?? '\uBBF8\uC815\uC758 \uC77C\uC815',
       startTime: map['start_time']?.toString(),
       endTime: map['end_time']?.toString(),
+      color: map['color']?.toString(),
       sortOrder: map['sort_order'] is num
           ? (map['sort_order'] as num).toInt()
           : int.tryParse(map['sort_order']?.toString() ?? '') ?? 0,
@@ -122,9 +125,11 @@ class PlanDraft {
     required this.title,
     this.startTime,
     this.endTime,
+    this.color,
   });
 
   final String title;
   final String? startTime;
   final String? endTime;
+  final String? color;
 }

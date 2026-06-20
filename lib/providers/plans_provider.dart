@@ -83,6 +83,14 @@ class PlansNotifier extends StateNotifier<AsyncValue<List<PlanSummary>>> {
     await _db.deletePlanItem(itemId);
     await refresh();
   }
+
+  Future<void> updatePlanItem({
+    required String itemId,
+    required PlanDraft draft,
+  }) async {
+    await _db.updatePlanItem(itemId: itemId, draft: draft);
+    await refresh();
+  }
 }
 
 final plansProvider =
