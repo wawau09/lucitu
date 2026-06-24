@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/store.dart';
@@ -8,7 +8,6 @@ import 'package:placelist/providers/category_provider.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
-import 'package:placelist/supabase_config.dart';
 import 'package:placelist/widgets/category_section.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -20,18 +19,10 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  final SupabaseClient _client = Supabase.instance.client;
   String _searchQuery = '';
 
-  Future<String> _getMainImageUrl(Store store) async {
-    if (store.imageUrl != null && store.imageUrl!.isNotEmpty) {
-      return store.imageUrl!;
-    }
-    final storage = _client.storage.from(supabaseStorageBucket);
-    if (store.imagePath != null && store.imagePath!.isNotEmpty) {
-      return storage.getPublicUrl(store.imagePath!);
-    }
-    return storage.getPublicUrl('${store.folderName}/1.jpeg');
+  String? _getMainImageUrl(Store store) {
+    return store.imageUrls.isNotEmpty ? store.imageUrls.first : null;
   }
 
   @override
@@ -156,20 +147,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   child: SizedBox(
                     width: 130,
                     height: 130,
-                    child: FutureBuilder<String>(
-                      future: _getMainImageUrl(store),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Container(color: Colors.grey[100]);
-                        }
-                        return Image.network(
-                          snapshot.data!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(color: Colors.grey[100]),
-                        );
-                      },
-                    ),
+                    child: Builder(builder: (context) {
+                      final imageUrl = _getMainImageUrl(store);
+                      if (imageUrl == null) {
+                        return Container(color: Colors.grey[100]);
+                      }
+                      return Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(color: Colors.grey[100]),
+                      );
+                    }),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -210,9 +199,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                store.location ?? '\uC704\uCE58 \uC815\uBCF4 \uC5C6\uC74C',
+                                store.categoryTags.isNotEmpty
+                                    ? store.categoryTags.take(2).join(' · ')
+                                    : '',
                                 style: GoogleFonts.notoSans(
-                                  fontSize: 14,
+                                  fontSize: 13,
                                   color: Colors.grey[600],
                                 ),
                                 maxLines: 1,

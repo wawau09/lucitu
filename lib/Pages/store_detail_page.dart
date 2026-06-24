@@ -13,7 +13,6 @@ import 'package:placelist/Pages/map_stub.dart'
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
-import 'package:placelist/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StoreDetailPage extends ConsumerStatefulWidget {
@@ -26,76 +25,11 @@ class StoreDetailPage extends ConsumerStatefulWidget {
 }
 
 class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
-  final SupabaseClient _client = Supabase.instance.client;
   int _currentPage = 0;
-  late Future<List<String>> _imagesFuture;
-  double? _latitude;
-  double? _longitude;
 
   @override
   void initState() {
     super.initState();
-    _imagesFuture = _getStoreImageUrls(widget.store);
-    _fetchLocation();
-  }
-
-  Future<void> _fetchLocation() async {
-    if (widget.store.id == null) return;
-    try {
-      final data = await _client
-          .from('stores_map_view')
-          .select('latitude, longitude')
-          .eq('id', widget.store.id!)
-          .maybeSingle();
-      if (data != null && mounted) {
-        setState(() {
-          _latitude = data['latitude'] is num
-              ? (data['latitude'] as num).toDouble()
-              : double.tryParse(data['latitude']?.toString() ?? '');
-          _longitude = data['longitude'] is num
-              ? (data['longitude'] as num).toDouble()
-              : double.tryParse(data['longitude']?.toString() ?? '');
-        });
-      }
-    } catch (e) {
-      debugPrint('Failed to fetch location: $e');
-    }
-  }
-
-  Future<List<String>> _getStoreImageUrls(Store store) async {
-    final storage = _client.storage.from(supabaseStorageBucket);
-    final urls = <String>[];
-    try {
-      final files = await storage.list(path: store.folderName);
-      final imageFiles = files
-          .where(
-            (file) =>
-                file.name.toLowerCase().endsWith('.jpeg') ||
-                file.name.toLowerCase().endsWith('.jpg') ||
-                file.name.toLowerCase().endsWith('.png'),
-          )
-          .toList();
-
-      imageFiles.sort((a, b) {
-        final numA = int.tryParse(a.name.split('.').first) ?? 0;
-        final numB = int.tryParse(b.name.split('.').first) ?? 0;
-        return numA.compareTo(numB);
-      });
-
-      for (final file in imageFiles) {
-        urls.add(storage.getPublicUrl('${store.folderName}/${file.name}'));
-      }
-    } catch (e) {
-      for (var i = 1; i <= 2; i++) {
-        urls.add(storage.getPublicUrl('${store.folderName}/$i.jpeg'));
-      }
-    }
-
-    if (urls.isEmpty) {
-      urls.add(storage.getPublicUrl('${store.folderName}/1.jpeg'));
-    }
-
-    return urls;
   }
 
   @override
@@ -121,7 +55,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildImageHeader(),
+            _buildImageHeader(store),
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
@@ -131,8 +65,6 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   _buildTitleRow(context),
                   const SizedBox(height: 8),
                   _buildCompactRating(store),
-                  const SizedBox(height: 8),
-                  if (store.location != null) _buildLocationRow(store),
                   const SizedBox(height: 16),
                   Container(
                     width: 40,
@@ -163,7 +95,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   const SizedBox(height: 32),
                   _buildRatingSection(context, store),
                   const SizedBox(height: 32),
-                  if (_latitude != null && _longitude != null) ...[
+                  if (store.latitude != null && store.longitude != null) ...[
                     _buildMapSection(store),
                     const SizedBox(height: 32),
                   ],
@@ -176,142 +108,141 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildImageHeader() {
+  Widget _buildImageHeader(Store store) {
+    final imageUrls = store.imageUrls;
+
+    if (imageUrls.isEmpty) {
+      return SizedBox(
+        height: 400,
+        width: double.infinity,
+        child: Container(
+          color: Colors.grey[200],
+          child: const Center(
+            child: Icon(Icons.image_outlined, color: Colors.grey, size: 80),
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       height: 400,
       width: double.infinity,
-      child: FutureBuilder<List<String>>(
-        future: _imagesFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Container(
-              color: Colors.grey[200],
-              child: const Center(
-                child: Icon(Icons.image_outlined, color: Colors.white, size: 80),
-              ),
-            );
-          }
-
-          final imageUrls = snapshot.data!;
-
-          return Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              PageView.builder(
-                scrollBehavior: const MaterialScrollBehavior().copyWith(
-                  dragDevices: {
-                    PointerDeviceKind.mouse,
-                    PointerDeviceKind.touch,
-                    PointerDeviceKind.trackpad,
-                  },
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          PageView.builder(
+            scrollBehavior: const MaterialScrollBehavior().copyWith(
+              dragDevices: {
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.touch,
+                PointerDeviceKind.trackpad,
+              },
+            ),
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemCount: imageUrls.length,
+            itemBuilder: (context, index) {
+              return Container(
+                color: Colors.grey[100],
+                child: Image.network(
+                  imageUrls[index],
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                        size: 60,
+                      ),
+                    ),
+                  ),
                 ),
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemCount: imageUrls.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    color: Colors.grey[100],
-                    child: Image.network(
-                      imageUrls[index],
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            color: Colors.grey,
-                            size: 60,
+              );
+            },
+          ),
+          if (imageUrls.length > 1)
+            Positioned(
+              bottom: 16,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  imageUrls.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentPage == index
+                          ? Colors.blue
+                          : Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Scaffold(
+                        extendBodyBehindAppBar: true,
+                        appBar: AppBar(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          iconTheme:
+                              const IconThemeData(color: Colors.white),
+                        ),
+                        body: PanoramaViewer(
+                          child: Image.asset(
+                            'assets/relax_inn_seaview_suite_4k.jpg',
                           ),
                         ),
                       ),
                     ),
                   );
                 },
-              ),
-              if (imageUrls.length > 1)
-                Positioned(
-                  bottom: 16,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      imageUrls.length,
-                      (index) => Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentPage == index
-                              ? Colors.blue
-                              : Colors.grey.shade400,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.threed_rotation,
+                        size: 20,
+                        color: Colors.black87,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        "\uD30C\uB178\uB77C\uB9C8",
+                        style: GoogleFonts.notoSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
                       ),
-                    ),
-                  ),
-                ),
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: Material(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(20),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => Scaffold(
-                            extendBodyBehindAppBar: true,
-                            appBar: AppBar(
-                              backgroundColor: Colors.transparent,
-                              elevation: 0,
-                              iconTheme:
-                                  const IconThemeData(color: Colors.white),
-                            ),
-                            body: PanoramaViewer(
-                              child: Image.asset(
-                                'assets/relax_inn_seaview_suite_4k.jpg',
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.threed_rotation,
-                            size: 20,
-                            color: Colors.black87,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            "\uD30C\uB178\uB77C\uB9C8",
-                            style: GoogleFonts.notoSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -383,25 +314,11 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildLocationRow(Store store) {
-    return Row(
-      children: [
-        const Icon(Icons.location_on, color: Colors.grey, size: 18),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            store.location!,
-            style: GoogleFonts.notoSans(
-              fontSize: 14,
-              color: Colors.grey[700],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildMapSection(Store store) {
+    final lat = store.latitude!;
+    final lng = store.longitude!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -433,7 +350,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: getWebMap(_latitude!, _longitude!, store.name),
+                child: getWebMap(lat, lng, store.name),
               ),
             ),
           )
@@ -449,7 +366,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
               child: NaverMap(
                 options: NaverMapViewOptions(
                   initialCameraPosition: NCameraPosition(
-                    target: NLatLng(_latitude!, _longitude!),
+                    target: NLatLng(lat, lng),
                     zoom: 15,
                   ),
                   locationButtonEnable: false,
@@ -460,7 +377,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                 onMapReady: (controller) {
                   final marker = NMarker(
                     id: store.id ?? 'marker',
-                    position: NLatLng(_latitude!, _longitude!),
+                    position: NLatLng(lat, lng),
                   );
                   controller.addOverlayAll({marker});
                   final infoWindow =

@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StoreDatabase {
   final SupabaseClient _client = Supabase.instance.client;
-  final String _table = 'stores';
+  final String _table = 'cafes';
 
   Future<void> createStore(Store newStore) async {
     await _client.from(_table).insert(newStore.toMap());
@@ -16,7 +16,11 @@ class StoreDatabase {
   }
 
   Future<List<Store>> getStores() async {
-    final List<dynamic> rows = await _client.from(_table).select().order('id');
+    final List<dynamic> rows = await _client
+        .from(_table)
+        .select('id, name, latitude, longitude, category_tags, image_urls')
+        .order('id');
+
     final storesById = <String, Map<String, dynamic>>{};
 
     for (final row in rows) {
@@ -31,7 +35,8 @@ class StoreDatabase {
     try {
       final List<dynamic> reviewRows = await _client
           .from('store_reviews')
-          .select('store_id, user_id, drink, hygiene, atmosphere, final_score, created_at')
+          .select(
+              'store_id, user_id, drink, hygiene, atmosphere, final_score, created_at')
           .order('created_at');
 
       for (final row in reviewRows) {

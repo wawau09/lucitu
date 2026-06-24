@@ -1,86 +1,69 @@
 class Store {
   String? id;
   String name;
-  String folderName;
-  int? imageId;
-  String? imageUrl;
-  String? imagePath;
-  String? location;
-  double? rating;
   double? latitude;
   double? longitude;
+  List<String> categoryTags;
+  List<String> imageUrls;
   List<dynamic>? reviews;
+  double? rating;
 
   Store({
     this.id,
     required this.name,
-    required this.folderName,
-    this.imageId,
-    this.imageUrl,
-    this.imagePath,
-    this.location,
-    this.rating,
     this.latitude,
     this.longitude,
+    List<String>? categoryTags,
+    List<String>? imageUrls,
     this.reviews,
-  });
+    this.rating,
+  })  : categoryTags = categoryTags ?? [],
+        imageUrls = imageUrls ?? [];
 
   Store copyWith({
     String? id,
     String? name,
-    String? folderName,
-    int? imageId,
-    String? imageUrl,
-    String? imagePath,
-    String? location,
-    double? rating,
     double? latitude,
     double? longitude,
+    List<String>? categoryTags,
+    List<String>? imageUrls,
     List<dynamic>? reviews,
+    double? rating,
   }) {
     return Store(
       id: id ?? this.id,
       name: name ?? this.name,
-      folderName: folderName ?? this.folderName,
-      imageId: imageId ?? this.imageId,
-      imageUrl: imageUrl ?? this.imageUrl,
-      imagePath: imagePath ?? this.imagePath,
-      location: location ?? this.location,
-      rating: rating ?? this.rating,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      categoryTags: categoryTags ?? this.categoryTags,
+      imageUrls: imageUrls ?? this.imageUrls,
       reviews: reviews ?? this.reviews,
+      rating: rating ?? this.rating,
     );
   }
 
   factory Store.fromMap(Map<String, dynamic> map) {
     final dynamic rawId = map['id'];
-    final String resolvedFolderName = (map['folder_name'] ??
-            map['folderName'] ??
-            map['folder'] ??
-            map['category'] ??
-            'default_folder')
-        .toString();
-    final String? resolvedImageUrl = (map['image_url'] ??
-            map['imageUrl'] ??
-            map['thumbnail_url'] ??
-            map['photo_url'])
-        ?.toString();
-    final String? resolvedImagePath = (map['image_path'] ??
-            map['imagePath'] ??
-            map['thumbnail_path'] ??
-            map['photo_path'])
-        ?.toString();
-    final int? resolvedImageId = map['image_id'] is int
-        ? map['image_id'] as int
-        : int.tryParse(map['image_id']?.toString() ?? '');
-    
-    final List<dynamic>? resolvedReviews = map['reviews'] is List
-        ? map['reviews'] as List<dynamic>
-        : null;
 
-    double? resolvedRating = map['rating'] is num 
-        ? (map['rating'] as num).toDouble() 
+    // category_tags: text[] from Supabase
+    final List<String> resolvedCategoryTags = () {
+      final raw = map['category_tags'];
+      if (raw is List) return raw.map((e) => e.toString()).toList();
+      return <String>[];
+    }();
+
+    // image_urls: text[] from Supabase
+    final List<String> resolvedImageUrls = () {
+      final raw = map['image_urls'];
+      if (raw is List) return raw.map((e) => e.toString()).toList();
+      return <String>[];
+    }();
+
+    final List<dynamic>? resolvedReviews =
+        map['reviews'] is List ? map['reviews'] as List<dynamic> : null;
+
+    double? resolvedRating = map['rating'] is num
+        ? (map['rating'] as num).toDouble()
         : double.tryParse(map['rating']?.toString() ?? '');
 
     if (resolvedReviews != null && resolvedReviews.isNotEmpty) {
@@ -100,40 +83,33 @@ class Store {
       }
     }
 
-    final double? resolvedLat = map['latitude'] is num 
-        ? (map['latitude'] as num).toDouble() 
+    final double? resolvedLat = map['latitude'] is num
+        ? (map['latitude'] as num).toDouble()
         : double.tryParse(map['latitude']?.toString() ?? '');
-        
-    final double? resolvedLng = map['longitude'] is num 
-        ? (map['longitude'] as num).toDouble() 
+
+    final double? resolvedLng = map['longitude'] is num
+        ? (map['longitude'] as num).toDouble()
         : double.tryParse(map['longitude']?.toString() ?? '');
 
     return Store(
       id: rawId?.toString(),
-      name: map['name'] ?? '이름 없음',
-      folderName: resolvedFolderName,
-      imageId: resolvedImageId,
-      imageUrl: resolvedImageUrl,
-      imagePath: resolvedImagePath,
-      location: map['location']?.toString(),
-      rating: resolvedRating,
+      name: map['name']?.toString() ?? '이름 없음',
       latitude: resolvedLat,
       longitude: resolvedLng,
+      categoryTags: resolvedCategoryTags,
+      imageUrls: resolvedImageUrls,
       reviews: resolvedReviews,
+      rating: resolvedRating,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'folder_name': folderName,
-      if (imageId != null) 'image_id': imageId,
-      if (imageUrl != null && imageUrl!.isNotEmpty) 'image_url': imageUrl,
-      if (imagePath != null && imagePath!.isNotEmpty) 'image_path': imagePath,
-      if (location != null) 'location': location,
-      if (rating != null) 'rating': rating,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
+      'category_tags': categoryTags,
+      'image_urls': imageUrls,
       if (reviews != null) 'reviews': reviews,
     };
   }

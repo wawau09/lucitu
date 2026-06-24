@@ -4,8 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/Pages/store_detail_page.dart';
 import 'package:placelist/DB/store.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:placelist/supabase_config.dart';
 
 class FavoritesListPage extends ConsumerWidget {
   const FavoritesListPage({super.key});
@@ -103,16 +101,7 @@ class FavoritesListPage extends ConsumerWidget {
                       fontSize: 16,
                     ),
                   ),
-                   const SizedBox(height: 4),
-                   if (store.location != null)
-                     Text(
-                       store.location!,
-                       style: GoogleFonts.notoSans(
-                         fontSize: 13,
-                         color: Colors.grey[600],
-                       ),
-                     ),
-                   const SizedBox(height: 4),
+                 const SizedBox(height: 4),
                    Row(
                      children: [
                        const Icon(Icons.star, color: Colors.amber, size: 16),
@@ -143,28 +132,16 @@ class FavoritesListPage extends ConsumerWidget {
   }
 
   Widget _buildStoreImage(Store store) {
-    // 간단한 이미지 로딩 로직 (main_page.dart와 유사하게 구현 가능)
-    final String imageUrl = store.imageUrl ?? '';
-    if (imageUrl.isNotEmpty) {
-      return Image.network(imageUrl, width: 80, height: 80, fit: BoxFit.cover);
+    if (store.imageUrls.isNotEmpty) {
+      return Image.network(
+        store.imageUrls.first,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (context, e, s) =>
+            Container(width: 80, height: 80, color: Colors.grey[200]),
+      );
     }
-    
-    // Storage 경로 시도
-    final storage = Supabase.instance.client.storage.from(supabaseStorageBucket);
-    final path = '${store.folderName}/1.jpeg';
-    
-    return FutureBuilder<String>(
-      future: Future.value(storage.getPublicUrl(path)),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return Container(width: 80, height: 80, color: Colors.grey[200]);
-        return Image.network(
-          snapshot.data!,
-          width: 80,
-          height: 80,
-          fit: BoxFit.cover,
-          errorBuilder: (context, e, s) => Container(width: 80, height: 80, color: Colors.grey[200]),
-        );
-      },
-    );
+    return Container(width: 80, height: 80, color: Colors.grey[200]);
   }
 }
