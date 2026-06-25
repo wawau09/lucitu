@@ -18,7 +18,7 @@ class StoreDatabase {
   Future<List<Store>> getStores() async {
     final List<dynamic> rows = await _client
         .from(_table)
-        .select('id, name, latitude, longitude, category_tags, image_urls')
+        .select('id, name, latitude, longitude, category_tags, image_urls, region')
         .order('id');
 
     final storesById = <String, Map<String, dynamic>>{};

@@ -29,10 +29,10 @@ void main() {
     
     final client = Supabase.instance.client;
     try {
-      final List<dynamic> data = await client.from('stores').select('id, name, reviews').order('id');
+      final List<dynamic> data = await client.from('cafes').select('id, name').order('id');
       print('Total stores fetched: ${data.length}');
       for (var row in data) {
-        print('Store ID ${row['id']} (${row['name']}) has reviews: ${row['reviews']} (type: ${row['reviews']?.runtimeType})');
+        print('Store ID ${row['id']} (${row['name']})');
       }
     } catch (e) {
       print('Error querying stores table: $e');

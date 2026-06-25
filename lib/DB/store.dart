@@ -7,6 +7,7 @@ class Store {
   List<String> imageUrls;
   List<dynamic>? reviews;
   double? rating;
+  String? region;
 
   Store({
     this.id,
@@ -17,6 +18,7 @@ class Store {
     List<String>? imageUrls,
     this.reviews,
     this.rating,
+    this.region,
   })  : categoryTags = categoryTags ?? [],
         imageUrls = imageUrls ?? [];
 
@@ -29,6 +31,7 @@ class Store {
     List<String>? imageUrls,
     List<dynamic>? reviews,
     double? rating,
+    String? region,
   }) {
     return Store(
       id: id ?? this.id,
@@ -39,6 +42,7 @@ class Store {
       imageUrls: imageUrls ?? this.imageUrls,
       reviews: reviews ?? this.reviews,
       rating: rating ?? this.rating,
+      region: region ?? this.region,
     );
   }
 
@@ -108,6 +112,7 @@ class Store {
       imageUrls: resolvedImageUrls,
       reviews: resolvedReviews,
       rating: resolvedRating,
+      region: map['region']?.toString(),
     );
   }
 
@@ -119,6 +124,7 @@ class Store {
       'category_tags': categoryTags,
       'image_urls': imageUrls,
       if (reviews != null) 'reviews': reviews,
+      if (region != null) 'region': region,
     };
   }
 }

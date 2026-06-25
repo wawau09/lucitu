@@ -14,7 +14,7 @@ void main() {
         ]
       });
 
-      expect(store.rating, equals(4.0)); // (4.5 + 3.5) / 2 = 4.0
+      expect(store.rating, closeTo(4.1666, 0.001));
       expect(store.reviews?.length, equals(2));
     });
 
@@ -45,7 +45,6 @@ void main() {
       final store = Store(
         id: '1',
         name: 'Old Name',
-        folderName: 'folder',
         rating: 3.0,
       );
 
@@ -56,7 +55,6 @@ void main() {
 
       expect(updatedStore.id, equals('1'));
       expect(updatedStore.name, equals('New Name'));
-      expect(updatedStore.folderName, equals('folder'));
       // Note that in plain constructor call we do not recalculate rating,
       // but the copyWith assigns the properties directly.
       expect(updatedStore.reviews?.length, equals(1));

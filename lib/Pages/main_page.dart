@@ -84,10 +84,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
                   if (_searchQuery.isNotEmpty) {
                     if (_searchQuery.startsWith('#')) {
-                      // # 접두사: 카테고리 태그로만 필터링
+                      // # 접두사: 카테고리 태그 또는 지역 필터링
                       final q = _searchQuery.substring(1).toLowerCase().trim();
                       if (q.isNotEmpty) {
                         stores = stores.where((store) {
+                          // region 매칭
+                          final regionMatch = store.region != null &&
+                              store.region!.toLowerCase().contains(q);
                           // categoryTags 직접 매칭
                           final tagMatch = store.categoryTags.any(
                             (tag) => tag.toLowerCase().contains(q),
@@ -96,16 +99,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           final catMatch = getStoreCategories(store).any(
                             (cat) => cat.label.toLowerCase().contains(q),
                           );
-                          return tagMatch || catMatch;
+                          return regionMatch || tagMatch || catMatch;
                         }).toList();
                       }
                     } else {
-                      // 일반 검색: 카페 이름 + 카테고리 태그
+                      // 일반 검색: 카페 이름 + 카테고리 태그 + 지역
                       final q = _searchQuery.toLowerCase();
                       stores = stores
                           .where(
                             (store) =>
                                 store.name.toLowerCase().contains(q) ||
+                                (store.region != null &&
+                                    store.region!.toLowerCase().contains(q)) ||
                                 store.categoryTags.any(
                                   (tag) => tag.toLowerCase().contains(q),
                                 ),
@@ -221,9 +226,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                store.categoryTags.isNotEmpty
-                                    ? store.categoryTags.take(2).join(' · ')
-                                    : '',
+                                [
+                                  if (store.region != null &&
+                                      store.region!.isNotEmpty)
+                                    store.region!,
+                                  ...store.categoryTags.take(2),
+                                ].join(' · '),
                                 style: GoogleFonts.notoSans(
                                   fontSize: 13,
                                   color: Colors.grey[600],

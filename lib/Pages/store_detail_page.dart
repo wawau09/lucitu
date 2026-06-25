@@ -320,6 +320,19 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             color: Colors.black87,
           ),
         ),
+        if (store.region != null && store.region!.isNotEmpty) ...[
+          const SizedBox(width: 12),
+          const Icon(Icons.location_on, color: Colors.grey, size: 18),
+          const SizedBox(width: 4),
+          Text(
+            store.region!,
+            style: GoogleFonts.notoSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
       ],
     );
   }
