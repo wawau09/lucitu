@@ -118,9 +118,18 @@ class FavoritesListPage extends ConsumerWidget {
             IconButton(
               onPressed: () {
                 if (store.id != null) {
-                  ref.read(favoritesProvider.notifier).toggleFavorite(store.id!);
-                  // 목록 갱신을 위해 favoritesProvider가 변경되면 favoritedStoresProvider도 재호출되도록 설정됨
-                  ref.invalidate(favoritedStoresProvider);
+                  ref
+                      .read(favoritesProvider.notifier)
+                      .toggleFavorite(store.id!)
+                      .catchError((e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('찜 처리 중 오류가 발생했습니다. 다시 시도해 주세요.'),
+                      ),
+                    );
+                  });
+                  // favoritedStoresProvider는 favoritesProvider를 watch하므로
+                  // toggleFavorite 후 state가 변경되면 자동으로 재계산됩니다.
                 }
               },
               icon: const Icon(Icons.favorite, color: Colors.redAccent),

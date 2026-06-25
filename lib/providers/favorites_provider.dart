@@ -52,25 +52,40 @@ class FavoritesNotifier extends StateNotifier<Set<String>> {
 
     final isFavorited = state.contains(storeId);
 
+    // Optimistic UI: 먼저 상태를 즉시 변경
+    if (isFavorited) {
+      state = {...state}..remove(storeId);
+    } else {
+      state = {...state, storeId};
+    }
+
     try {
       if (isFavorited) {
-        // 제거
+        // DB에서 제거
         await _supabase
             .from('favorites')
             .delete()
             .eq('user_id', user.id)
             .eq('store_id', storeId);
-        state = {...state}..remove(storeId);
       } else {
-        // 추가
-        await _supabase.from('favorites').insert({
-          'user_id': user.id,
-          'store_id': storeId,
-        });
-        state = {...state, storeId};
+        // DB에 추가 (upsert로 중복 삽입 오류 방지)
+        await _supabase.from('favorites').upsert(
+          {
+            'user_id': user.id,
+            'store_id': storeId,
+          },
+          onConflict: 'user_id,store_id',
+        );
       }
     } catch (e) {
+      // DB 실패 시 optimistic update 롤백
+      if (isFavorited) {
+        state = {...state, storeId};
+      } else {
+        state = {...state}..remove(storeId);
+      }
       print('찜 토글 실패: $e');
+      rethrow; // UI에서 에러 처리 가능하도록 rethrow
     }
   }
 

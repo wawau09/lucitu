@@ -241,7 +241,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   if (store.id != null) {
                                     ref
                                         .read(favoritesProvider.notifier)
-                                        .toggleFavorite(store.id!);
+                                        .toggleFavorite(store.id!)
+                                        .catchError((e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              '찜 처리 중 오류가 발생했습니다. 다시 시도해 주세요.'),
+                                        ),
+                                      );
+                                    });
                                   }
                                 },
                                 icon: Icon(
