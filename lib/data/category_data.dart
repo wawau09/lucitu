@@ -28,11 +28,24 @@ List<Category> getStoreCategories(Store store) {
     for (final tag in store.categoryTags) {
       final normalizedTag = tag.toLowerCase().trim();
       try {
-        // id 매칭 (영문 id: 'coffee', 'jeonpo' 등)
         final cat = allCategories.firstWhere(
-          (c) =>
-              c.id == normalizedTag ||
-              c.label == tag.trim(), // label 매칭 (한글: '커피', '전포' 등)
+          (c) {
+            // 1. id 매칭 (영문 id)
+            if (c.id == normalizedTag) return true;
+            
+            // 2. label 매칭 (한글)
+            final labelText = c.label.trim();
+            if (labelText == tag.trim()) return true;
+
+            // 3. '/' 로 구분된 다중 키워드 매칭 (예: '유럽/정원', '조용한/카공', '힙/인테리어')
+            if (labelText.contains('/')) {
+              final parts = labelText.split('/').map((s) => s.trim().toLowerCase());
+              final cleanTag = tag.trim().toLowerCase();
+              return parts.any((part) => part.contains(cleanTag) || cleanTag.contains(part));
+            }
+
+            return false;
+          },
         );
         if (!categories.contains(cat)) {
           categories.add(cat);

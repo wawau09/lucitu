@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:placelist/DB/store.dart';
+import 'package:placelist/data/category_data.dart';
 
 void main() {
   group('Store Rating Calculation', () {
@@ -58,6 +59,29 @@ void main() {
       // Note that in plain constructor call we do not recalculate rating,
       // but the copyWith assigns the properties directly.
       expect(updatedStore.reviews?.length, equals(1));
+    });
+
+    test('getStoreCategories splits slash-separated labels and matches correctly', () {
+      final store1 = Store(
+        name: 'Europe Cafe',
+        categoryTags: ['유럽'],
+      );
+      final store2 = Store(
+        name: 'Quiet Cafe',
+        categoryTags: ['카공'],
+      );
+      final store3 = Store(
+        name: 'Other Cafe',
+        categoryTags: ['힙'],
+      );
+
+      final cats1 = getStoreCategories(store1);
+      final cats2 = getStoreCategories(store2);
+      final cats3 = getStoreCategories(store3);
+
+      expect(cats1.map((c) => c.label), contains('유럽/정원'));
+      expect(cats2.map((c) => c.label), contains('조용한/카공'));
+      expect(cats3.map((c) => c.label), contains('힙/인테리어'));
     });
   });
 }
