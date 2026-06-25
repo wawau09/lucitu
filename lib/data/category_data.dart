@@ -48,9 +48,13 @@ List<Category> getStoreCategories(Store store) {
   if (store.categoryTags.isNotEmpty) {
     final categories = <Category>[];
     for (final tag in store.categoryTags) {
+      final normalizedTag = tag.toLowerCase().trim();
       try {
+        // id 매칭 (영문 id: 'coffee', 'jeonpo' 등)
         final cat = allCategories.firstWhere(
-          (c) => c.id == tag.toLowerCase().trim(),
+          (c) =>
+              c.id == normalizedTag ||
+              c.label == tag.trim(), // label 매칭 (한글: '커피', '전포' 등)
         );
         if (!categories.contains(cat)) {
           categories.add(cat);

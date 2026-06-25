@@ -61,7 +61,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     prefixIconConstraints: const BoxConstraints(minWidth: 32),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 11),
-                    hintText: "\uCE74\uD398 \uC774\uB984\uC744 \uAC80\uC0C9\uD574\uBCF4\uC138\uC694",
+                    hintText: "카페 이름 또는 카테고리 검색",
                     hintStyle: GoogleFonts.notoSans(
                       color: Colors.grey,
                       fontSize: 14,
@@ -83,11 +83,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   var stores = List<Store>.from(storesList);
 
                   if (_searchQuery.isNotEmpty) {
+                    final q = _searchQuery.toLowerCase();
                     stores = stores
                         .where(
-                          (store) => store.name
-                              .toLowerCase()
-                              .contains(_searchQuery.toLowerCase()),
+                          (store) =>
+                              store.name.toLowerCase().contains(q) ||
+                              store.categoryTags.any(
+                                (tag) => tag.toLowerCase().contains(q),
+                              ),
                         )
                         .toList();
                   }
