@@ -61,27 +61,33 @@ void main() {
       expect(updatedStore.reviews?.length, equals(1));
     });
 
-    test('getStoreCategories splits slash-separated labels and matches correctly', () {
+    test('getStoreCategories matches categories based on unified keywords mapping', () {
       final store1 = Store(
-        name: 'Europe Cafe',
-        categoryTags: ['유럽'],
+        name: 'Bakery Cafe',
+        categoryTags: ['디저트'],
       );
       final store2 = Store(
         name: 'Quiet Cafe',
         categoryTags: ['카공'],
       );
       final store3 = Store(
-        name: 'Other Cafe',
-        categoryTags: ['힙'],
+        name: 'View Cafe',
+        categoryTags: ['오션뷰'],
+      );
+      final store4 = Store(
+        name: 'Terrace Cafe',
+        categoryTags: ['루프탑'],
       );
 
       final cats1 = getStoreCategories(store1);
       final cats2 = getStoreCategories(store2);
       final cats3 = getStoreCategories(store3);
+      final cats4 = getStoreCategories(store4);
 
-      expect(cats1.map((c) => c.label), contains('유럽/정원'));
-      expect(cats2.map((c) => c.label), contains('조용한/카공'));
-      expect(cats3.map((c) => c.label), contains('힙/인테리어'));
+      expect(cats1.map((c) => c.label), contains('베이커리'));
+      expect(cats2.map((c) => c.label), contains('조용한'));
+      expect(cats3.map((c) => c.label), contains('뷰맛집'));
+      expect(cats4.map((c) => c.label), contains('테라스'));
     });
   });
 }

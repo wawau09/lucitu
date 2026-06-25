@@ -3,12 +3,21 @@ import '../DB/store.dart';
 
 const List<Category> allCategories = [
   Category(id: 'bakery',      label: '베이커리',     group: 'Style'),
-  Category(id: 'coffee',      label: '커피전문',     group: 'Style'),
-  Category(id: 'europe',      label: '유럽/정원',    group: 'Style'),
-  Category(id: 'quiet',       label: '조용한/카공',  group: 'Vibe'),
-  Category(id: 'hip',         label: '힙/인테리어',  group: 'Vibe'),
+  Category(id: 'quiet',       label: '조용한',       group: 'Vibe'),
+  Category(id: 'terrace',     label: '테라스',       group: 'Vibe'),
+  Category(id: 'view',        label: '뷰맛집',       group: 'Vibe'),
+  Category(id: 'parking',     label: '주차가능',     group: 'Vibe'),
   Category(id: 'pet',         label: '애견동반',     group: 'Vibe'),
 ];
+
+const Map<String, List<String>> categoryKeywords = {
+  'bakery': ['베이커리', '빵', '베이글', '도넛', '케이크', '타르트', '쿠키', '파이', '디저트', 'bakery'],
+  'quiet': ['조용', '조용한', '공부', '스터디', '카공', '독서'],
+  'terrace': ['테라스', '루프탑', '야외', '정원', '가든', '테라스석'],
+  'view': ['뷰', '전망', '오션뷰', '마운틴뷰', '경치', '뷰맛집', '바다뷰'],
+  'parking': ['주차', '주차장', '주차가능'],
+  'pet': ['애견', '애견동반', '반려동물', '반려', '펫', 'dog', 'pet'],
+};
 
 /// Groups categories by their group field.
 Map<String, List<Category>> get categoriesByGroup {
@@ -37,11 +46,11 @@ List<Category> getStoreCategories(Store store) {
             final labelText = c.label.trim();
             if (labelText == tag.trim()) return true;
 
-            // 3. '/' 로 구분된 다중 키워드 매칭 (예: '유럽/정원', '조용한/카공', '힙/인테리어')
-            if (labelText.contains('/')) {
-              final parts = labelText.split('/').map((s) => s.trim().toLowerCase());
+            // 3. 키워드 매핑 매칭 (예: '카공' -> '조용한', '루프탑' -> '테라스')
+            final keywords = categoryKeywords[c.id];
+            if (keywords != null) {
               final cleanTag = tag.trim().toLowerCase();
-              return parts.any((part) => part.contains(cleanTag) || cleanTag.contains(part));
+              return keywords.any((kw) => kw.contains(cleanTag) || cleanTag.contains(kw));
             }
 
             return false;
@@ -59,56 +68,18 @@ List<Category> getStoreCategories(Store store) {
 
   // Fallback: name-based heuristics (for data without tags)
   final categories = <Category>[];
-  final name = store.name;
+  final name = store.name.toLowerCase();
 
-  Category? findCat(String id) {
-    try {
-      return allCategories.firstWhere((c) => c.id == id);
-    } catch (_) {
-      return null;
+  for (final cat in allCategories) {
+    final keywords = categoryKeywords[cat.id];
+    if (keywords != null) {
+      final matches = keywords.any((kw) => name.contains(kw));
+      if (matches) {
+        if (!categories.contains(cat)) {
+          categories.add(cat);
+        }
+      }
     }
-  }
-
-  void addCat(String id) {
-    final cat = findCat(id);
-    if (cat != null && !categories.contains(cat)) categories.add(cat);
-  }
-
-  // 베이커리
-  if (name.contains('베이커리') || name.contains('빵') || name.contains('베이글') ||
-      name.contains('도넛') || name.contains('케이크') || name.contains('타르트') ||
-      name.contains('쿠키') || name.contains('파이')) {
-    addCat('bakery');
-  }
-
-  // 커피전문
-  if (name.contains('커피') || name.contains('로스터') || name.contains('에스프레소') ||
-      name.contains('브루') || name.contains('드립')) {
-    addCat('coffee');
-  }
-
-  // 유럽/정원
-  if (name.contains('유럽') || name.contains('프랑스') || name.contains('정원') ||
-      name.contains('가든') || name.contains('식물') || name.contains('빈티지')) {
-    addCat('europe');
-  }
-
-  // 조용한/카공
-  if (name.contains('조용') || name.contains('공부') || name.contains('스터디') ||
-      name.contains('카공') || name.contains('독서')) {
-    addCat('quiet');
-  }
-
-  // 힙/인테리어
-  if (name.contains('힙') || name.contains('인테리어') || name.contains('무드') ||
-      name.contains('감성') || name.contains('포토')) {
-    addCat('hip');
-  }
-
-  // 애견동반
-  if (name.contains('애견') || name.contains('반려') || name.contains('펫') ||
-      name.contains('dog') || name.contains('pet')) {
-    addCat('pet');
   }
 
   return categories;
