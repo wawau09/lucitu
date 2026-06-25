@@ -67,19 +67,27 @@ class Store {
         : double.tryParse(map['rating']?.toString() ?? '');
 
     if (resolvedReviews != null && resolvedReviews.isNotEmpty) {
-      double totalFinal = 0.0;
+      double totalDrink = 0.0;
+      double totalHygiene = 0.0;
+      double totalAtmosphere = 0.0;
       int count = 0;
       for (var rev in resolvedReviews) {
         if (rev is Map) {
-          final val = rev['final'] ?? rev['finalScore'];
-          if (val is num) {
-            totalFinal += val.toDouble();
+          final drink = rev['drink'];
+          final hygiene = rev['hygiene'];
+          final atmosphere = rev['atmosphere'];
+          if (drink is num && hygiene is num && atmosphere is num) {
+            totalDrink += drink.toDouble();
+            totalHygiene += hygiene.toDouble();
+            totalAtmosphere += atmosphere.toDouble();
             count++;
           }
         }
       }
       if (count > 0) {
-        resolvedRating = totalFinal / count;
+        // 음료, 위생, 분위기 3개 평균
+        resolvedRating =
+            (totalDrink + totalHygiene + totalAtmosphere) / (count * 3);
       }
     }
 

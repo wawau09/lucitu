@@ -92,6 +92,9 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                       color: Colors.grey[700],
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  if (store.categoryTags.isNotEmpty)
+                    _buildCategoryChips(store.categoryTags),
                   const SizedBox(height: 32),
                   _buildRatingSection(context, store),
                   const SizedBox(height: 32),
@@ -321,6 +324,33 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
+  Widget _buildCategoryChips(List<String> tags) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: tags.map((tag) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3267A2).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF3267A2).withValues(alpha: 0.25),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            '# $tag',
+            style: GoogleFonts.notoSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF3267A2),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
 
   Widget _buildMapSection(Store store) {
     final lat = store.latitude!;
@@ -622,7 +652,6 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     var drink = 5.0;
     var hygiene = 5.0;
     var atmosphere = 5.0;
-    var finalScore = 5.0;
 
     final pageContext = context;
 
@@ -687,16 +716,45 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                         (val) => setState(() => hygiene = val),
                       ),
                       _buildRatingCategoryRow(
-                        "\uB9E4\uC7A5 \uBD84\uC704\uAE30",
+                        "매장 분위기",
                         atmosphere,
                         (val) => setState(() => atmosphere = val),
                       ),
-                      const Divider(height: 32),
-                      _buildRatingCategoryRow(
-                        "\uCD5C\uC885 \uC810\uC218",
-                        finalScore,
-                        (val) => setState(() => finalScore = val),
-                        isFinal: true,
+                      const SizedBox(height: 12),
+                      // 자동 계산된 평균 점수 미리보기
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3267A2).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "최종 평점 (자동 계산)",
+                              style: GoogleFonts.notoSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF3267A2),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 18),
+                                const SizedBox(width: 4),
+                                Text(
+                                  ((drink + hygiene + atmosphere) / 3).toStringAsFixed(1),
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF3267A2),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 18),
                       Row(
@@ -736,6 +794,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                   ),
                                 );
 
+                                final autoFinal = (drink + hygiene + atmosphere) / 3;
                                 try {
                                   await ref
                                       .read(storesProvider.notifier)
@@ -744,7 +803,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                         drink: drink,
                                         hygiene: hygiene,
                                         atmosphere: atmosphere,
-                                        finalScore: finalScore,
+                                        finalScore: autoFinal,
                                       );
                                 } on RatingSubmissionException catch (e) {
                                   if (!mounted) return;
@@ -829,9 +888,8 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
   Widget _buildRatingCategoryRow(
     String title,
     double rating,
-    ValueChanged<double> onRatingChanged, {
-    bool isFinal = false,
-  }) {
+    ValueChanged<double> onRatingChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -840,9 +898,9 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
           Text(
             title,
             style: GoogleFonts.notoSans(
-              fontSize: isFinal ? 16 : 14,
-              fontWeight: isFinal ? FontWeight.bold : FontWeight.w500,
-              color: isFinal ? Colors.black87 : Colors.grey[800],
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[800],
             ),
           ),
           Row(
@@ -857,7 +915,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                     starValue <= rating ? Icons.star : Icons.star_border,
                     color:
                         starValue <= rating ? Colors.amber : Colors.grey[300],
-                    size: isFinal ? 28 : 24,
+                    size: 24,
                   ),
                 ),
               );
@@ -898,7 +956,6 @@ class _RatingStats {
     var drinkSum = 0.0;
     var hygieneSum = 0.0;
     var atmosphereSum = 0.0;
-    var finalSum = 0.0;
     var count = 0;
 
     for (final review in reviews) {
@@ -906,7 +963,6 @@ class _RatingStats {
       drinkSum += _readRating(review['drink']);
       hygieneSum += _readRating(review['hygiene']);
       atmosphereSum += _readRating(review['atmosphere']);
-      finalSum += _readRating(review['final'] ?? review['finalScore']);
       count++;
     }
 
@@ -920,11 +976,15 @@ class _RatingStats {
       );
     }
 
+    final dAvg = drinkSum / count;
+    final hAvg = hygieneSum / count;
+    final aAvg = atmosphereSum / count;
+
     return _RatingStats(
-      drinkAvg: drinkSum / count,
-      hygieneAvg: hygieneSum / count,
-      atmosphereAvg: atmosphereSum / count,
-      finalAvg: finalSum / count,
+      drinkAvg: dAvg,
+      hygieneAvg: hAvg,
+      atmosphereAvg: aAvg,
+      finalAvg: (dAvg + hAvg + aAvg) / 3, // 3개 평균으로 자동 계산
       count: count,
     );
   }
