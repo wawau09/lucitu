@@ -2,34 +2,12 @@ import '../models/category_model.dart';
 import '../DB/store.dart';
 
 const List<Category> allCategories = [
-  // Area
-  Category(id: 'jeonpo', label: '전포', group: 'Area'),
-  Category(id: 'gwangalli', label: '광안리', group: 'Area'),
-  Category(id: 'haeundae', label: '해운대', group: 'Area'),
-
-  // Food/Drink
-  Category(id: 'coffee', label: '커피', group: 'Food/Drink'),
-  Category(id: 'juice', label: '주스/스무디', group: 'Food/Drink'),
-  Category(id: 'dessert', label: '디저트', group: 'Food/Drink'),
-  Category(id: 'brunch', label: '브런치', group: 'Food/Drink'),
-
-  // Concept/Style
-  Category(id: 'europe', label: '유럽풍', group: 'Concept/Style'),
-  Category(id: 'vintage', label: '빈티지', group: 'Concept/Style'),
-  Category(id: 'garden', label: '정원', group: 'Concept/Style'),
-
-  // View
-  Category(id: 'ocean', label: '오션뷰', group: 'View'),
-  Category(id: 'mountain', label: '마운틴뷰', group: 'View'),
-  Category(id: 'rooftop', label: '루프탑', group: 'View'),
-
-  // Type
-  Category(id: 'franchise', label: '프랜차이즈', group: 'Type'),
-  Category(id: 'independent', label: '개인', group: 'Type'),
-
-  // Purpose
-  Category(id: 'value', label: '가성비', group: 'Purpose'),
-  Category(id: 'solo', label: '혼카페', group: 'Purpose'),
+  Category(id: 'bakery',      label: '베이커리',     group: 'Style'),
+  Category(id: 'coffee',      label: '커피전문',     group: 'Style'),
+  Category(id: 'europe',      label: '유럽/정원',    group: 'Style'),
+  Category(id: 'quiet',       label: '조용한/카공',  group: 'Vibe'),
+  Category(id: 'hip',         label: '힙/인테리어',  group: 'Vibe'),
+  Category(id: 'pet',         label: '애견동반',     group: 'Vibe'),
 ];
 
 /// Groups categories by their group field.
@@ -83,46 +61,42 @@ List<Category> getStoreCategories(Store store) {
     if (cat != null && !categories.contains(cat)) categories.add(cat);
   }
 
-  // 1. Location / Area
-  if (name.contains('전포')) addCat('jeonpo');
-  if (name.contains('광안')) addCat('gwangalli');
-  if (name.contains('해운대') || name.contains('해리단')) addCat('haeundae');
+  // 베이커리
+  if (name.contains('베이커리') || name.contains('빵') || name.contains('베이글') ||
+      name.contains('도넛') || name.contains('케이크') || name.contains('타르트') ||
+      name.contains('쿠키') || name.contains('파이')) {
+    addCat('bakery');
+  }
 
-  // 2. Food/Drink
-  if (name.contains('커피') || name.contains('카페') || name.contains('로스터리') || name.contains('에스프레소')) {
+  // 커피전문
+  if (name.contains('커피') || name.contains('로스터') || name.contains('에스프레소') ||
+      name.contains('브루') || name.contains('드립')) {
     addCat('coffee');
   }
-  if (name.contains('주스') || name.contains('스무디') || name.contains('에이드') || name.contains('티')) {
-    addCat('juice');
-  }
-  if (name.contains('디저트') || name.contains('베이글') || name.contains('쿠키') || name.contains('도넛') ||
-      name.contains('케이크') || name.contains('베이커리') || name.contains('젤라또') || name.contains('타르트')) {
-    addCat('dessert');
-  }
-  if (name.contains('브런치') || name.contains('샌드위치') || name.contains('바게트')) {
-    addCat('brunch');
+
+  // 유럽/정원
+  if (name.contains('유럽') || name.contains('프랑스') || name.contains('정원') ||
+      name.contains('가든') || name.contains('식물') || name.contains('빈티지')) {
+    addCat('europe');
   }
 
-  // 3. Concept/Style
-  if (name.contains('유럽') || name.contains('프랑스')) addCat('europe');
-  if (name.contains('빈티지')) addCat('vintage');
-  if (name.contains('정원') || name.contains('가든') || name.contains('식물')) addCat('garden');
-
-  // 4. View
-  if (name.contains('오션') || name.contains('바다')) addCat('ocean');
-  if (name.contains('마운틴') || name.contains('산')) addCat('mountain');
-  if (name.contains('루프탑') || name.contains('테라스')) addCat('rooftop');
-
-  // 5. Type
-  if (name.contains('프랜차이즈') || name.contains('스타벅스') || name.contains('컴포즈') || name.contains('메가')) {
-    addCat('franchise');
-  } else {
-    addCat('independent');
+  // 조용한/카공
+  if (name.contains('조용') || name.contains('공부') || name.contains('스터디') ||
+      name.contains('카공') || name.contains('독서')) {
+    addCat('quiet');
   }
 
-  // 6. Purpose
-  if (name.contains('가성비')) addCat('value');
-  if (name.contains('혼카페') || name.contains('공부') || name.contains('스터디')) addCat('solo');
+  // 힙/인테리어
+  if (name.contains('힙') || name.contains('인테리어') || name.contains('무드') ||
+      name.contains('감성') || name.contains('포토')) {
+    addCat('hip');
+  }
+
+  // 애견동반
+  if (name.contains('애견') || name.contains('반려') || name.contains('펫') ||
+      name.contains('dog') || name.contains('pet')) {
+    addCat('pet');
+  }
 
   return categories;
 }

@@ -61,7 +61,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     prefixIconConstraints: const BoxConstraints(minWidth: 32),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 11),
-                    hintText: "카페 이름 또는 카테고리 검색",
+                    hintText: "카페 이름 검색 또는 #카테고리",
                     hintStyle: GoogleFonts.notoSans(
                       color: Colors.grey,
                       fontSize: 14,
@@ -83,16 +83,35 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   var stores = List<Store>.from(storesList);
 
                   if (_searchQuery.isNotEmpty) {
-                    final q = _searchQuery.toLowerCase();
-                    stores = stores
-                        .where(
-                          (store) =>
-                              store.name.toLowerCase().contains(q) ||
-                              store.categoryTags.any(
-                                (tag) => tag.toLowerCase().contains(q),
-                              ),
-                        )
-                        .toList();
+                    if (_searchQuery.startsWith('#')) {
+                      // # 접두사: 카테고리 태그로만 필터링
+                      final q = _searchQuery.substring(1).toLowerCase().trim();
+                      if (q.isNotEmpty) {
+                        stores = stores.where((store) {
+                          // categoryTags 직접 매칭
+                          final tagMatch = store.categoryTags.any(
+                            (tag) => tag.toLowerCase().contains(q),
+                          );
+                          // allCategories label 매칭 후 store의 category와 비교
+                          final catMatch = getStoreCategories(store).any(
+                            (cat) => cat.label.toLowerCase().contains(q),
+                          );
+                          return tagMatch || catMatch;
+                        }).toList();
+                      }
+                    } else {
+                      // 일반 검색: 카페 이름 + 카테고리 태그
+                      final q = _searchQuery.toLowerCase();
+                      stores = stores
+                          .where(
+                            (store) =>
+                                store.name.toLowerCase().contains(q) ||
+                                store.categoryTags.any(
+                                  (tag) => tag.toLowerCase().contains(q),
+                                ),
+                          )
+                          .toList();
+                    }
                   }
 
                   if (selectedCategories.isNotEmpty) {
