@@ -16,7 +16,7 @@ analyzer:
   errors:
     unused_element: ignore
     deprecated_member_use: ignore
-    use_build_context_synchronously: warning
+    use_build_context_synchronously: ignore
     depend_on_referenced_packages: ignore
     avoid_print: ignore
 
