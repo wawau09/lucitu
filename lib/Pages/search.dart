@@ -1311,7 +1311,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       titleController.dispose();
       startTimeController.dispose();
       endTimeController.dispose();
-      return;
     }
   }
 
@@ -2739,7 +2738,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       titleController.dispose();
       startTimeController.dispose();
       endTimeController.dispose();
-      return;
     }
   }
   Future<void> _showEditItemDialog(PlanItem item, String planId) async {
@@ -3227,8 +3225,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             children: [
               if (item.startTime != null)
                 Text(
-                  '시간: ${_formatItemTime(item.startTime)}' +
-                      (item.endTime != null ? ' ~ ${_formatItemTime(item.endTime)}' : ''),
+                  "시간: ${_formatItemTime(item.startTime)}${item.endTime != null ? ' ~ ${_formatItemTime(item.endTime)}' : ''}",
                   style: const TextStyle(fontSize: 14),
                 ),
             ],

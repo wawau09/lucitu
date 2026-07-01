@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
-class MapPage extends StatefulWidget{
+class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
   @override
@@ -11,14 +11,11 @@ class MapPage extends StatefulWidget{
 }
 
 class Map extends State<MapPage> {
-   @override
+  @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
       return const Center(
-        child: Text(
-          '웹에서는 네이버 지도를 지원하지 않습니다.',
-          style: TextStyle(fontSize: 16),
-        ),
+        child: Text('웹에서는 네이버 지도를 지원하지 않습니다.', style: TextStyle(fontSize: 16)),
       );
     }
 
@@ -28,9 +25,9 @@ class Map extends State<MapPage> {
     return Scaffold(
       body: NaverMap(
         options: const NaverMapViewOptions(
-          indoorEnable: true,             // 실내 맵 사용 가능 여부 설정
-          locationButtonEnable: false,    // 위치 버튼 표시 여부 설정
-          consumeSymbolTapEvents: true,  // 심볼 탭 이벤트 소비 여부 설정
+          indoorEnable: true, // 실내 맵 사용 가능 여부 설정
+          locationButtonEnable: false, // 위치 버튼 표시 여부 설정
+          consumeSymbolTapEvents: true, // 심볼 탭 이벤트 소비 여부 설정
           initialCameraPosition: NCameraPosition(
             target: NLatLng(35.1, 128.95),
             zoom: 12,
@@ -38,24 +35,33 @@ class Map extends State<MapPage> {
             tilt: 0,
           ),
         ),
-        onMapReady: (controller) async {                // 지도 준비 완료 시 호출되는 콜백 함수
-          mapControllerCompleter.complete(controller);  // Completer에 지도 컨트롤러 완료 신호 전송
+        onMapReady: (controller) async {
+          // 지도 준비 완료 시 호출되는 콜백 함수
+          mapControllerCompleter.complete(
+            controller,
+          ); // Completer에 지도 컨트롤러 완료 신호 전송
           final marker = NMarker(
-              id: '0',
-              size: Size(30, 40),
-              position: NLatLng(35.10658, 128.9663));
+            id: '0',
+            size: Size(30, 40),
+            position: NLatLng(35.10658, 128.9663),
+          );
           final marker1 = NMarker(
-              id: '1',
-              position: NLatLng(35.15571, 129.0596));
+            id: '1',
+            position: NLatLng(35.15571, 129.0596),
+          );
           controller.addOverlayAll({marker, marker1});
-          
-          final OnMarkerInfoMap =
-              NInfoWindow.onMarker(id: marker.info.id, text: "아트몰링");
-          marker.openInfoWindow(OnMarkerInfoMap);
 
-          final OnMarkerInfo =
-              NInfoWindow.onMarker(id: marker1.info.id, text: "내공초밥");
-          marker1.openInfoWindow(OnMarkerInfo);
+          final onMarkerInfoMap = NInfoWindow.onMarker(
+            id: marker.info.id,
+            text: "아트몰링",
+          );
+          marker.openInfoWindow(onMarkerInfoMap);
+
+          final onMarkerInfo = NInfoWindow.onMarker(
+            id: marker1.info.id,
+            text: "내공초밥",
+          );
+          marker1.openInfoWindow(onMarkerInfo);
         },
       ),
     );
