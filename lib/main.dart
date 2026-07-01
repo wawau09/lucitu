@@ -138,17 +138,14 @@ class _MyAppState extends ConsumerState<MyApp> {
             tint: const Color(0xFF3267A2),
             items: const [
               CNTabBarItem(
-                label: '일정',
                 icon: CNSymbol('calendar'),
                 activeIcon: CNSymbol('calendar'),
               ),
               CNTabBarItem(
-                label: '홈',
                 icon: CNSymbol('house'),
                 activeIcon: CNSymbol('house.fill'),
               ),
               CNTabBarItem(
-                label: '계정',
                 icon: CNSymbol('person'),
                 activeIcon: CNSymbol('person.fill'),
               ),
