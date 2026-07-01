@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4 # v3에서 v4로 업데이트
+      - uses: actions/checkout@v4
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -19,7 +19,8 @@ jobs:
         run: flutter pub get
 
       - name: Build iOS (No Sign)
-        run: flutter build ios --config-only
+        # ❌ --config-only 대신 ⭕ --no-codesign 코드로 전체 컴파일을 진행합니다.
+        run: flutter build ios --no-codesign --release
 
       - name: Build IPA
         run: |
@@ -28,7 +29,7 @@ jobs:
           zip -r Runner.ipa Payload
 
       - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v4 # ❌ v3에서 ⭕ v4로 업데이트
+        uses: actions/upload-artifact@v4
         with:
           name: ios-app
           path: Runner.ipa
