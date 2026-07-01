@@ -156,37 +156,66 @@ class _MyAppState extends ConsumerState<MyApp> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: BottomNavigationBar(
-                  currentIndex: currentIndex,
-                  showSelectedLabels: false,
-                  showUnselectedLabels: false,
-                  backgroundColor: Colors.transparent,
-                  selectedItemColor: const Color(0xFF3267A2),
-                  unselectedItemColor: Colors.black.withValues(alpha: 0.3),
-                  iconSize: 24,
-                  elevation: 0,
-                  type: BottomNavigationBarType.fixed,
-                  onTap: (index) {
-                    ref.read(navigationProvider.notifier).setIndex(index);
-                  },
-                  items: const [
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.event_note_rounded),
-                      label: '\uC77C\uC815',
+              child: PlatformVersion.shouldUseNativeGlass
+                  ? BottomNavigationBar(
+                      currentIndex: currentIndex,
+                      showSelectedLabels: false,
+                      showUnselectedLabels: false,
+                      backgroundColor: Colors.transparent,
+                      selectedItemColor: const Color(0xFF3267A2),
+                      unselectedItemColor: Colors.black.withValues(alpha: 0.3),
+                      iconSize: 24,
+                      elevation: 0,
+                      type: BottomNavigationBarType.fixed,
+                      onTap: (index) {
+                        ref.read(navigationProvider.notifier).setIndex(index);
+                      },
+                      items: const [
+                        BottomNavigationBarItem(
+                          icon: Icon(Icons.event_note_rounded),
+                          label: '\uC77C\uC815',
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Icon(Icons.home_rounded),
+                          label: 'Home',
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Icon(Icons.person_rounded),
+                          label: 'Account',
+                        ),
+                      ],
+                    )
+                  : BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: BottomNavigationBar(
+                        currentIndex: currentIndex,
+                        showSelectedLabels: false,
+                        showUnselectedLabels: false,
+                        backgroundColor: Colors.transparent,
+                        selectedItemColor: const Color(0xFF3267A2),
+                        unselectedItemColor: Colors.black.withValues(alpha: 0.3),
+                        iconSize: 24,
+                        elevation: 0,
+                        type: BottomNavigationBarType.fixed,
+                        onTap: (index) {
+                          ref.read(navigationProvider.notifier).setIndex(index);
+                        },
+                        items: const [
+                          BottomNavigationBarItem(
+                            icon: Icon(Icons.event_note_rounded),
+                            label: '\uC77C\uC815',
+                          ),
+                          BottomNavigationBarItem(
+                            icon: Icon(Icons.home_rounded),
+                            label: 'Home',
+                          ),
+                          BottomNavigationBarItem(
+                            icon: Icon(Icons.person_rounded),
+                            label: 'Account',
+                          ),
+                        ],
+                      ),
                     ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.home_rounded),
-                      label: 'Home',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.person_rounded),
-                      label: 'Account',
-                    ),
-                  ],
-                ),
-              ),
             ),
           ).liquidGlass(
             effect: CNGlassEffect.regular,
