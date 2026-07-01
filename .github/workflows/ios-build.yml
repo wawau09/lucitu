@@ -10,7 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ➔ 구버전 Xcode가 잡히는 문제를 해결하기 위해 Xcode 16 버전을 명시적으로 강제 지정합니다.
       - name: Set up Xcode 16
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -21,8 +20,15 @@ jobs:
         with:
           channel: 'stable'
 
+      # ➔ [추가] flutter_naver_map의 SPM 문법 에러를 우회하기 위해 SPM 기능을 강제로 비활성화합니다.
+      - name: Disable Swift Package Manager
+        run: flutter config --no-swift-package-manager
+
+      # 만약 로컬 Podfile이 꼬여있을 수 있으므로 안전하게 clean 후 진행합니다.
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter clean
+          flutter pub get
 
       - name: Build iOS (No Sign)
         run: flutter build ios --no-codesign --release
