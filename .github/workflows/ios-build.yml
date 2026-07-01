@@ -10,6 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+          # 1. 플러터 기본 세팅
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -18,6 +19,36 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # 2. 플러터가 파일들을 13.0 템플릿으로 '초기화(Upgrading)' 하도록 먼저 실행합니다.
+      - name: Run Flutter Config to Trigger Migration
+        run: flutter build ios --config-only
+
+      # 3. 초기화가 끝나자마자 모든 타겟 설정을 iOS 18.0으로 강제 덮어씁니다.
+      - name: Force iOS 18.0 Deployment Target After Migration
+        run: |
+          # project.pbxproj 파일 수정
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 18.0/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 18.0/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 15.0/IPHONEOS_DEPLOYMENT_TARGET = 18.0/g' ios/Runner.xcodeproj/project.pbxproj
+          
+          # Podfile 파일 수정 (기본 플랫폼 및 내부 플러그인 타겟을 전부 18.0으로 주입)
+          sed -i '' "s/platform :ios, '13.0'/platform :ios, '18.0'/g" ios/Podfile
+          sed -i '' "s/platform :ios, '14.0'/platform :ios, '18.0'/g" ios/Podfile
+          sed -i '' "s/platform :ios, '15.0'/platform :ios, '18.0'/g" ios/Podfile
+          sed -i '' 's/flutter_additional_ios_build_settings(target)/flutter_additional_ios_build_settings(target); target.build_configurations.each { |c| c.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "18.0" }/g' ios/Podfile
+          
+          # AppFrameworkInfo 파일 수정
+          if [ -f ios/Flutter/AppFrameworkInfo.plist ]; then
+            sed -i '' 's/<string>13.0<\/string>/<string>18.0<\/string>/g' ios/Flutter/AppFrameworkInfo.plist
+          fi
+
+      # 4. 개조된 Podfile 설정을 외부 플러그인(cupertino_native 등)에 반영하기 위해 코코아팟 수동 새로고침
+      - name: Refresh Pods with iOS 18.0
+        run: |
+          cd ios
+          pod install --repo-update
+
+      # 5. 플러터는 이미 파일이 최신화(마이그레이션 완료)되었다고 판단하므로, 덮어쓰기 없이 18.0 설정 그대로 컴파일을 시작합니다.
       - name: Build iOS (No Sign)
         run: flutter build ios --no-codesign --release
 
