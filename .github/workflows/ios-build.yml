@@ -10,11 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ➔ 구버전(16.x) 혼선을 막기 위해 Xcode 26.3 버전을 명시적으로 지정합니다.
-      - name: Set up Xcode 26.3
+      # ➔ 구버전 혼선을 막기 위해 Xcode 안정판 버전을 지정합니다.
+      - name: Set up Latest Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '26.3'
+          xcode-version: 'latest-stable'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2

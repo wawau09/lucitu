@@ -6,9 +6,13 @@
 	<string>이 앱은 로컬 네트워크에서 디버깅 정보를 전송하기 위해 네트워크를 사용합니다.</string>
 	<key>NMFClientId</key>
 	<string>lpx588w5up</string>
+	<key>NMFNcpKeyId</key>
+	<string>lpx588w5up</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>위치 정보를 사용하려면 권한이 필요합니다.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
+	<string>위치 정보를 사용하려면 권한이 필요합니다.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>위치 정보를 사용하려면 권한이 필요합니다.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
