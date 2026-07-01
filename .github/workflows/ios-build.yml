@@ -6,14 +6,10 @@ on:
 
 jobs:
   build:
-    # ❌ macos-latest 대신 ⭕ macos-14 또는 macos-15 지정 (최신 Xcode 환경 확보)
-    runs-on: macos-14
+    # 안정적인 최신 빌드 환경인 macos-15 지정
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-
-      # iOS 18 컴파일을 위해 Xcode 16 이상 버전으로 고정합니다.
-      - name: Set up Xcode version
-        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
