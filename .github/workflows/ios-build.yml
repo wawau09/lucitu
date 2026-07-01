@@ -20,12 +20,11 @@ jobs:
         with:
           channel: 'stable'
 
-      # ➔ [추가] flutter_naver_map의 SPM 문법 에러를 우회하기 위해 SPM 기능을 강제로 비활성화합니다.
+      # ➔ 정확한 명칭인 '--no-enable-swift-package-manager'로 수정했습니다.
       - name: Disable Swift Package Manager
-        run: flutter config --no-swift-package-manager
+        run: flutter config --no-enable-swift-package-manager
 
-      # 만약 로컬 Podfile이 꼬여있을 수 있으므로 안전하게 clean 후 진행합니다.
-      - name: Install dependencies
+      - name: Clear Cache & Install dependencies
         run: |
           flutter clean
           flutter pub get
