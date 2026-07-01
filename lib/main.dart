@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -133,114 +132,31 @@ class _MyAppState extends ConsumerState<MyApp> {
           extendBody: true,
           backgroundColor: Colors.white,
           body: IndexedStack(index: currentIndex, children: screens),
-          bottomNavigationBar: _buildBottomBar(currentIndex, ref),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomBar(int currentIndex, WidgetRef ref) {
-    final tabBar = _buildCustomTabBar(currentIndex, ref);
-
-    if (PlatformVersion.shouldUseNativeGlass) {
-      // 네이티브 Liquid Glass:
-      // margin을 liquidGlass() 바깥에 두어야 glass가 올바른 영역에 그려짐
-      final glassBar = SizedBox(
-        height: 68,
-        child: tabBar,
-      ).liquidGlass(
-        effect: CNGlassEffect.regular,
-        shape: CNGlassEffectShape.capsule,
-      );
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(60, 0, 60, 32),
-        child: glassBar,
-      );
-    } else {
-      // 비네이티브 폴백: BackdropFilter + 반투명 박스
-      return Container(
-        margin: const EdgeInsets.fromLTRB(60, 0, 60, 32),
-        height: 68,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(34),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(34),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(34),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  width: 1.0,
-                ),
+          bottomNavigationBar: CNTabBar(
+            currentIndex: currentIndex,
+            onTap: (index) => ref.read(navigationProvider.notifier).setIndex(index),
+            tint: const Color(0xFF3267A2),
+            items: const [
+              CNTabBarItem(
+                label: '일정',
+                icon: CNSymbol('calendar'),
+                activeIcon: CNSymbol('calendar'),
               ),
-              child: tabBar,
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
-  Widget _buildCustomTabBar(int currentIndex, WidgetRef ref) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildTabIcon(
-          icon: Icons.event_note_rounded,
-          index: 0,
-          currentIndex: currentIndex,
-          ref: ref,
-        ),
-        _buildTabIcon(
-          icon: Icons.home_rounded,
-          index: 1,
-          currentIndex: currentIndex,
-          ref: ref,
-        ),
-        _buildTabIcon(
-          icon: Icons.person_rounded,
-          index: 2,
-          currentIndex: currentIndex,
-          ref: ref,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTabIcon({
-    required IconData icon,
-    required int index,
-    required int currentIndex,
-    required WidgetRef ref,
-  }) {
-    final isSelected = currentIndex == index;
-    return GestureDetector(
-      onTap: () => ref.read(navigationProvider.notifier).setIndex(index),
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 72,
-        height: 68,
-        child: Center(
-          child: Icon(
-            icon,
-            size: 30,
-            color: isSelected
-                ? const Color(0xFF3267A2)
-                : Colors.black.withValues(alpha: 0.35),
+              CNTabBarItem(
+                label: '홈',
+                icon: CNSymbol('house'),
+                activeIcon: CNSymbol('house.fill'),
+              ),
+              CNTabBarItem(
+                label: '계정',
+                icon: CNSymbol('person'),
+                activeIcon: CNSymbol('person.fill'),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 }
+
