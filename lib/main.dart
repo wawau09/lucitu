@@ -121,6 +121,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
+      navigatorObservers: [CNTabBarRouteObserver()],
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: Colors.white,
@@ -132,44 +133,63 @@ class _MyAppState extends ConsumerState<MyApp> {
           extendBody: true,
           backgroundColor: Colors.white,
           body: IndexedStack(index: currentIndex, children: screens),
-          bottomNavigationBar: Container(
-            margin: const EdgeInsets.fromLTRB(72, 0, 72, 28),
-            height: 64,
-            decoration: BoxDecoration(
-              color: PlatformVersion.shouldUseNativeGlass
-                  ? Colors.transparent
-                  : Colors.white.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: PlatformVersion.shouldUseNativeGlass
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
-              child: PlatformVersion.shouldUseNativeGlass
-                  ? _buildCustomTabBar(currentIndex, ref)
-                  : BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: _buildCustomTabBar(currentIndex, ref),
-                    ),
-            ),
-          ).liquidGlass(
-            effect: CNGlassEffect.regular,
-            shape: CNGlassEffectShape.capsule,
-          ),
+          bottomNavigationBar: _buildBottomBar(currentIndex, ref),
         ),
       ),
     );
+  }
+
+  Widget _buildBottomBar(int currentIndex, WidgetRef ref) {
+    final tabBar = _buildCustomTabBar(currentIndex, ref);
+
+    if (PlatformVersion.shouldUseNativeGlass) {
+      // 네이티브 Liquid Glass:
+      // margin을 liquidGlass() 바깥에 두어야 glass가 올바른 영역에 그려짐
+      final glassBar = SizedBox(
+        height: 68,
+        child: tabBar,
+      ).liquidGlass(
+        effect: CNGlassEffect.regular,
+        shape: CNGlassEffectShape.capsule,
+      );
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(60, 0, 60, 32),
+        child: glassBar,
+      );
+    } else {
+      // 비네이티브 폴백: BackdropFilter + 반투명 박스
+      return Container(
+        margin: const EdgeInsets.fromLTRB(60, 0, 60, 32),
+        height: 68,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(34),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(34),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  width: 1.0,
+                ),
+              ),
+              child: tabBar,
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildCustomTabBar(int currentIndex, WidgetRef ref) {
@@ -208,14 +228,17 @@ class _MyAppState extends ConsumerState<MyApp> {
     return GestureDetector(
       onTap: () => ref.read(navigationProvider.notifier).setIndex(index),
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 64,
-        height: 64,
-        alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 32,
-          color: isSelected ? const Color(0xFF3267A2) : Colors.black.withValues(alpha: 0.3),
+      child: SizedBox(
+        width: 72,
+        height: 68,
+        child: Center(
+          child: Icon(
+            icon,
+            size: 30,
+            color: isSelected
+                ? const Color(0xFF3267A2)
+                : Colors.black.withValues(alpha: 0.35),
+          ),
         ),
       ),
     );
