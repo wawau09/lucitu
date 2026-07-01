@@ -133,13 +133,13 @@ class _MyAppState extends ConsumerState<MyApp> {
           backgroundColor: Colors.white,
           body: IndexedStack(index: currentIndex, children: screens),
           bottomNavigationBar: Container(
-            margin: const EdgeInsets.fromLTRB(54, 0, 54, 28),
-            height: 60,
+            margin: const EdgeInsets.fromLTRB(72, 0, 72, 28),
+            height: 64,
             decoration: BoxDecoration(
               color: PlatformVersion.shouldUseNativeGlass
                   ? Colors.transparent
                   : Colors.white.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(32),
               border: Border.all(
                 color: PlatformVersion.shouldUseNativeGlass
                     ? Colors.white.withValues(alpha: 0.15)
@@ -155,73 +155,67 @@ class _MyAppState extends ConsumerState<MyApp> {
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(32),
               child: PlatformVersion.shouldUseNativeGlass
-                  ? BottomNavigationBar(
-                      currentIndex: currentIndex,
-                      showSelectedLabels: false,
-                      showUnselectedLabels: false,
-                      backgroundColor: Colors.transparent,
-                      selectedItemColor: const Color(0xFF3267A2),
-                      unselectedItemColor: Colors.black.withValues(alpha: 0.3),
-                      iconSize: 24,
-                      elevation: 0,
-                      type: BottomNavigationBarType.fixed,
-                      onTap: (index) {
-                        ref.read(navigationProvider.notifier).setIndex(index);
-                      },
-                      items: const [
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.event_note_rounded),
-                          label: '\uC77C\uC815',
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.home_rounded),
-                          label: 'Home',
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.person_rounded),
-                          label: 'Account',
-                        ),
-                      ],
-                    )
+                  ? _buildCustomTabBar(currentIndex, ref)
                   : BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: BottomNavigationBar(
-                        currentIndex: currentIndex,
-                        showSelectedLabels: false,
-                        showUnselectedLabels: false,
-                        backgroundColor: Colors.transparent,
-                        selectedItemColor: const Color(0xFF3267A2),
-                        unselectedItemColor: Colors.black.withValues(alpha: 0.3),
-                        iconSize: 24,
-                        elevation: 0,
-                        type: BottomNavigationBarType.fixed,
-                        onTap: (index) {
-                          ref.read(navigationProvider.notifier).setIndex(index);
-                        },
-                        items: const [
-                          BottomNavigationBarItem(
-                            icon: Icon(Icons.event_note_rounded),
-                            label: '\uC77C\uC815',
-                          ),
-                          BottomNavigationBarItem(
-                            icon: Icon(Icons.home_rounded),
-                            label: 'Home',
-                          ),
-                          BottomNavigationBarItem(
-                            icon: Icon(Icons.person_rounded),
-                            label: 'Account',
-                          ),
-                        ],
-                      ),
+                      child: _buildCustomTabBar(currentIndex, ref),
                     ),
             ),
           ).liquidGlass(
             effect: CNGlassEffect.regular,
-            shape: CNGlassEffectShape.rect,
-            cornerRadius: 30.0,
+            shape: CNGlassEffectShape.capsule,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomTabBar(int currentIndex, WidgetRef ref) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildTabIcon(
+          icon: Icons.event_note_rounded,
+          index: 0,
+          currentIndex: currentIndex,
+          ref: ref,
+        ),
+        _buildTabIcon(
+          icon: Icons.home_rounded,
+          index: 1,
+          currentIndex: currentIndex,
+          ref: ref,
+        ),
+        _buildTabIcon(
+          icon: Icons.person_rounded,
+          index: 2,
+          currentIndex: currentIndex,
+          ref: ref,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabIcon({
+    required IconData icon,
+    required int index,
+    required int currentIndex,
+    required WidgetRef ref,
+  }) {
+    final isSelected = currentIndex == index;
+    return GestureDetector(
+      onTap: () => ref.read(navigationProvider.notifier).setIndex(index),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 64,
+        height: 64,
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 32,
+          color: isSelected ? const Color(0xFF3267A2) : Colors.black.withValues(alpha: 0.3),
         ),
       ),
     );
