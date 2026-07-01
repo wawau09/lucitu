@@ -20,14 +20,15 @@ jobs:
         with:
           channel: 'stable'
 
-      # ➔ 정확한 명칭인 '--no-enable-swift-package-manager'로 수정했습니다.
       - name: Disable Swift Package Manager
         run: flutter config --no-enable-swift-package-manager
 
+      # ➔ 꼬여있는 Podfile.lock을 삭제하여 최신 NMapsMap(3.23.0) 버전을 강제로 갱신하도록 설정했습니다.
       - name: Clear Cache & Install dependencies
         run: |
           flutter clean
           flutter pub get
+          rm -f ios/Podfile.lock
 
       - name: Build iOS (No Sign)
         run: flutter build ios --no-codesign --release
