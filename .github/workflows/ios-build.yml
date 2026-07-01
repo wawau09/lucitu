@@ -6,9 +6,14 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # ❌ macos-latest 대신 ⭕ macos-14 또는 macos-15 지정 (최신 Xcode 환경 확보)
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
+
+      # iOS 18 컴파일을 위해 Xcode 16 이상 버전으로 고정합니다.
+      - name: Set up Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -19,7 +24,6 @@ jobs:
         run: flutter pub get
 
       - name: Build iOS (No Sign)
-        # ❌ --config-only 대신 ⭕ --no-codesign 코드로 전체 컴파일을 진행합니다.
         run: flutter build ios --no-codesign --release
 
       - name: Build IPA
