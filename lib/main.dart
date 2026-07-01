@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:cupertino_native_better/cupertino_native_better.dart';
 import 'supabase_config.dart';
 import 'package:placelist/Pages/account.dart';
 import 'package:placelist/Pages/search.dart';
@@ -135,10 +136,14 @@ class _MyAppState extends ConsumerState<MyApp> {
             margin: const EdgeInsets.fromLTRB(54, 0, 54, 28),
             height: 60,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.25),
+              color: PlatformVersion.shouldUseNativeGlass
+                  ? Colors.transparent
+                  : Colors.white.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: PlatformVersion.shouldUseNativeGlass
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.3),
                 width: 1.5,
               ),
               boxShadow: [
@@ -183,6 +188,10 @@ class _MyAppState extends ConsumerState<MyApp> {
                 ),
               ),
             ),
+          ).liquidGlass(
+            effect: CNGlassEffect.regular,
+            shape: CNGlassEffectShape.rect,
+            cornerRadius: 30.0,
           ),
         ),
       ),
