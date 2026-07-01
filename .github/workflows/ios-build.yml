@@ -10,11 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ➔ 16.0 대신 현재 러너가 제공하는 가장 최신의 안정판 Xcode(16.1~16.2+)를 잡습니다.
-      - name: Set up Latest Xcode
+      # ➔ 구버전(16.x) 혼선을 막기 위해 Xcode 26.3 버전을 명시적으로 지정합니다.
+      - name: Set up Xcode 26.3
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 'latest-stable'
+          xcode-version: '26.3'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -24,7 +24,6 @@ jobs:
       - name: Disable Swift Package Manager
         run: flutter config --no-enable-swift-package-manager
 
-      # ➔ pub get 대신 pub upgrade를 실행하여 빌드 에러가 해결된 최신 패키지 버전을 가져옵니다.
       - name: Clear Cache & Upgrade dependencies
         run: |
           flutter clean
