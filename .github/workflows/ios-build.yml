@@ -6,7 +6,6 @@ on:
 
 jobs:
   build:
-    # 안정적인 최신 빌드 환경인 macos-15 지정
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +17,12 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      # Flutter가 타겟을 13.0으로 복구하지 못하도록 빌드 전 환경 설정을 15.0으로 강제 고정합니다.
+      - name: Force iOS 15.0 Deployment Target
+        run: |
+          flutter config --ios-signing-development-team=3G639295RM
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj
 
       - name: Build iOS (No Sign)
         run: flutter build ios --no-codesign --release
