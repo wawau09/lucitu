@@ -132,22 +132,27 @@ class _MyAppState extends ConsumerState<MyApp> {
           backgroundColor: Colors.white,
           body: IndexedStack(index: currentIndex, children: screens),
           bottomNavigationBar: Container(
-            margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            margin: const EdgeInsets.fromLTRB(54, 0, 54, 28),
+            height: 60,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(32),
+              color: Colors.white.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(30),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                 child: BottomNavigationBar(
                   currentIndex: currentIndex,
                   showSelectedLabels: false,
@@ -155,7 +160,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                   backgroundColor: Colors.transparent,
                   selectedItemColor: const Color(0xFF3267A2),
                   unselectedItemColor: Colors.black.withValues(alpha: 0.3),
-                  iconSize: 28,
+                  iconSize: 24,
                   elevation: 0,
                   type: BottomNavigationBarType.fixed,
                   onTap: (index) {
