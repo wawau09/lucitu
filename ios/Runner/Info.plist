@@ -64,7 +64,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.wawau.lucitu</string>
+				<string>com.loci.app</string>
 			</array>
 		</dict>
 	</array>
