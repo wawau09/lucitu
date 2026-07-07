@@ -16,7 +16,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await FlutterNaverMap().init(
-    clientId: 'lpx588w5up',
+    clientId: '0w1sxphr42',
     onAuthFailed: (error) {
       debugPrint('Naver Map Auth Failed: $error');
     },
