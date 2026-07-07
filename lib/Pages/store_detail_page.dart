@@ -10,6 +10,7 @@ import 'package:panorama_viewer/panorama_viewer.dart';
 import 'package:placelist/DB/store.dart';
 import 'package:placelist/Pages/map_stub.dart'
     if (dart.library.html) 'package:placelist/Pages/map_web.dart';
+import 'package:placelist/providers/category_provider.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
@@ -96,6 +97,10 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   if (store.categoryTags.isNotEmpty)
                     _buildCategoryChips(store.categoryTags),
                   const SizedBox(height: 32),
+                  if (store.menuBoard != null && store.menuBoard!.isNotEmpty) ...[
+                    _buildMenuBoardSection(store.menuBoard!),
+                    const SizedBox(height: 32),
+                  ],
                   _buildRatingSection(context, store),
                   const SizedBox(height: 32),
                   if (store.latitude != null && store.longitude != null) ...[
@@ -342,26 +347,115 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
       spacing: 8,
       runSpacing: 8,
       children: tags.map((tag) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3267A2).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF3267A2).withValues(alpha: 0.25),
-              width: 1,
+        return GestureDetector(
+          onTap: () {
+            // 1. 글로벌 검색어 상태를 '#태그이름'으로 설정
+            ref.read(searchQueryProvider.notifier).state = '#$tag';
+            // 2. 홈 화면(MainScreen)이 있는 탭 인덱스 1로 전환
+            ref.read(navigationProvider.notifier).setIndex(1);
+            // 3. 현재 상세 페이지 닫기
+            Navigator.pop(context);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3267A2).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF3267A2).withValues(alpha: 0.25),
+                width: 1,
+              ),
             ),
-          ),
-          child: Text(
-            '# $tag',
-            style: GoogleFonts.notoSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF3267A2),
+            child: Text(
+              '# $tag',
+              style: GoogleFonts.notoSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF3267A2),
+              ),
             ),
           ),
         );
       }).toList(),
+    );
+  }
+
+  String _formatMenuValue(dynamic value) {
+    if (value == null) return '';
+    if (value is num) {
+      final str = value.toInt().toString();
+      final reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+      final formatted = str.replaceAllMapped(reg, (Match m) => '${m[1]},');
+      return '$formatted원';
+    }
+    return value.toString();
+  }
+
+  Widget _buildMenuBoardSection(Map<String, dynamic> menu) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.restaurant_menu, color: Color(0xFF3267A2), size: 22),
+            const SizedBox(width: 8),
+            Text(
+              "메뉴판",
+              style: GoogleFonts.notoSans(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: menu.entries.map((entry) {
+              final isLast = menu.entries.last.key == entry.key;
+              return Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          entry.key,
+                          style: GoogleFonts.notoSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        _formatMenuValue(entry.value),
+                        style: GoogleFonts.notoSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF3267A2),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!isLast) ...[
+                    const SizedBox(height: 12),
+                    const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 

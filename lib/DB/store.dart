@@ -8,6 +8,7 @@ class Store {
   List<dynamic>? reviews;
   double? rating;
   String? region;
+  Map<String, dynamic>? menuBoard;
 
   Store({
     this.id,
@@ -19,6 +20,7 @@ class Store {
     this.reviews,
     this.rating,
     this.region,
+    this.menuBoard,
   })  : categoryTags = categoryTags ?? [],
         imageUrls = imageUrls ?? [];
 
@@ -32,6 +34,7 @@ class Store {
     List<dynamic>? reviews,
     double? rating,
     String? region,
+    Map<String, dynamic>? menuBoard,
   }) {
     return Store(
       id: id ?? this.id,
@@ -43,6 +46,7 @@ class Store {
       reviews: reviews ?? this.reviews,
       rating: rating ?? this.rating,
       region: region ?? this.region,
+      menuBoard: menuBoard ?? this.menuBoard,
     );
   }
 
@@ -103,6 +107,10 @@ class Store {
         ? (map['longitude'] as num).toDouble()
         : double.tryParse(map['longitude']?.toString() ?? '');
 
+    final Map<String, dynamic>? resolvedMenuBoard = map['menu_board'] is Map
+        ? Map<String, dynamic>.from(map['menu_board'] as Map)
+        : null;
+
     return Store(
       id: rawId?.toString(),
       name: map['name']?.toString() ?? '이름 없음',
@@ -113,6 +121,7 @@ class Store {
       reviews: resolvedReviews,
       rating: resolvedRating,
       region: map['region']?.toString(),
+      menuBoard: resolvedMenuBoard,
     );
   }
 
@@ -125,6 +134,7 @@ class Store {
       'image_urls': imageUrls,
       if (reviews != null) 'reviews': reviews,
       if (region != null) 'region': region,
+      if (menuBoard != null) 'menu_board': menuBoard,
     };
   }
 }

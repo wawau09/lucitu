@@ -41,3 +41,5 @@ final selectedCategoriesProvider =
     StateNotifierProvider<SelectedCategoriesNotifier, Set<Category>>(
   (ref) => SelectedCategoriesNotifier(),
 );
+
+final searchQueryProvider = StateProvider<String>((ref) => '');

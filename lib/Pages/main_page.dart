@@ -19,7 +19,19 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  String _searchQuery = '';
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(searchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   String? _getMainImageUrl(Store store) {
     return store.imageUrls.isNotEmpty ? store.imageUrls.first : null;
@@ -29,6 +41,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     final selectedCategories = ref.watch(selectedCategoriesProvider);
     final storesAsync = ref.watch(storesProvider);
+    final searchQuery = ref.watch(searchQueryProvider);
+
+    ref.listen<String>(searchQueryProvider, (previous, next) {
+      if (_searchController.text != next) {
+        _searchController.text = next;
+      }
+    });
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -46,11 +65,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
+                  controller: _searchController,
                   textAlignVertical: TextAlignVertical.center,
                   onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
+                    ref.read(searchQueryProvider.notifier).state = value;
                   },
                   decoration: InputDecoration(
                     prefixIcon: const Icon(
@@ -82,10 +100,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 data: (storesList) {
                   var stores = List<Store>.from(storesList);
 
-                  if (_searchQuery.isNotEmpty) {
-                    if (_searchQuery.startsWith('#')) {
+                  if (searchQuery.isNotEmpty) {
+                    if (searchQuery.startsWith('#')) {
                       // # 접두사: 카테고리 태그 또는 지역 필터링
-                      final q = _searchQuery.substring(1).toLowerCase().trim();
+                      final q = searchQuery.substring(1).toLowerCase().trim();
                       if (q.isNotEmpty) {
                         stores = stores.where((store) {
                           // region 매칭
@@ -104,7 +122,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       }
                     } else {
                       // 일반 검색: 카페 이름 + 카테고리 태그 + 지역
-                      final q = _searchQuery.toLowerCase();
+                      final q = searchQuery.toLowerCase();
                       stores = stores
                           .where(
                             (store) =>
