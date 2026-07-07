@@ -40,6 +40,9 @@ class _AccountPageState extends State<AccountPage> {
         OAuthProvider.google,
         // Uri.base.origin을 사용하여 현재 도메인(Vercel 또는 localhost)으로 자동 리디렉션되도록 합니다.
         redirectTo: kIsWeb ? Uri.base.origin : 'com.loci.app://login-callback',
+        queryParams: {
+          'prompt': 'select_account', // 구글 계정 선택(선택창) 화면이 항상 표시되도록 설정
+        },
       );
 
     } catch (error) {
