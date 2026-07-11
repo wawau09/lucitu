@@ -43,6 +43,7 @@ dependencies:
   glass_liquid_navbar: ^0.2.0
   cupertino_native_better: 1.4.4
   panorama_viewer: ^2.0.7
+  shared_preferences: ^2.3.5
 
 dev_dependencies:
   flutter_test:

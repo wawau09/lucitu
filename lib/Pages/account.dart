@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:placelist/Pages/favorites_list_page.dart';
+import 'package:placelist/Pages/settings_page.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -14,18 +15,38 @@ class AccountPage extends StatefulWidget {
 class _AccountPageState extends State<AccountPage> {
   User? _user;
   bool _isLoading = false;
+  String _avatarIcon = 'cat';
 
   @override
   void initState() {
     super.initState();
     _user = Supabase.instance.client.auth.currentUser;
+    _loadAvatar();
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (mounted) {
         setState(() {
           _user = data.session?.user;
         });
+        if (_user != null) _loadAvatar();
       }
     });
+  }
+
+  Future<void> _loadAvatar() async {
+    final user = _user;
+    if (user == null) return;
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('avatar_icon')
+          .eq('id', user.id)
+          .maybeSingle();
+      if (profile != null && mounted) {
+        setState(() {
+          _avatarIcon = profile['avatar_icon']?.toString() ?? 'cat';
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -34,14 +55,11 @@ class _AccountPageState extends State<AccountPage> {
     });
 
     try {
-      // google_sign_in을 사용하지 않고 Supabase의 signInWithOAuth를 직접 사용합니다.
-      // 이 방식은 Supabase 대시보드에 구글 클라이언트 ID와 시크릿이 설정되어 있어야 합니다.
       await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
-        // Uri.base.origin을 사용하여 현재 도메인(Vercel 또는 localhost)으로 자동 리디렉션되도록 합니다.
         redirectTo: kIsWeb ? Uri.base.origin : 'com.loci.app://login-callback',
         queryParams: {
-          'prompt': 'select_account', // 구글 계정 선택(선택창) 화면이 항상 표시되도록 설정
+          'prompt': 'select_account',
         },
       );
 
@@ -67,7 +85,7 @@ class _AccountPageState extends State<AccountPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: _user == null ? _buildLoggedOutView() : _buildLoggedInView(),
       ),
@@ -152,8 +170,11 @@ class _AccountPageState extends State<AccountPage> {
           const SizedBox(height: 40),
           CircleAvatar(
             radius: 50,
-            backgroundColor: Colors.grey[200],
-            child: const Icon(Icons.person, size: 50, color: Colors.grey),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            child: Text(
+              getAvatarEmoji(_avatarIcon),
+              style: const TextStyle(fontSize: 50),
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -187,7 +208,19 @@ class _AccountPageState extends State<AccountPage> {
             leading: const Icon(Icons.settings_outlined),
             title: const Text("설정"),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
+              // 설정에서 돌아온 후 아바타와 이름 새로고침
+              if (mounted) {
+                _loadAvatar();
+                setState(() {
+                  _user = Supabase.instance.client.auth.currentUser;
+                });
+              }
+            },
           ),
           const Spacer(),
           TextButton(

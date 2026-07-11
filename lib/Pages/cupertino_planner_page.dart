@@ -1213,10 +1213,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                               _buildTripOverviewCard(isDark),
                               const SizedBox(height: 16),
 
-                              // 3. Participants Widget
-                              _buildParticipantsWidget(cardBg, isDark),
-                              const SizedBox(height: 16),
-
                               // 4. Expense Tracker with custom doughnut chart
                               _buildExpenseWidget(cardBg, isDark),
                               const SizedBox(height: 16),
@@ -1246,6 +1242,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
                               // 6. Packing Checklist Widget
                               _buildChecklistWidget(cardBg, isDark),
+                              const SizedBox(height: 16),
+
+                              // 3. Participants Widget
+                              _buildParticipantsWidget(cardBg, isDark),
                               const SizedBox(height: 48), // Padding space at bottom
                             ],
                           ),
@@ -1484,42 +1484,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '함께하는 동행자',
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              GestureDetector(
-                onTap: _showAddParticipantDialog,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF007AFF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(CupertinoIcons.plus, size: 12, color: Color(0xFF007AFF)),
-                      const SizedBox(width: 2),
-                      Text(
-                        '추가',
-                        style: GoogleFonts.notoSansKr(
-                          color: const Color(0xFF007AFF),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            '함께하는 동행자',
+            style: GoogleFonts.notoSansKr(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(

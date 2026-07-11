@@ -861,101 +861,191 @@ class _PlanPageState extends ConsumerState<PlanPage> {
   void _showPlanActionChooser() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  '일정 추가',
-                  style: GoogleFonts.notoSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ListTile(
-                  leading: Container(
-                    width: 44,
-                    height: 44,
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  // Drag handle
+                  Container(
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0F6FF),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      color: Color(0xFF3267A2),
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  title: Text(
-                    '새 일정 만들기',
-                    style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
+                  const SizedBox(height: 24),
+                  // Title row
+                  Row(
+                    children: [
+                      Text(
+                        '일정 추가',
+                        style: GoogleFonts.notoSansKr(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(Icons.close, size: 18, color: Color(0xFF6B7280)),
+                        ),
+                      ),
+                    ],
                   ),
-                  subtitle: Text(
-                    '새로운 일정을 직접 생성합니다',
-                    style: GoogleFonts.notoSans(
-                      fontSize: 12,
-                      color: Colors.grey,
+                  const SizedBox(height: 20),
+                  // ── 새 일정 만들기 card ──
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showCreatePlanDialog();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF4A90E2), Color(0xFF6C63FF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF4A90E2).withOpacity(0.35),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Center(
+                              child: Text('✈️', style: TextStyle(fontSize: 26)),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '새 일정 만들기',
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '나만의 여행 일정을 처음부터 계획해요',
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                        ],
+                      ),
                     ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showCreatePlanDialog();
-                  },
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 12),
+                  // ── 코드로 참가 card ──
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showJoinByCodeDialog();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF8C42), Color(0xFFFF6B6B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF8C42).withOpacity(0.35),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Center(
+                              child: Text('🎟️', style: TextStyle(fontSize: 26)),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '코드로 참가하기',
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '초대 코드로 친구의 일정에 합류해요',
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                        ],
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.group_add_rounded,
-                      color: Color(0xFFD97706),
-                    ),
                   ),
-                  title: Text(
-                    '코드로 참가',
-                    style: GoogleFonts.notoSans(fontWeight: FontWeight.w700),
-                  ),
-                  subtitle: Text(
-                    '공유받은 일정 코드를 입력하여 참가합니다',
-                    style: GoogleFonts.notoSans(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showJoinByCodeDialog();
-                  },
-                ),
-                const SizedBox(height: 8),
-              ],
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         );
@@ -968,77 +1058,241 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     DateTime selectedDate = DateTime.now();
     final result = await showDialog<bool>(
       context: context,
+      barrierColor: Colors.black54,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              title: Text(
-                '\uC0C8 \uC77C\uC815 \uB9CC\uB4E4\uAE30',
-                style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
-              ),
-              content: SizedBox(
-                width: 420,
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 40,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: '\uACC4\uD68D \uC774\uB984',
+                    // ── Header gradient banner ──
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF4A90E2), Color(0xFF6C63FF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _formatDate(selectedDate),
-                            style: GoogleFonts.notoSans(
-                              fontWeight: FontWeight.w600,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Text('✈️', style: TextStyle(fontSize: 26)),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            '새 일정 만들기',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: selectedDate,
-                              firstDate: DateTime.now().subtract(
-                                const Duration(days: 365),
+                          const SizedBox(height: 4),
+                          Text(
+                            '특별한 하루를 계획해 보세요',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // ── Form body ──
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '일정 이름',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF6B7280),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF9FAFB),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                            ),
+                            child: TextField(
+                              controller: nameController,
+                              style: GoogleFonts.notoSansKr(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF111827),
                               ),
-                              lastDate: DateTime.now().add(
-                                const Duration(days: 3650),
+                              decoration: InputDecoration(
+                                hintText: '예) 제주도 당일치기 🌊',
+                                hintStyle: GoogleFonts.notoSansKr(
+                                  color: const Color(0xFF9CA3AF),
+                                  fontSize: 14,
+                                ),
+                                prefixIcon: const Icon(Icons.edit_outlined, color: Color(0xFF9CA3AF), size: 20),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               ),
-                            );
-                            if (picked == null) return;
-                            setDialogState(() {
-                              selectedDate = picked;
-                            });
-                          },
-                          child: const Text('\uB0A0\uC9DC \uC120\uD0DD'),
-                        ),
-                      ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            '여행 날짜',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF6B7280),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedDate,
+                                firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                                lastDate: DateTime.now().add(const Duration(days: 3650)),
+                                builder: (context, child) => Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: const ColorScheme.light(
+                                      primary: Color(0xFF4A90E2),
+                                      onPrimary: Colors.white,
+                                    ),
+                                  ),
+                                  child: child!,
+                                ),
+                              );
+                              if (picked == null) return;
+                              setDialogState(() => selectedDate = picked);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0F6FF),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFF4A90E2).withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.calendar_today_rounded, color: Color(0xFF4A90E2), size: 18),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _formatDate(selectedDate),
+                                    style: GoogleFonts.notoSansKr(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF4A90E2),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  const Icon(Icons.chevron_right_rounded, color: Color(0xFF4A90E2), size: 18),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                        ],
+                      ),
+                    ),
+                    // ── Action buttons ──
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(false),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                ),
+                              ),
+                              child: Text(
+                                '취소',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF4A90E2), Color(0xFF6C63FF)],
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF4A90E2).withOpacity(0.4),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.of(dialogContext).pop(true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: Text(
+                                  '일정 생성하기 ✨',
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('\uCDE8\uC18C'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3267A2),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('\uC0DD\uC131'),
-                ),
-              ],
             );
           },
         );
@@ -1072,7 +1326,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '\uC77C\uC815\uC774 \uC0DD\uC131\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
+            '일정이 생성되었습니다.',
             style: GoogleFonts.notoSans(),
           ),
           behavior: SnackBarBehavior.floating,
@@ -1081,9 +1335,315 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('\uC77C\uC815 \uC0DD\uC131 \uC2E4\uD328: $e')),
+        SnackBar(content: Text('일정 생성 실패: $e')),
       );
     }
+  }
+
+  Future<void> _showJoinByCodeDialog() async {
+    final codeController = TextEditingController();
+    bool isLoading = false;
+    String? errorMsg;
+
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 40,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Header gradient banner ──
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFFF8C42), Color(0xFFFF6B6B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Text('🎟️', style: TextStyle(fontSize: 26)),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            '코드로 참가하기',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '초대 코드를 입력해 일정에 합류하세요',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // ── Code input body ──
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '초대 코드',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF6B7280),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF7F0),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: errorMsg != null
+                                    ? Colors.redAccent.withOpacity(0.5)
+                                    : const Color(0xFFFF8C42).withOpacity(0.3),
+                              ),
+                            ),
+                            child: TextField(
+                              controller: codeController,
+                              textCapitalization: TextCapitalization.characters,
+                              style: GoogleFonts.robotoMono(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF111827),
+                                letterSpacing: 4,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLength: 8,
+                              onChanged: (_) {
+                                if (errorMsg != null) {
+                                  setDialogState(() => errorMsg = null);
+                                }
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'ABC12345',
+                                hintStyle: GoogleFonts.robotoMono(
+                                  color: const Color(0xFF9CA3AF),
+                                  fontSize: 18,
+                                  letterSpacing: 4,
+                                ),
+                                prefixIcon: const Icon(Icons.confirmation_num_outlined, color: Color(0xFFFF8C42), size: 20),
+                                border: InputBorder.none,
+                                counterText: '',
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                            ),
+                          ),
+                          if (errorMsg != null) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.error_outline, color: Colors.redAccent, size: 14),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    errorMsg!,
+                                    style: GoogleFonts.notoSansKr(
+                                      fontSize: 12,
+                                      color: Colors.redAccent,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF7ED),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFF8C42).withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Text('💡', style: TextStyle(fontSize: 14)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '초대 코드는 일정 상세 화면에서 확인할 수 있어요',
+                                    style: GoogleFonts.notoSansKr(
+                                      fontSize: 12,
+                                      color: const Color(0xFFB45309),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                        ],
+                      ),
+                    ),
+                    // ── Action buttons ──
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                ),
+                              ),
+                              child: Text(
+                                '취소',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: isLoading
+                                    ? const LinearGradient(colors: [Color(0xFFD1D5DB), Color(0xFF9CA3AF)])
+                                    : const LinearGradient(
+                                        colors: [Color(0xFFFF8C42), Color(0xFFFF6B6B)],
+                                      ),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: isLoading
+                                    ? []
+                                    : [
+                                        BoxShadow(
+                                          color: const Color(0xFFFF8C42).withOpacity(0.4),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: isLoading
+                                    ? null
+                                    : () async {
+                                        final code = codeController.text.trim().toUpperCase();
+                                        if (code.isEmpty) {
+                                          setDialogState(() => errorMsg = '코드를 입력해주세요.');
+                                          return;
+                                        }
+                                        setDialogState(() {
+                                          isLoading = true;
+                                          errorMsg = null;
+                                        });
+                                        try {
+                                          final joined = await ref
+                                              .read(plansProvider.notifier)
+                                              .joinPlanByCode(planCode: code);
+                                          if (!mounted) return;
+                                          Navigator.of(dialogContext).pop();
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => PlanDetailPage(planId: joined.id),
+                                            ),
+                                          );
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                '🎉 "${joined.name}" 일정에 참가했습니다!',
+                                                style: GoogleFonts.notoSans(),
+                                              ),
+                                              behavior: SnackBarBehavior.floating,
+                                              backgroundColor: const Color(0xFFFF8C42),
+                                            ),
+                                          );
+                                        } catch (e) {
+                                          setDialogState(() {
+                                            isLoading = false;
+                                            errorMsg = '코드를 찾을 수 없습니다. 다시 확인해주세요.';
+                                          });
+                                        }
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: isLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        '참가하기 🎟️',
+                                        style: GoogleFonts.notoSansKr(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    codeController.dispose();
   }
 
   Future<void> _showAddItemDialog(String planId, {TimeOfDay? initialTime}) async {
@@ -1543,92 +2103,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       titleController.dispose();
       startTimeController.dispose();
       endTimeController.dispose();
-    }
-  }
-
-  Future<void> _showJoinByCodeDialog() async {
-    final codeController = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: Text(
-            '\uCF54\uB4DC\uB85C \uCC38\uAC00',
-            style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
-          ),
-          content: SizedBox(
-            width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: codeController,
-                  decoration: const InputDecoration(
-                    labelText: '\uC77C\uC815 \uCF54\uB4DC',
-                    hintText: 'PL-260603-ABCD',
-                  ),
-                  textCapitalization: TextCapitalization.characters,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '\uC77C\uC815 \uCF54\uB4DC\uB97C \uC785\uB825\uD558\uBA74 \uD604\uC7AC \uB85C\uADF8\uC778 \uACC4\uC815\uC774 \uACF5\uB3D9 \uC791\uC5C5\uC790\uB85C \uCD94\uAC00\uB429\uB2C8\uB2E4.',
-                  style: GoogleFonts.notoSans(
-                    fontSize: 13,
-                    color: const Color(0xFF6B7280),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('\uCDE8\uC18C'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3267A2),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('\uCC38\uAC00'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (result != true || !mounted) {
-      codeController.dispose();
-      return;
-    }
-
-    final planCode = codeController.text.trim();
-    codeController.dispose();
-    if (planCode.isEmpty) return;
-
-    try {
-      await ref.read(plansProvider.notifier).joinPlanByCode(planCode: planCode);
-      await ref.read(plansProvider.notifier).refresh();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '\uC77C\uC815\uC5D0 \uCC38\uAC00\uD588\uC2B5\uB2C8\uB2E4.',
-            style: GoogleFonts.notoSans(),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('\uCC38\uAC00 \uC2E4\uD328: $e')));
     }
   }
 

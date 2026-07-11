@@ -11,6 +11,7 @@ import 'package:placelist/Pages/search.dart';
 import 'package:placelist/Pages/terms_agreement_page.dart';
 import 'Pages/main_page.dart';
 import 'package:placelist/providers/navigation_provider.dart';
+import 'package:placelist/providers/theme_provider.dart';
 
 
 Future<void> main() async {
@@ -118,15 +119,23 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationProvider);
+    final themeMode = ref.watch(themeProvider);
     final List<Widget> screens = [const PlanPage(), const MainScreen(), const AccountPage()];
 
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       navigatorObservers: [CNTabBarRouteObserver()],
+      themeMode: themeMode,
       theme: ThemeData(
         useMaterial3: true,
+        brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.white,
+        colorSchemeSeed: const Color(0xFF3267A2),
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
         colorSchemeSeed: const Color(0xFF3267A2),
       ),
       home: PopScope(
