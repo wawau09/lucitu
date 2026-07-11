@@ -11,9 +11,10 @@ class FavoritesListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final favoritesAsync = ref.watch(favoritedStoresProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           "찜한 카페",
@@ -22,8 +23,6 @@ class FavoritesListPage extends ConsumerWidget {
             fontSize: 18,
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
         centerTitle: true,
       ),
@@ -34,11 +33,11 @@ class FavoritesListPage extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.favorite_border, size: 80, color: Colors.grey[300]),
+                  Icon(Icons.favorite_border, size: 80, color: isDark ? Colors.white10 : Colors.grey[300]),
                   const SizedBox(height: 16),
                   Text(
                     "찜한 카페가 없습니다.",
-                    style: GoogleFonts.notoSans(color: Colors.grey),
+                    style: GoogleFonts.notoSans(color: isDark ? Colors.white30 : Colors.grey),
                   ),
                 ],
               ),
@@ -51,17 +50,17 @@ class FavoritesListPage extends ConsumerWidget {
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final store = stores[index];
-              return _buildFavoriteCard(context, ref, store);
+              return _buildFavoriteCard(context, ref, store, isDark);
             },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('오류 발생: $err')),
+        error: (err, stack) => Center(child: Text('오류 발생: $err', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87))),
       ),
     );
   }
 
-  Widget _buildFavoriteCard(BuildContext context, WidgetRef ref, Store store) {
+  Widget _buildFavoriteCard(BuildContext context, WidgetRef ref, Store store, bool isDark) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -72,9 +71,9 @@ class FavoritesListPage extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -87,7 +86,7 @@ class FavoritesListPage extends ConsumerWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: _buildStoreImage(store),
+              child: _buildStoreImage(store, isDark),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -99,19 +98,20 @@ class FavoritesListPage extends ConsumerWidget {
                     style: GoogleFonts.notoSans(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
-                 const SizedBox(height: 4),
-                   Row(
-                     children: [
-                       const Icon(Icons.star, color: Colors.amber, size: 16),
-                       const SizedBox(width: 4),
-                       Text(
-                         (store.rating ?? 0.0).toStringAsFixed(1),
-                         style: const TextStyle(fontSize: 14, color: Colors.grey),
-                       ),
-                     ],
-                   ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        (store.rating ?? 0.0).toStringAsFixed(1),
+                        style: TextStyle(fontSize: 14, color: isDark ? Colors.white38 : Colors.grey),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -128,8 +128,6 @@ class FavoritesListPage extends ConsumerWidget {
                       ),
                     );
                   });
-                  // favoritedStoresProvider는 favoritesProvider를 watch하므로
-                  // toggleFavorite 후 state가 변경되면 자동으로 재계산됩니다.
                 }
               },
               icon: const Icon(Icons.favorite, color: Colors.redAccent),
@@ -140,7 +138,7 @@ class FavoritesListPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildStoreImage(Store store) {
+  Widget _buildStoreImage(Store store, bool isDark) {
     if (store.imageUrls.isNotEmpty) {
       return Image.network(
         store.imageUrls.first,
@@ -148,9 +146,9 @@ class FavoritesListPage extends ConsumerWidget {
         height: 80,
         fit: BoxFit.cover,
         errorBuilder: (context, e, s) =>
-            Container(width: 80, height: 80, color: Colors.grey[200]),
+            Container(width: 80, height: 80, color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200]),
       );
     }
-    return Container(width: 80, height: 80, color: Colors.grey[200]);
+    return Container(width: 80, height: 80, color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200]);
   }
 }

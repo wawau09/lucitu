@@ -43,35 +43,36 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
       ),
       orElse: () => widget.store,
     );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
       ),
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildImageHeader(store),
+            _buildImageHeader(store, isDark),
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTitleRow(context),
+                  _buildTitleRow(context, isDark),
                   const SizedBox(height: 8),
-                  _buildCompactRating(store),
+                  _buildCompactRating(store, isDark),
                   const SizedBox(height: 16),
                   Container(
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.lightBlue,
+                      color: isDark ? const Color(0xFF64B5F6) : Colors.lightBlue,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -81,7 +82,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                     style: GoogleFonts.notoSans(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -90,21 +91,21 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                     style: GoogleFonts.notoSans(
                       fontSize: 15,
                       height: 1.6,
-                      color: Colors.grey[700],
+                      color: isDark ? Colors.white70 : Colors.grey[700],
                     ),
                   ),
                   const SizedBox(height: 16),
                   if (store.categoryTags.isNotEmpty)
-                    _buildCategoryChips(store.categoryTags),
+                    _buildCategoryChips(store.categoryTags, isDark),
                   const SizedBox(height: 32),
                   if (store.menuBoard != null && store.menuBoard!.isNotEmpty) ...[
-                    _buildMenuBoardSection(store.menuBoard!),
+                    _buildMenuBoardSection(store.menuBoard!, isDark),
                     const SizedBox(height: 32),
                   ],
-                  _buildRatingSection(context, store),
+                  _buildRatingSection(context, store, isDark),
                   const SizedBox(height: 32),
                   if (store.latitude != null && store.longitude != null) ...[
-                    _buildMapSection(store),
+                    _buildMapSection(store, isDark),
                     const SizedBox(height: 32),
                   ],
                 ],
@@ -116,7 +117,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildImageHeader(Store store) {
+  Widget _buildImageHeader(Store store, bool isDark) {
     final imageUrls = store.imageUrls;
 
     if (imageUrls.isEmpty) {
@@ -124,9 +125,9 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
         height: 400,
         width: double.infinity,
         child: Container(
-          color: Colors.grey[200],
-          child: const Center(
-            child: Icon(Icons.image_outlined, color: Colors.grey, size: 80),
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
+          child: Center(
+            child: Icon(Icons.image_outlined, color: isDark ? Colors.white24 : Colors.grey, size: 80),
           ),
         ),
       );
@@ -154,16 +155,16 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             itemCount: imageUrls.length,
             itemBuilder: (context, index) {
               return Container(
-                color: Colors.grey[100],
+                color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
                 child: Image.network(
                   imageUrls[index],
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[200],
-                    child: const Center(
+                    color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
+                    child: Center(
                       child: Icon(
                         Icons.broken_image,
-                        color: Colors.grey,
+                        color: isDark ? Colors.white24 : Colors.grey,
                         size: 60,
                       ),
                     ),
@@ -187,7 +188,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                       shape: BoxShape.circle,
                       color: _currentPage == index
                           ? Colors.blue
-                          : Colors.grey.shade400,
+                          : (isDark ? Colors.white24 : Colors.grey.shade400),
                     ),
                   ),
                 ),
@@ -197,7 +198,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             right: 16,
             bottom: 16,
             child: Material(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: isDark ? Colors.black.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
@@ -230,18 +231,18 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.threed_rotation,
                         size: 20,
-                        color: Colors.black87,
+                        color: isDark ? Colors.white70 : Colors.black87,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        "\uD30C\uB178\uB77C\uB9C8",
+                        "파노라마",
                         style: GoogleFonts.notoSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: isDark ? Colors.white70 : Colors.black87,
                         ),
                       ),
                     ],
@@ -255,7 +256,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildTitleRow(BuildContext context) {
+  Widget _buildTitleRow(BuildContext context, bool isDark) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -265,7 +266,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             style: GoogleFonts.notoSans(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: isDark ? Colors.white : Colors.black87,
               height: 1.2,
             ),
           ),
@@ -281,7 +282,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                 final user = Supabase.instance.client.auth.currentUser;
                 if (user == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('\uCC1C \uAE30\uB2A5\uC744 \uC0AC\uC6A9\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.')),
+                    const SnackBar(content: Text('찜 기능을 사용하려면 로그인이 필요합니다.')),
                   );
                   ref.read(navigationProvider.notifier).setIndex(2);
                   Navigator.pop(context);
@@ -302,7 +303,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
               },
               icon: Icon(
                 isFavorited ? Icons.favorite : Icons.favorite_border,
-                color: isFavorited ? Colors.redAccent : Colors.black87,
+                color: isFavorited ? Colors.redAccent : (isDark ? Colors.white70 : Colors.black87),
                 size: 28,
               ),
             );
@@ -312,7 +313,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildCompactRating(Store store) {
+  Widget _buildCompactRating(Store store, bool isDark) {
     return Row(
       children: [
         const Icon(Icons.star, color: Colors.amber, size: 20),
@@ -322,19 +323,19 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
           style: GoogleFonts.notoSans(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
         ),
         if (store.region != null && store.region!.isNotEmpty) ...[
           const SizedBox(width: 12),
-          const Icon(Icons.location_on, color: Colors.grey, size: 18),
+          Icon(Icons.location_on, color: isDark ? Colors.white38 : Colors.grey, size: 18),
           const SizedBox(width: 4),
           Text(
             store.region!,
             style: GoogleFonts.notoSans(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
+              color: isDark ? Colors.white54 : Colors.grey[600],
             ),
           ),
         ],
@@ -342,27 +343,24 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildCategoryChips(List<String> tags) {
+  Widget _buildCategoryChips(List<String> tags, bool isDark) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: tags.map((tag) {
         return GestureDetector(
           onTap: () {
-            // 1. 글로벌 검색어 상태를 '#태그이름'으로 설정
             ref.read(searchQueryProvider.notifier).state = '#$tag';
-            // 2. 홈 화면(MainScreen)이 있는 탭 인덱스 1로 전환
             ref.read(navigationProvider.notifier).setIndex(1);
-            // 3. 현재 상세 페이지 닫기
             Navigator.pop(context);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF3267A2).withValues(alpha: 0.08),
+              color: const Color(0xFF3267A2).withValues(alpha: isDark ? 0.20 : 0.08),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: const Color(0xFF3267A2).withValues(alpha: 0.25),
+                color: const Color(0xFF3267A2).withValues(alpha: isDark ? 0.40 : 0.25),
                 width: 1,
               ),
             ),
@@ -371,7 +369,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
               style: GoogleFonts.notoSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF3267A2),
+                color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
               ),
             ),
           ),
@@ -391,20 +389,20 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     return value.toString();
   }
 
-  Widget _buildMenuBoardSection(Map<String, dynamic> menu) {
+  Widget _buildMenuBoardSection(Map<String, dynamic> menu, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.restaurant_menu, color: Color(0xFF3267A2), size: 22),
+            Icon(Icons.restaurant_menu, color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2), size: 22),
             const SizedBox(width: 8),
             Text(
               "메뉴판",
               style: GoogleFonts.notoSans(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           ],
@@ -412,9 +410,9 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade50,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade200),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -431,7 +429,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                           style: GoogleFonts.notoSans(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
                       ),
@@ -440,14 +438,14 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                         style: GoogleFonts.notoSans(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF3267A2),
+                          color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
                         ),
                       ),
                     ],
                   ),
                   if (!isLast) ...[
                     const SizedBox(height: 12),
-                    const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                    Divider(height: 1, color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE)),
                     const SizedBox(height: 12),
                   ],
                 ],
@@ -459,7 +457,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildMapSection(Store store) {
+  Widget _buildMapSection(Store store, bool isDark) {
     final lat = store.latitude!;
     final lng = store.longitude!;
 
@@ -467,11 +465,11 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "\uC704\uCE58 \uC548\uB0B4",
+          "위치 안내",
           style: GoogleFonts.notoSans(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
         const SizedBox(height: 12),
@@ -488,9 +486,9 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             child: Container(
               height: 250,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade300),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -503,7 +501,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             height: 250,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade300),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -535,7 +533,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildRatingSection(BuildContext context, Store store) {
+  Widget _buildRatingSection(BuildContext context, Store store, bool isDark) {
     final stats = _RatingStats.fromReviews(store.reviews);
     final user = Supabase.instance.client.auth.currentUser;
     final hasRated = store.id != null &&
@@ -551,19 +549,19 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "\uD3C9\uC810 \uBC0F \uB9AC\uBDF0",
+              "평점 및 리뷰",
               style: GoogleFonts.notoSans(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
             if (stats.count > 0)
               Text(
-                "\uD3C9\uAC00 ${stats.count}\uAC1C",
+                "평가 ${stats.count}개",
                 style: GoogleFonts.notoSans(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: isDark ? Colors.white38 : Colors.grey[600],
                 ),
               ),
           ],
@@ -572,9 +570,9 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[50],
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade100),
+            border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade100),
           ),
           child: Column(
             children: [
@@ -583,11 +581,11 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   padding: const EdgeInsets.symmetric(vertical: 12.0),
                   child: Center(
                     child: Text(
-                      "\uC544\uC9C1 \uD3C9\uC810\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.\n\uCCAB \uBC88\uC9F8 \uD3C9\uC810\uC744 \uB0A8\uACA8\uBCF4\uC138\uC694!",
+                      "아직 평점이 없습니다.\n첫 번째 평점을 남겨보세요!",
                       textAlign: TextAlign.center,
                       style: GoogleFonts.notoSans(
                         fontSize: 14,
-                        color: Colors.grey[500],
+                        color: isDark ? Colors.white38 : Colors.grey[500],
                         height: 1.5,
                       ),
                     ),
@@ -606,7 +604,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                             style: GoogleFonts.notoSans(
                               fontSize: 48,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -624,10 +622,10 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "\uCD5C\uC885 \uC810\uC218 \uD3C9\uADE0",
+                            "최종 점수 평균",
                             style: GoogleFonts.notoSans(
                               fontSize: 11,
-                              color: Colors.grey[500],
+                              color: isDark ? Colors.white38 : Colors.grey[500],
                             ),
                           ),
                         ],
@@ -636,7 +634,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                     Container(
                       height: 80,
                       width: 1,
-                      color: Colors.grey[200],
+                      color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
                     ),
                     Expanded(
                       flex: 6,
@@ -644,11 +642,11 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                         padding: const EdgeInsets.only(left: 16.0),
                         child: Column(
                           children: [
-                            _buildRatingBar("\uC74C\uB8CC", stats.drinkAvg),
+                            _buildRatingBar("음료", stats.drinkAvg, isDark),
                             const SizedBox(height: 8),
-                            _buildRatingBar("\uC704\uC0DD", stats.hygieneAvg),
+                            _buildRatingBar("위생", stats.hygieneAvg, isDark),
                             const SizedBox(height: 8),
-                            _buildRatingBar("\uBD84\uC704\uAE30", stats.atmosphereAvg),
+                            _buildRatingBar("분위기", stats.atmosphereAvg, isDark),
                           ],
                         ),
                       ),
@@ -665,12 +663,12 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   icon: const Icon(Icons.rate_review_outlined, size: 18),
                   label: Text(
                     hasRated
-                        ? "\uC774\uBBF8 \uD3C9\uC810\uC744 \uB0A8\uACBC\uC2B5\uB2C8\uB2E4"
+                        ? "이미 평점을 남겼습니다"
                         : user == null
-                            ? "\uB85C\uADF8\uC778 \uD6C4 \uD3C9\uC810 \uB9E4\uAE30\uAE30"
+                            ? "로그인 후 평점 매기기"
                             : stats.count == 0
-                                ? "\uCCAB \uD3C9\uC810 \uB9E4\uAE30\uAE30"
-                                : "\uD3C9\uC810 \uCC38\uC5EC\uD558\uAE30",
+                                ? "첫 평점 매기기"
+                                : "평점 참여하기",
                     style: GoogleFonts.notoSans(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -694,7 +692,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildRatingBar(String label, double rating) {
+  Widget _buildRatingBar(String label, double rating, bool isDark) {
     return Row(
       children: [
         SizedBox(
@@ -703,7 +701,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             label,
             style: GoogleFonts.notoSans(
               fontSize: 13,
-              color: Colors.grey[700],
+              color: isDark ? Colors.white70 : Colors.grey[700],
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -713,7 +711,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: (rating / 5.0).clamp(0.0, 1.0),
-              backgroundColor: Colors.grey[200],
+              backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
               minHeight: 6,
             ),
@@ -727,7 +725,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             style: GoogleFonts.notoSans(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
             textAlign: TextAlign.right,
           ),
@@ -740,7 +738,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('\uD3C9\uC810\uC744 \uB9E4\uAE30\uB824\uBA74 \uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.')),
+        const SnackBar(content: Text('평점을 매기려면 로그인이 필요합니다.')),
       );
       ref.read(navigationProvider.notifier).setIndex(2);
       Navigator.pop(context);
@@ -751,7 +749,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
         .read(storesProvider.notifier)
         .hasUserRatedStore(storeId, user.id)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('\uC774\uBBF8 \uC774 \uCE74\uD398\uC5D0 \uD3C9\uC810\uC744 \uB0A8\uACBC\uC2B5\uB2C8\uB2E4.')),
+        const SnackBar(content: Text('이미 이 카페에 평점을 남겼습니다.')),
       );
       return;
     }
@@ -759,13 +757,14 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     var drink = 5.0;
     var hygiene = 5.0;
     var atmosphere = 5.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final pageContext = context;
 
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -789,50 +788,53 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                         width: 42,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[300],
                           borderRadius: BorderRadius.circular(99),
                         ),
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        "\uCE74\uD398 \uD3C9\uC810 \uB9E4\uAE30\uAE30",
+                        "카페 평점 매기기",
                         style: GoogleFonts.notoSans(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "\uC774 \uCE74\uD398\uC758 \uD56D\uBAA9\uBCC4 \uD3C9\uC810\uC744 \uB9E4\uACA8\uC8FC\uC138\uC694.\n(5\uC810 \uB9CC\uC810)",
+                        "이 카페의 항목별 평점을 매겨주세요.\n(5점 만점)",
                         textAlign: TextAlign.center,
                         style: GoogleFonts.notoSans(
                           fontSize: 13,
-                          color: Colors.grey[600],
+                          color: isDark ? Colors.white38 : Colors.grey[600],
                           height: 1.5,
                         ),
                       ),
                       const SizedBox(height: 22),
                       _buildRatingCategoryRow(
-                        "\uC74C\uB8CC \uB9DB",
+                        "음료 맛",
                         drink,
                         (val) => setState(() => drink = val),
+                        isDark,
                       ),
                       _buildRatingCategoryRow(
-                        "\uC704\uC0DD \uC0C1\uD0DC",
+                        "위생 상태",
                         hygiene,
                         (val) => setState(() => hygiene = val),
+                        isDark,
                       ),
                       _buildRatingCategoryRow(
                         "매장 분위기",
                         atmosphere,
                         (val) => setState(() => atmosphere = val),
+                        isDark,
                       ),
                       const SizedBox(height: 12),
-                      // 자동 계산된 평균 점수 미리보기
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3267A2).withValues(alpha: 0.08),
+                          color: const Color(0xFF3267A2).withValues(alpha: isDark ? 0.20 : 0.08),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -843,7 +845,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                               style: GoogleFonts.notoSans(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF3267A2),
+                                color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
                               ),
                             ),
                             Row(
@@ -855,7 +857,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                   style: GoogleFonts.notoSans(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF3267A2),
+                                    color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
                                   ),
                                 ),
                               ],
@@ -870,8 +872,8 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(sheetContext),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.grey[700],
-                                side: BorderSide(color: Colors.grey.shade300),
+                                foregroundColor: isDark ? Colors.white70 : Colors.grey[700],
+                                side: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 13),
                                 shape: RoundedRectangleBorder(
@@ -879,7 +881,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                 ),
                               ),
                               child: Text(
-                                "\uCDE8\uC18C",
+                                "취소",
                                 style: GoogleFonts.notoSans(
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -895,7 +897,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                 ScaffoldMessenger.of(pageContext).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                      '\uD3C9\uC810\uC744 \uB4F1\uB85D\uD558\uB294 \uC911...',
+                                      '평점을 등록하는 중...',
                                     ),
                                     duration: Duration(milliseconds: 500),
                                   ),
@@ -916,13 +918,13 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                   if (!mounted) return;
                                   final message = switch (e.code) {
                                     'alreadyRated' =>
-                                      '\uC774\uBBF8 \uC774 \uCE74\uD398\uC5D0 \uD3C9\uC810\uC744 \uB0A8\uACBC\uC2B5\uB2C8\uB2E4.',
+                                      '이미 이 카페에 평점을 남겼습니다.',
                                     'saveFailed' =>
                                       e.detail == null
-                                          ? '\uD3C9\uC810 \uC800\uC7A5\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.'
-                                          : '\uD3C9\uC810 \uC800\uC7A5 \uC2E4\uD328: ${e.detail}',
+                                          ? '평점 저장에 실패했습니다. 잠시 후 다시 시도해주세요.'
+                                          : '평점 저장 실패: ${e.detail}',
                                     _ =>
-                                      '\uD3C9\uC810\uC744 \uB9E4\uAE30\uB824\uBA74 \uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
+                                      '평점을 매기려면 로그인이 필요합니다.',
                                   };
                                   ScaffoldMessenger.of(pageContext)
                                       .showSnackBar(
@@ -944,7 +946,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                 ScaffoldMessenger.of(pageContext).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      '\uD3C9\uC810\uC774 \uC131\uACF5\uC801\uC73C\uB85C \uB4F1\uB85D\uB418\uC5C8\uC2B5\uB2C8\uB2E4!',
+                                      '평점이 성공적으로 등록되었습니다!',
                                       style: GoogleFonts.notoSans(),
                                     ),
                                     backgroundColor: Colors.green,
@@ -972,7 +974,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                                 ),
                               ),
                               child: Text(
-                                "\uB4F1\uB85D",
+                                "등록",
                                 style: GoogleFonts.notoSans(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -996,6 +998,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     String title,
     double rating,
     ValueChanged<double> onRatingChanged,
+    bool isDark,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1007,7 +1010,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             style: GoogleFonts.notoSans(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[800],
+              color: isDark ? Colors.white70 : Colors.grey[800],
             ),
           ),
           Row(
@@ -1021,7 +1024,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   child: Icon(
                     starValue <= rating ? Icons.star : Icons.star_border,
                     color:
-                        starValue <= rating ? Colors.amber : Colors.grey[300],
+                        starValue <= rating ? Colors.amber : (isDark ? Colors.white12 : Colors.grey[300]),
                     size: 24,
                   ),
                 ),

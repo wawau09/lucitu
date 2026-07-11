@@ -1344,29 +1344,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Theme Toggle button
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isDarkOverride = !isDark;
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeInOut,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2E2E32) : const Color(0xFFF2F2F7),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isDark ? CupertinoIcons.sun_max_fill : CupertinoIcons.moon_fill,
-                    color: isDark ? Colors.amber : Colors.indigo,
-                    size: 16,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
               // Quick Add Plan button
               GestureDetector(
                 onTap: () => _showEventBottomSheet(),
