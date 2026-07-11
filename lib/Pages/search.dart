@@ -7,6 +7,7 @@ import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/plans_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/widgets/clock_schedule.dart';
+import 'package:placelist/Pages/cupertino_planner_page.dart';
 
 class PlanPage extends ConsumerStatefulWidget {
   const PlanPage({super.key});
@@ -1064,6 +1065,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
             .read(plansProvider.notifier)
             .getPlanDetail(created.id);
       });
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => PlanDetailPage(planId: created.id)),
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1839,16 +1844,16 @@ class _PlanPageState extends ConsumerState<PlanPage> {
   }
 }
 
-class PlanDetailPage extends ConsumerStatefulWidget {
-  const PlanDetailPage({super.key, required this.planId});
+class OldPlanDetailPage extends ConsumerStatefulWidget {
+  const OldPlanDetailPage({super.key, required this.planId});
 
   final String planId;
 
   @override
-  ConsumerState<PlanDetailPage> createState() => _PlanDetailPageState();
+  ConsumerState<OldPlanDetailPage> createState() => _OldPlanDetailPageState();
 }
 
-class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
+class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
   Future<PlanDetail>? _detailFuture;
 
   @override
