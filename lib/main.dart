@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:cupertino_native_better/cupertino_native_better.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'supabase_config.dart';
 import 'package:placelist/Pages/account.dart';
 import 'package:placelist/Pages/search.dart';
@@ -15,12 +16,14 @@ import 'package:placelist/providers/navigation_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await FlutterNaverMap().init(
-    clientId: '0w1sxphr42',
-    onAuthFailed: (error) {
-      debugPrint('Naver Map Auth Failed: $error');
-    },
-  );
+  if (!kIsWeb) {
+    await FlutterNaverMap().init(
+      clientId: '0w1sxphr42',
+      onAuthFailed: (error) {
+        debugPrint('Naver Map Auth Failed: $error');
+      },
+    );
+  }
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
