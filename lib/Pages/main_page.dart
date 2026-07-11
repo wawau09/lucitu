@@ -42,6 +42,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final selectedCategories = ref.watch(selectedCategoriesProvider);
     final storesAsync = ref.watch(storesProvider);
     final searchQuery = ref.watch(searchQueryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen<String>(searchQueryProvider, (previous, next) {
       if (_searchController.text != next) {
@@ -50,7 +51,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -60,13 +61,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
                   controller: _searchController,
                   textAlignVertical: TextAlignVertical.center,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   onChanged: (value) {
                     ref.read(searchQueryProvider.notifier).state = value;
                   },
@@ -81,7 +83,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 11),
                     hintText: "카페 이름 검색 또는 #카테고리",
                     hintStyle: GoogleFonts.notoSans(
-                      color: Colors.grey,
+                      color: isDark ? Colors.white38 : Colors.grey,
                       fontSize: 14,
                     ),
                     border: InputBorder.none,
@@ -91,12 +93,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             ),
             const CategoryFilterSection(),
             const SizedBox(height: 12),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            Divider(height: 1, color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE)),
             Expanded(
               child: storesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) =>
-                    Center(child: Text("\uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4: $err")),
+                    Center(child: Text("오류가 발생했습니다: $err", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87))),
                 data: (storesList) {
                   var stores = List<Store>.from(storesList);
 
@@ -147,10 +149,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   }
 
                   if (stores.isEmpty) {
-                    return _buildEmptyState();
+                    return _buildEmptyState(isDark);
                   }
 
-                  return _buildCafeList(stores);
+                  return _buildCafeList(stores, isDark);
                 },
               ),
             ),
@@ -160,16 +162,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  Widget _buildCafeList(List<Store> stores) {
+  Widget _buildCafeList(List<Store> stores, bool isDark) {
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 100),
       itemCount: stores.length,
-      separatorBuilder: (context, index) => const Divider(
+      separatorBuilder: (context, index) => Divider(
         height: 1,
         indent: 16,
         endIndent: 16,
-        color: Color(0xFFEEEEEE),
+        color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE),
       ),
       itemBuilder: (context, index) {
         final store = stores[index];
@@ -195,13 +197,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     child: Builder(builder: (context) {
                       final imageUrl = _getMainImageUrl(store);
                       if (imageUrl == null) {
-                        return Container(color: Colors.grey[100]);
+                        return Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]);
                       }
                       return Image.network(
                         imageUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
-                            Container(color: Colors.grey[100]),
+                            Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]),
                       );
                     }),
                   ),
@@ -218,7 +220,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           style: GoogleFonts.notoSans(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black87,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -236,9 +238,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             Text(
                               (store.rating ?? 0.0).toStringAsFixed(1),
                               style: GoogleFonts.notoSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white70 : Colors.black87,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -252,7 +254,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 ].join(' · '),
                                 style: GoogleFonts.notoSans(
                                   fontSize: 13,
-                                  color: Colors.grey[600],
+                                  color: isDark ? Colors.white30 : Colors.grey[600],
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -277,7 +279,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
-                                          '\uCC1C \uAE30\uB2A5\uC744 \uC0AC\uC6A9\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
+                                          '찜 기능을 사용하려면 로그인이 필요합니다.',
                                         ),
                                       ),
                                     );
@@ -307,7 +309,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                       : Icons.favorite_border,
                                   color: isFavorited
                                       ? Colors.redAccent
-                                      : Colors.grey[400],
+                                      : (isDark ? Colors.white30 : Colors.grey[400]),
                                   size: 20,
                                 ),
                                 padding: EdgeInsets.zero,
@@ -328,16 +330,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.storefront_outlined, size: 80, color: Colors.grey[200]),
+          Icon(Icons.storefront_outlined, size: 80, color: isDark ? Colors.white10 : Colors.grey[200]),
           const SizedBox(height: 16),
           Text(
-            "\uC544\uC9C1 \uB4F1\uB85D\uB41C \uCE74\uD398\uAC00 \uC5C6\uB124\uC694!",
-            style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 15),
+            "아직 등록된 카페가 없네요!",
+            style: GoogleFonts.notoSans(color: isDark ? Colors.white30 : Colors.grey, fontSize: 15),
           ),
         ],
       ),

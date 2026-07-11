@@ -14,6 +14,7 @@ class CategoryChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isSelected =
         ref.watch(selectedCategoriesProvider).contains(category);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () =>
@@ -26,7 +27,9 @@ class CategoryChip extends ConsumerWidget {
           color: isSelected ? _selectedColor : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? _selectedColor : Colors.grey.shade400,
+            color: isSelected
+                ? _selectedColor
+                : (isDark ? Colors.white30 : Colors.grey.shade400),
             width: 1.2,
           ),
         ),
@@ -35,7 +38,9 @@ class CategoryChip extends ConsumerWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? Colors.white : Colors.grey.shade600,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.grey.shade300 : Colors.grey.shade600),
           ),
         ),
       ),

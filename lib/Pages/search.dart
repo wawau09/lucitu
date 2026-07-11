@@ -26,9 +26,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
   Widget build(BuildContext context) {
     final user = _client.auth.currentUser;
     final plansAsync = ref.watch(plansProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -44,18 +45,18 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                     style: GoogleFonts.notoSans(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.refresh, color: Colors.black87),
+                        icon: Icon(Icons.refresh, color: isDark ? Colors.white70 : Colors.black87),
                         onPressed: () =>
                             ref.read(plansProvider.notifier).refresh(),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.add, color: Colors.black87),
+                        icon: Icon(Icons.add, color: isDark ? Colors.white70 : Colors.black87),
                         onPressed: _showPlanActionChooser,
                       ),
                     ],
@@ -63,18 +64,18 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                 ],
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            Divider(height: 1, color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE)),
             Expanded(
               child: plansAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => _buildErrorState(err.toString()),
+                error: (err, stack) => _buildErrorState(err.toString(), isDark),
                 data: (plans) {
                   if (user == null) {
-                    return _buildLoggedOutState();
+                    return _buildLoggedOutState(isDark);
                   }
 
                   if (plans.isEmpty) {
-                    return _buildEmptyPlansCard();
+                    return _buildEmptyPlansCard(isDark);
                   }
 
                   return RefreshIndicator(
@@ -83,14 +84,14 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(bottom: 100),
                       itemCount: plans.length,
-                      separatorBuilder: (context, index) => const Divider(
+                      separatorBuilder: (context, index) => Divider(
                         height: 1,
                         indent: 16,
                         endIndent: 16,
-                        color: Color(0xFFEEEEEE),
+                        color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE),
                       ),
                       itemBuilder: (context, index) {
-                        return _buildPlanCard(plan: plans[index]);
+                        return _buildPlanCard(plan: plans[index], isDark: isDark);
                       },
                     ),
                   );
@@ -103,23 +104,23 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
-  Widget _buildLoggedOutState() {
+  Widget _buildLoggedOutState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_note_outlined, size: 80, color: Colors.grey[200]),
+          Icon(Icons.event_note_outlined, size: 80, color: isDark ? Colors.white10 : Colors.grey[200]),
           const SizedBox(height: 16),
           Text(
             "일정을 보려면 로그인이 필요합니다.",
-            style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 15),
+            style: GoogleFonts.notoSans(color: isDark ? Colors.white38 : Colors.grey, fontSize: 15),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => ref.read(navigationProvider.notifier).setIndex(2),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black87,
-              foregroundColor: Colors.white,
+              backgroundColor: isDark ? Colors.white : Colors.black87,
+              foregroundColor: isDark ? Colors.black87 : Colors.white,
             ),
             child: const Text('로그인 하러 가기'),
           ),
@@ -128,36 +129,36 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
-  Widget _buildErrorState(String message) {
+  Widget _buildErrorState(String message, bool isDark) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Text(
-          '\uC77C\uC815\uC744 \uBD88\uB7EC\uC624\uB294 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.\n$message',
-          style: GoogleFonts.notoSans(color: Colors.black87, height: 1.5),
+          '일정을 불러오는 중 오류가 발생했습니다.\n$message',
+          style: GoogleFonts.notoSans(color: isDark ? Colors.white70 : Colors.black87, height: 1.5),
           textAlign: TextAlign.center,
         ),
       ),
     );
   }
 
-  Widget _buildEmptyPlansCard() {
+  Widget _buildEmptyPlansCard(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy_outlined, size: 80, color: Colors.grey[200]),
+          Icon(Icons.event_busy_outlined, size: 80, color: isDark ? Colors.white10 : Colors.grey[200]),
           const SizedBox(height: 16),
           Text(
             "아직 등록된 일정이 없네요!",
-            style: GoogleFonts.notoSans(color: Colors.grey, fontSize: 15),
+            style: GoogleFonts.notoSans(color: isDark ? Colors.white38 : Colors.grey, fontSize: 15),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _showCreatePlanDialog,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black87,
-              foregroundColor: Colors.white,
+              backgroundColor: isDark ? Colors.white : Colors.black87,
+              foregroundColor: isDark ? Colors.black87 : Colors.white,
             ),
             child: const Text('새 일정 만들기'),
           ),
@@ -166,7 +167,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
-  Widget _buildPlanCard({required PlanSummary plan}) {
+  Widget _buildPlanCard({required PlanSummary plan, required bool isDark}) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -184,11 +185,11 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               child: Container(
                 width: 100,
                 height: 100,
-                color: Colors.grey[100],
+                color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
                 child: Icon(
                   Icons.event_note,
                   size: 40,
-                  color: Colors.grey[400],
+                  color: isDark ? Colors.white24 : Colors.grey[400],
                 ),
               ),
             ),
@@ -207,7 +208,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                             style: GoogleFonts.notoSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -216,14 +217,14 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                         if (plan.sharedWithMe)
                           _buildPill(
                             label: '공유중',
-                            background: const Color(0xFFF0F6FF),
-                            foreground: const Color(0xFF2F5E8F),
+                            background: isDark ? const Color(0xFF1E3A5F) : const Color(0xFFF0F6FF),
+                            foreground: isDark ? const Color(0xFF82B1FF) : const Color(0xFF2F5E8F),
                           )
                         else
                           _buildPill(
                             label: '내 일정',
-                            background: const Color(0xFFF5F7FB),
-                            foreground: const Color(0xFF374151),
+                            background: isDark ? const Color(0xFF2D3748) : const Color(0xFFF5F7FB),
+                            foreground: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF374151),
                           ),
                       ],
                     ),
@@ -233,7 +234,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                       children: [
                         Icon(
                           Icons.calendar_today,
-                          color: Colors.grey[600],
+                          color: isDark ? Colors.white38 : Colors.grey[600],
                           size: 14,
                         ),
                         const SizedBox(width: 4),
@@ -242,7 +243,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                             _formatDate(plan.planDate),
                             style: GoogleFonts.notoSans(
                               fontSize: 14,
-                              color: Colors.grey[600],
+                              color: isDark ? Colors.white54 : Colors.grey[600],
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -257,7 +258,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                           '코드: ${plan.planCode}',
                           style: GoogleFonts.notoSans(
                             fontSize: 12,
-                            color: Colors.grey[500],
+                            color: isDark ? Colors.white30 : Colors.grey[500],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -265,10 +266,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                         if (plan.isOwner)
                           IconButton(
                             onPressed: () => _confirmDeletePlan(plan),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.delete_outline,
                               size: 20,
-                              color: Colors.grey,
+                              color: isDark ? Colors.white38 : Colors.grey,
                             ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
