@@ -1851,9 +1851,9 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         children: [
           // Left Side: Time (09:00)
           SizedBox(
-            width: 50,
+            width: 44,
             child: Padding(
-              padding: const EdgeInsets.only(top: 14),
+              padding: const EdgeInsets.only(top: 20),
               child: Text(
                 event.startTime,
                 style: GoogleFonts.outfit(
@@ -1867,25 +1867,24 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           ),
           // Middle Side: Vertical Connection Line + Interactive Status Circle Dot
           SizedBox(
-            width: 24,
+            width: 16,
             child: Column(
               children: [
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isFirst ? Colors.transparent : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA)),
-                  ),
+                Container(
+                  height: 24,
+                  width: 2,
+                  color: isFirst ? Colors.transparent : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA)),
                 ),
                 GestureDetector(
                   onTap: () => _cycleEventStatus(event),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    width: 16,
-                    height: 16,
+                    width: 12,
+                    height: 12,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: statusColor.withOpacity(0.2),
-                      border: Border.all(color: statusColor, width: 3),
+                      border: Border.all(color: statusColor, width: 2),
                     ),
                   ),
                 ),
@@ -1898,7 +1897,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           // Right Side: Card UI
           Expanded(
             child: Padding(

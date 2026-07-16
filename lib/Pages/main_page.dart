@@ -103,39 +103,41 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   var stores = List<Store>.from(storesList);
 
                   if (searchQuery.isNotEmpty) {
-                    if (searchQuery.startsWith('#')) {
-                      // # 접두사: 카테고리 태그 또는 지역 필터링
-                      final q = searchQuery.substring(1).toLowerCase().trim();
-                      if (q.isNotEmpty) {
-                        stores = stores.where((store) {
-                          // region 매칭
-                          final regionMatch = store.region != null &&
-                              store.region!.toLowerCase().contains(q);
-                          // categoryTags 직접 매칭
-                          final tagMatch = store.categoryTags.any(
-                            (tag) => tag.toLowerCase().contains(q),
-                          );
-                          // allCategories label 매칭 후 store의 category와 비교
-                          final catMatch = getStoreCategories(store).any(
-                            (cat) => cat.label.toLowerCase().contains(q),
-                          );
-                          return regionMatch || tagMatch || catMatch;
-                        }).toList();
-                      }
-                    } else {
-                      // 일반 검색: 카페 이름 + 카테고리 태그 + 지역
-                      final q = searchQuery.toLowerCase();
-                      stores = stores
-                          .where(
-                            (store) =>
-                                store.name.toLowerCase().contains(q) ||
+                    final terms = searchQuery
+                        .split(RegExp(r'\s+'))
+                        .map((t) => t.trim())
+                        .where((t) => t.isNotEmpty)
+                        .toList();
+
+                    if (terms.isNotEmpty) {
+                      stores = stores.where((store) {
+                        return terms.every((term) {
+                          if (term.startsWith('#')) {
+                            final q = term.substring(1).toLowerCase();
+                            if (q.isEmpty) return true;
+                            // region 매칭
+                            final regionMatch = store.region != null &&
+                                store.region!.toLowerCase().contains(q);
+                            // categoryTags 직접 매칭
+                            final tagMatch = store.categoryTags.any(
+                              (tag) => tag.toLowerCase().contains(q),
+                            );
+                            // allCategories label 매칭 후 store의 category와 비교
+                            final catMatch = getStoreCategories(store).any(
+                              (cat) => cat.label.toLowerCase().contains(q),
+                            );
+                            return regionMatch || tagMatch || catMatch;
+                          } else {
+                            final q = term.toLowerCase();
+                            return store.name.toLowerCase().contains(q) ||
                                 (store.region != null &&
                                     store.region!.toLowerCase().contains(q)) ||
                                 store.categoryTags.any(
                                   (tag) => tag.toLowerCase().contains(q),
-                                ),
-                          )
-                          .toList();
+                                );
+                          }
+                        });
+                      }).toList();
                     }
                   }
 
@@ -144,7 +146,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       final storeCats = getStoreCategories(store);
                       return ref
                           .read(selectedCategoriesProvider.notifier)
-                          .matchesAny(storeCats);
+                          .matchesAll(storeCats);
                     }).toList();
                   }
 

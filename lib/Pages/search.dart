@@ -661,7 +661,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 64,
+              width: 48,
               child: Text(
                 _formatItemTime(item.startTime),
                 style: GoogleFonts.notoSans(
@@ -671,17 +671,17 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 6),
             Container(
               width: 10,
               height: 10,
-              margin: const EdgeInsets.only(top: 4),
+              margin: const EdgeInsets.only(top: 6),
               decoration: const BoxDecoration(
                 color: Color(0xFF3267A2),
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -716,7 +716,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 64,
+            width: 48,
             child: Text(
               _formatItemTime(item.startTime),
               style: GoogleFonts.notoSans(
@@ -726,17 +726,17 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           Container(
             width: 10,
             height: 10,
-            margin: const EdgeInsets.only(top: 4),
+            margin: const EdgeInsets.only(top: 6),
             decoration: const BoxDecoration(
               color: Color(0xFF3267A2),
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(14),
@@ -2577,7 +2577,7 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
                 children: [
                   // Time
                   SizedBox(
-                    width: 48,
+                    width: 44,
                     child: Text(
                       timeString,
                       style: GoogleFonts.notoSans(
@@ -2588,7 +2588,7 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
                       textAlign: TextAlign.right,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 6),
                   // Clock icon instead of circle dot
                   Icon(
                     itemsInHour.isNotEmpty
@@ -2599,7 +2599,7 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
                         ? const Color(0xFF3267A2)
                         : const Color(0xFFD1D5DB),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 6),
                   // Items
                   Expanded(
                     child: itemsInHour.isEmpty
@@ -2766,7 +2766,7 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 64,
+              width: 48,
               child: Text(
                 _formatItemTime(item.startTime),
                 style: GoogleFonts.notoSans(
@@ -2776,17 +2776,17 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 6),
             Container(
               width: 10,
               height: 10,
-              margin: const EdgeInsets.only(top: 4),
+              margin: const EdgeInsets.only(top: 6),
               decoration: const BoxDecoration(
                 color: Color(0xFF3267A2),
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2854,7 +2854,7 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 64,
+            width: 48,
             child: Text(
               _formatItemTime(item.startTime),
               style: GoogleFonts.notoSans(
@@ -2864,17 +2864,17 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           Container(
             width: 10,
             height: 10,
-            margin: const EdgeInsets.only(top: 4),
+            margin: const EdgeInsets.only(top: 6),
             decoration: const BoxDecoration(
               color: Color(0xFF3267A2),
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(14),
