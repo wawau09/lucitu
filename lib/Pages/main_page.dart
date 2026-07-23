@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/store.dart';
@@ -7,6 +9,7 @@ import 'package:placelist/data/category_data.dart';
 import 'package:placelist/providers/category_provider.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
+import 'package:placelist/providers/search_history_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
 import 'package:placelist/widgets/category_section.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,6 +23,9 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   late final TextEditingController _searchController;
+  bool _isMapView = false;
+  String _sortBy = 'default'; // 'default', 'rating', 'name'
+  Store? _selectedMapStore;
 
   @override
   void initState() {
@@ -37,11 +43,20 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     return store.imageUrls.isNotEmpty ? store.imageUrls.first : null;
   }
 
+  void _onSearchSubmitted(String value) {
+    final query = value.trim();
+    if (query.isNotEmpty) {
+      ref.read(searchQueryProvider.notifier).state = query;
+      ref.read(searchHistoryProvider.notifier).addQuery(query);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedCategories = ref.watch(selectedCategoriesProvider);
     final storesAsync = ref.watch(storesProvider);
     final searchQuery = ref.watch(searchQueryProvider);
+    final searchHistory = ref.watch(searchHistoryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen<String>(searchQueryProvider, (previous, next) {
@@ -57,43 +72,171 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 검색바 및 뷰 토글
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: TextField(
-                  controller: _searchController,
-                  textAlignVertical: TextAlignVertical.center,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                  onChanged: (value) {
-                    ref.read(searchQueryProvider.notifier).state = value;
-                  },
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: Colors.grey,
-                      size: 20,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: TextField(
+                        controller: _searchController,
+                        textAlignVertical: TextAlignVertical.center,
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                        onChanged: (value) {
+                          ref.read(searchQueryProvider.notifier).state = value;
+                        },
+                        onSubmitted: _onSearchSubmitted,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                          prefixIconConstraints: const BoxConstraints(minWidth: 32),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    ref.read(searchQueryProvider.notifier).state = '';
+                                  },
+                                )
+                              : null,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                          hintText: "카페 이름 검색 또는 #카테고리",
+                          hintStyle: GoogleFonts.notoSans(
+                            color: isDark ? Colors.white38 : Colors.grey,
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                      ),
                     ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 32),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 11),
-                    hintText: "카페 이름 검색 또는 #카테고리",
-                    hintStyle: GoogleFonts.notoSans(
-                      color: isDark ? Colors.white38 : Colors.grey,
-                      fontSize: 14,
-                    ),
-                    border: InputBorder.none,
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  // 리스트/지도 토글 버튼
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        _isMapView ? Icons.format_list_bulleted : Icons.map_outlined,
+                        color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
+                      ),
+                      tooltip: _isMapView ? '목록으로 보기' : '지도로 보기',
+                      onPressed: () {
+                        setState(() {
+                          _isMapView = !_isMapView;
+                          _selectedMapStore = null;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
+
+            // 최근 검색어 Chip 목록 (검색어가 비어있거나 히스토리가 있을 때)
+            if (searchHistory.isNotEmpty)
+              Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: searchHistory.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (context, index) {
+                    final item = searchHistory[index];
+                    return InputChip(
+                      label: Text(item, style: const TextStyle(fontSize: 12)),
+                      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                      deleteIcon: const Icon(Icons.close, size: 14),
+                      onDeleted: () {
+                        ref.read(searchHistoryProvider.notifier).removeQuery(item);
+                      },
+                      onPressed: () {
+                        _searchController.text = item;
+                        ref.read(searchQueryProvider.notifier).state = item;
+                        _onSearchSubmitted(item);
+                      },
+                    );
+                  },
+                ),
+              ),
+
+            const SizedBox(height: 4),
             const CategoryFilterSection(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+
+            // 정렬 옵션 Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _isMapView ? '지도 탐색' : '카페 목록',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white70 : Colors.black54,
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    initialValue: _sortBy,
+                    onSelected: (val) {
+                      setState(() {
+                        _sortBy = val;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.sort,
+                            size: 16,
+                            color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _sortBy == 'rating'
+                                ? '평점 높은 순'
+                                : _sortBy == 'name'
+                                    ? '이름순'
+                                    : '추천순',
+                            style: GoogleFonts.notoSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
+                            ),
+                          ),
+                          const Icon(Icons.arrow_drop_down, size: 18),
+                        ],
+                      ),
+                    ),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(value: 'default', child: Text('추천순')),
+                      const PopupMenuItem(value: 'rating', child: Text('평점 높은 순')),
+                      const PopupMenuItem(value: 'name', child: Text('이름순')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
             Divider(height: 1, color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE)),
+
+            // 메인 컨텐츠 (리스트 뷰 vs 지도 뷰)
             Expanded(
               child: storesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -115,26 +258,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           if (term.startsWith('#')) {
                             final q = term.substring(1).toLowerCase();
                             if (q.isEmpty) return true;
-                            // region 매칭
-                            final regionMatch = store.region != null &&
-                                store.region!.toLowerCase().contains(q);
-                            // categoryTags 직접 매칭
                             final tagMatch = store.categoryTags.any(
                               (tag) => tag.toLowerCase().contains(q),
                             );
-                            // allCategories label 매칭 후 store의 category와 비교
                             final catMatch = getStoreCategories(store).any(
                               (cat) => cat.label.toLowerCase().contains(q),
                             );
-                            return regionMatch || tagMatch || catMatch;
+                            return tagMatch || catMatch;
                           } else {
                             final q = term.toLowerCase();
-                            return store.name.toLowerCase().contains(q) ||
-                                (store.region != null &&
-                                    store.region!.toLowerCase().contains(q)) ||
-                                store.categoryTags.any(
-                                  (tag) => tag.toLowerCase().contains(q),
-                                );
+                            return store.name.toLowerCase().contains(q);
                           }
                         });
                       }).toList();
@@ -150,13 +283,194 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     }).toList();
                   }
 
+                  // 정렬 적용
+                  if (_sortBy == 'rating') {
+                    stores.sort((a, b) => (b.rating ?? 0.0).compareTo(a.rating ?? 0.0));
+                  } else if (_sortBy == 'name') {
+                    stores.sort((a, b) => a.name.compareTo(b.name));
+                  }
+
                   if (stores.isEmpty) {
                     return _buildEmptyState(isDark);
+                  }
+
+                  if (_isMapView) {
+                    return _buildMapView(stores, isDark);
                   }
 
                   return _buildCafeList(stores, isDark);
                 },
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapView(List<Store> stores, bool isDark) {
+    if (kIsWeb) {
+      return Center(
+        child: Text(
+          '웹 환경에서는 기본 지도 호환 모드로 작동합니다.',
+          style: GoogleFonts.notoSans(color: isDark ? Colors.white70 : Colors.black87),
+        ),
+      );
+    }
+
+    final validStores = stores.where((s) => s.latitude != null && s.longitude != null).toList();
+
+    if (validStores.isEmpty) {
+      return Center(
+        child: Text(
+          "지도에 표시할 위치 정보가 없습니다.",
+          style: GoogleFonts.notoSans(color: isDark ? Colors.white54 : Colors.grey[600]),
+        ),
+      );
+    }
+
+    final initialLat = validStores.first.latitude!;
+    final initialLng = validStores.first.longitude!;
+
+    return Stack(
+      children: [
+        NaverMap(
+          options: NaverMapViewOptions(
+            initialCameraPosition: NCameraPosition(
+              target: NLatLng(initialLat, initialLng),
+              zoom: 13,
+            ),
+            locationButtonEnable: true,
+            indoorEnable: true,
+          ),
+          onMapReady: (controller) {
+            final markers = <NMarker>{};
+            for (final store in validStores) {
+              if (store.latitude == null || store.longitude == null) continue;
+              final marker = NMarker(
+                id: store.id ?? store.name,
+                position: NLatLng(store.latitude!, store.longitude!),
+              );
+              marker.setOnTapListener((NMarker m) {
+                if (mounted) {
+                  setState(() {
+                    _selectedMapStore = store;
+                  });
+                }
+              });
+              markers.add(marker);
+            }
+            if (markers.isNotEmpty) {
+              controller.addOverlayAll(markers);
+            }
+          },
+        ),
+        if (_selectedMapStore != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 100,
+            child: _buildStorePreviewCard(_selectedMapStore!, isDark),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStorePreviewCard(Store store, bool isDark) {
+    final imageUrl = _getMainImageUrl(store);
+    return Card(
+      elevation: 8,
+      color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            if (imageUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
+                  width: 70,
+                  height: 70,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 70,
+                    height: 70,
+                    color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                  ),
+                ),
+              ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    store.name,
+                    style: GoogleFonts.notoSans(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 14),
+                      const SizedBox(width: 2),
+                      Text(
+                        (store.rating ?? 0.0).toStringAsFixed(1),
+                        style: GoogleFonts.notoSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          store.region ?? '',
+                          style: GoogleFonts.notoSans(
+                            fontSize: 12,
+                            color: isDark ? Colors.white38 : Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StoreDetailPage(store: store),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3267A2),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('상세보기'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: () {
+                setState(() {
+                  _selectedMapStore = null;
+                });
+              },
             ),
           ],
         ),
@@ -240,9 +554,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             Text(
                               (store.rating ?? 0.0).toStringAsFixed(1),
                               style: GoogleFonts.notoSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white70 : Colors.black87,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white70 : Colors.black87,
                               ),
                             ),
                             const SizedBox(width: 8),
