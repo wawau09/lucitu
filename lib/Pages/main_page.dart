@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -12,6 +13,7 @@ import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/search_history_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
 import 'package:placelist/widgets/category_section.dart';
+import 'package:placelist/widgets/map_marker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
@@ -264,10 +266,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             final catMatch = getStoreCategories(store).any(
                               (cat) => cat.label.toLowerCase().contains(q),
                             );
-                            return tagMatch || catMatch;
+                            final regionMatch =
+                                store.region?.toLowerCase().contains(q) ?? false;
+                            return tagMatch || catMatch || regionMatch;
                           } else {
                             final q = term.toLowerCase();
-                            return store.name.toLowerCase().contains(q);
+                            final nameMatch = store.name.toLowerCase().contains(q);
+                            final regionMatch =
+                                store.region?.toLowerCase().contains(q) ?? false;
+                            final tagMatch = store.categoryTags.any(
+                              (tag) => tag.toLowerCase().contains(q),
+                            );
+                            final catMatch = getStoreCategories(store).any(
+                              (cat) => cat.label.toLowerCase().contains(q),
+                            );
+                            return nameMatch || regionMatch || tagMatch || catMatch;
                           }
                         });
                       }).toList();
@@ -291,7 +304,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   }
 
                   if (stores.isEmpty) {
-                    return _buildEmptyState(isDark);
+                    final hasFilter = searchQuery.isNotEmpty || selectedCategories.isNotEmpty;
+                    return _buildEmptyState(isDark, isFiltered: hasFilter);
                   }
 
                   if (_isMapView) {
@@ -343,19 +357,54 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             locationButtonEnable: true,
             indoorEnable: true,
           ),
-          onMapReady: (controller) {
+          onMapReady: (controller) async {
             final markers = <NMarker>{};
             for (final store in validStores) {
               if (store.latitude == null || store.longitude == null) continue;
-              final marker = NMarker(
-                id: store.id ?? store.name,
-                position: NLatLng(store.latitude!, store.longitude!),
+              final isSelected = _selectedMapStore?.id == store.id;
+              final marker = await buildCustomMarker(
+                context: context,
+                store: store,
+                isSelected: isSelected,
+                isDark: isDark,
               );
-              marker.setOnTapListener((NMarker m) {
-                if (mounted) {
-                  setState(() {
-                    _selectedMapStore = store;
+              marker.setOnTapListener((NMarker m) async {
+                if (!mounted) return;
+                setState(() {
+                  _selectedMapStore = store;
+                });
+                // 탭한 마커 위치로 지도를 부드럽게 이동 및 줌인
+                if (store.latitude != null && store.longitude != null) {
+                  controller.updateCamera(
+                    NCameraUpdate.scrollAndZoomTo(
+                      target: NLatLng(store.latitude!, store.longitude!),
+                      zoom: 15.5,
+                    ),
+                  );
+                }
+                // 선택 마커 강조 갱신
+                controller.clearOverlays();
+                for (final s in validStores) {
+                  if (s.latitude == null || s.longitude == null) continue;
+                  final updated = await buildCustomMarker(
+                    context: context,
+                    store: s,
+                    isSelected: s.id == store.id,
+                    isDark: isDark,
+                  );
+                  updated.setOnTapListener((NMarker m2) async {
+                    if (!mounted) return;
+                    setState(() => _selectedMapStore = s);
+                    if (s.latitude != null && s.longitude != null) {
+                      controller.updateCamera(
+                        NCameraUpdate.scrollAndZoomTo(
+                          target: NLatLng(s.latitude!, s.longitude!),
+                          zoom: 15.5,
+                        ),
+                      );
+                    }
                   });
+                  controller.addOverlayAll({updated});
                 }
               });
               markers.add(marker);
@@ -389,15 +438,32 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             if (imageUrl != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  imageUrl,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
                   width: 70,
                   height: 70,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  placeholder: (context, url) => Container(
                     width: 70,
                     height: 70,
                     color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                    child: const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    width: 70,
+                    height: 70,
+                    color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                    child: Icon(
+                      Icons.broken_image,
+                      color: isDark ? Colors.white24 : Colors.grey[400],
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
@@ -479,185 +545,223 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildCafeList(List<Store> stores, bool isDark) {
-    return ListView.separated(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 100),
-      itemCount: stores.length,
-      separatorBuilder: (context, index) => Divider(
-        height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE),
-      ),
-      itemBuilder: (context, index) {
-        final store = stores[index];
-        return InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => StoreDetailPage(store: store),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 130,
-                    height: 130,
-                    child: Builder(builder: (context) {
-                      final imageUrl = _getMainImageUrl(store);
-                      if (imageUrl == null) {
-                        return Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]);
-                      }
-                      return Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]),
-                      );
-                    }),
-                  ),
+    return RefreshIndicator(
+      onRefresh: () => ref.read(storesProvider.notifier).fetchStores(),
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.only(bottom: 100),
+        itemCount: stores.length,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          indent: 16,
+          endIndent: 16,
+          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE),
+        ),
+        itemBuilder: (context, index) {
+          final store = stores[index];
+          return InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StoreDetailPage(store: store),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 130,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          store.name,
-                          style: GoogleFonts.notoSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              (store.rating ?? 0.0).toStringAsFixed(1),
-                              style: GoogleFonts.notoSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white70 : Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                [
-                                  if (store.region != null &&
-                                      store.region!.isNotEmpty)
-                                    store.region!,
-                                  ...store.categoryTags.take(2),
-                                ].join(' · '),
-                                style: GoogleFonts.notoSans(
-                                  fontSize: 13,
-                                  color: isDark ? Colors.white30 : Colors.grey[600],
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 130,
+                      height: 130,
+                      child: Builder(builder: (context) {
+                        final imageUrl = _getMainImageUrl(store);
+                        if (imageUrl == null) {
+                          return Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]);
+                        }
+                        return Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Consumer(
-                          builder: (context, ref, child) {
-                            final favoriteIds = ref.watch(favoritesProvider);
-                            final isFavorited = store.id != null &&
-                                favoriteIds.contains(store.id);
-
-                            return Align(
-                              alignment: Alignment.bottomRight,
-                              child: IconButton(
-                                onPressed: () {
-                                  final user =
-                                      Supabase.instance.client.auth.currentUser;
-                                  if (user == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          '찜 기능을 사용하려면 로그인이 필요합니다.',
-                                        ),
-                                      ),
-                                    );
-                                    ref
-                                        .read(navigationProvider.notifier)
-                                        .setIndex(2);
-                                    return;
-                                  }
-                                  if (store.id != null) {
-                                    ref
-                                        .read(favoritesProvider.notifier)
-                                        .toggleFavorite(store.id!)
-                                        .catchError((e) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              '찜 처리 중 오류가 발생했습니다. 다시 시도해 주세요.'),
-                                        ),
-                                      );
-                                    });
-                                  }
-                                },
-                                icon: Icon(
-                                  isFavorited
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: isFavorited
-                                      ? Colors.redAccent
-                                      : (isDark ? Colors.white30 : Colors.grey[400]),
-                                  size: 20,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
                               ),
                             );
                           },
-                        ),
-                      ],
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]),
+                        );
+                      }),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: SizedBox(
+                      height: 130,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            store.name,
+                            style: GoogleFonts.notoSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                (store.rating ?? 0.0).toStringAsFixed(1),
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white70 : Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  [
+                                    if (store.region != null &&
+                                        store.region!.isNotEmpty)
+                                      store.region!,
+                                    ...store.categoryTags.take(2),
+                                  ].join(' · '),
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 13,
+                                    color: isDark ? Colors.white30 : Colors.grey[600],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final favoriteIds = ref.watch(favoritesProvider);
+                              final isFavorited = store.id != null &&
+                                  favoriteIds.contains(store.id);
+
+                              return Align(
+                                alignment: Alignment.bottomRight,
+                                child: IconButton(
+                                  onPressed: () {
+                                    final user =
+                                        Supabase.instance.client.auth.currentUser;
+                                    if (user == null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            '찜 기능을 사용하려면 로그인이 필요합니다.',
+                                          ),
+                                        ),
+                                      );
+                                      ref
+                                          .read(navigationProvider.notifier)
+                                          .setIndex(2);
+                                      return;
+                                    }
+                                    if (store.id != null) {
+                                      ref
+                                          .read(favoritesProvider.notifier)
+                                          .toggleFavorite(store.id!)
+                                          .catchError((e) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                '찜 처리 중 오류가 발생했습니다. 다시 시도해 주세요.'),
+                                          ),
+                                        );
+                                      });
+                                    }
+                                  },
+                                  icon: Icon(
+                                    isFavorited
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: isFavorited
+                                        ? Colors.redAccent
+                                        : (isDark ? Colors.white30 : Colors.grey[400]),
+                                    size: 20,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(bool isDark, {bool isFiltered = false}) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.storefront_outlined, size: 80, color: isDark ? Colors.white10 : Colors.grey[200]),
-          const SizedBox(height: 16),
-          Text(
-            "아직 등록된 카페가 없네요!",
-            style: GoogleFonts.notoSans(color: isDark ? Colors.white30 : Colors.grey, fontSize: 15),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isFiltered ? Icons.search_off_outlined : Icons.storefront_outlined,
+              size: 80,
+              color: isDark ? Colors.white24 : Colors.grey[300],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isFiltered ? "검색 결과가 없습니다" : "아직 등록된 카페가 없네요!",
+              style: GoogleFonts.notoSans(
+                color: isDark ? Colors.white70 : Colors.grey[800],
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (isFiltered) ...[
+              const SizedBox(height: 8),
+              Text(
+                "다른 검색어나 카테고리 필터를 시도해보세요.",
+                style: GoogleFonts.notoSans(
+                  color: isDark ? Colors.white38 : Colors.grey[600],
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

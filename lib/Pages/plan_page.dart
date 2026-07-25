@@ -7,6 +7,10 @@ import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/plans_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/widgets/clock_schedule.dart';
+import 'package:placelist/widgets/plan_share_card.dart';
+import 'package:placelist/widgets/plan_item_form_sheet.dart';
+import 'package:placelist/widgets/plan/plan_collaborator_section.dart';
+import 'package:placelist/utils/share_helper.dart';
 import 'package:placelist/Pages/cupertino_planner_page.dart';
 
 class PlanPage extends ConsumerStatefulWidget {
@@ -21,6 +25,58 @@ class _PlanPageState extends ConsumerState<PlanPage> {
   String? _selectedPlanId;
   Future<PlanDetail>? _selectedPlanFuture;
   bool _queuedInitialSelection = false;
+  final GlobalKey _shareCardKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkClipboardForPlanCode();
+    });
+  }
+
+  Future<void> _checkClipboardForPlanCode() async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text?.trim();
+      if (text != null && text.toUpperCase().startsWith('PL-') && text.length >= 8) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('복사된 일정 코드($text)를 발견했습니다!'),
+            action: SnackBarAction(
+              label: '참가하기',
+              onPressed: () => _joinByCode(text),
+            ),
+            duration: const Duration(seconds: 6),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _joinByCode(String code) async {
+    try {
+      final joined = await ref.read(plansProvider.notifier).joinPlanByCode(planCode: code);
+      _reloadSelectedPlan(joined.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('일정에 성공적으로 참가했습니다!'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('일정 참가 실패: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -540,10 +596,18 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                         },
                       ),
               ),
+              if (detail.items.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _buildShareButton(detail),
+              ],
               const SizedBox(height: 14),
               _buildDetailSection(
-                title: '\uACF5\uB3D9 \uC791\uC5C5\uC790',
-                child: _buildCollaboratorSection(detail),
+                title: '공동 작업자',
+                child: PlanCollaboratorSection(
+                  detail: detail,
+                  onRemoveCollaborator: (member) =>
+                      _confirmRemoveCollaborator(detail.plan.id, member),
+                ),
               ),
               if (detail.plan.isOwner) ...[
                 const SizedBox(height: 14),
@@ -567,6 +631,95 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
+  Future<void> _confirmRemoveCollaborator(
+    String planId,
+    PlanCollaborator member,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('공동 작업자 내보내기'),
+        content: Text('${member.name} 님을 이 일정에서 내보내시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('내보내기'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      try {
+        await ref.read(plansProvider.notifier).removeCollaborator(
+              planId: planId,
+              email: member.email,
+            );
+        _reloadSelectedPlan(planId);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('내보내기 실패: $e')),
+        );
+      }
+    }
+  }
+
+  // ── 공유 버튼 ──
+  Widget _buildShareButton(PlanDetail detail) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _showShareDialog(detail),
+        icon: const Icon(Icons.ios_share_rounded, size: 17),
+        label: Text(
+          '일정 카드로 공유하기',
+          style: GoogleFonts.notoSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF6C63FF),
+          side: BorderSide(
+            color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
+          ),
+          backgroundColor: isDark
+              ? const Color(0xFF6C63FF).withValues(alpha: 0.08)
+              : const Color(0xFF6C63FF).withValues(alpha: 0.04),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      ),
+    );
+  }
+
+  // ── 공유 미리보기 다이얼로그 ──
+  Future<void> _showShareDialog(PlanDetail detail) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _SharePreviewSheet(
+          shareCardKey: _shareCardKey,
+          plan: detail.plan,
+          items: detail.items,
+        );
+      },
+    );
+  }
+
   BoxDecoration _detailDecoration() {
     return BoxDecoration(
       color: Colors.white,
@@ -581,6 +734,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       ],
     );
   }
+
 
   Widget _buildDetailSection({required String title, required Widget child}) {
     return Container(
@@ -812,7 +966,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                             ? null
                             : () => _confirmRemoveCollaborator(
                                 detail.plan.id,
-                                member.email,
+                                member,
                               ),
                         child: Text(
                           member.isSelf ? '\uB098' : '\uC0AD\uC81C',
@@ -1648,462 +1802,48 @@ class _PlanPageState extends ConsumerState<PlanPage> {
   }
 
   Future<void> _showAddItemDialog(String planId, {TimeOfDay? initialTime}) async {
-    final titleController = TextEditingController();
-    final startTimeController = TextEditingController(
-      text: initialTime != null
-          ? '${initialTime.hour.toString().padLeft(2, '0')}${initialTime.minute.toString().padLeft(2, '0')}'
-          : '',
+    final draft = await showPlanItemFormSheet(
+      context,
+      isEdit: false,
+      initialTime: initialTime,
     );
-    final endTimeController = TextEditingController();
-    String? selectedColor;
-
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  20,
-                  24,
-                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        '\uD56D\uBAA9 \uCD94\uAC00',
-                        style: GoogleFonts.notoSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF111827),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: '\uC77C\uC815\uBA85',
-                          hintText: '\uC77C\uC815 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694',
-                          prefixIcon: Icon(Icons.event_note_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Start time row
-                      TextField(
-                        controller: startTimeController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [_TimeInputFormatter()],
-                        decoration: const InputDecoration(
-                          labelText: '시작 시간 (예: 1430 또는 14:30)',
-                          hintText: '시간 입력',
-                          prefixIcon: Icon(Icons.access_time, color: Color(0xFF3267A2)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // End time row
-                      TextField(
-                        controller: endTimeController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [_TimeInputFormatter()],
-                        decoration: const InputDecoration(
-                          labelText: '종료 시간 (선택, 예: 1530 또는 15:30)',
-                          hintText: '시간 입력',
-                          prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12,
-                        children: _planColors.map((c) {
-                          final isSelected = selectedColor == c;
-                          return GestureDetector(
-                            onTap: () => setDialogState(() => selectedColor = c),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: c == null ? Colors.grey[200] : Color(int.parse(c.substring(1, 7), radix: 16) + 0xFF000000),
-                                border: isSelected ? Border.all(color: Colors.black54, width: 2) : Border.all(color: Colors.transparent, width: 2),
-                              ),
-                              child: c == null ? const Icon(Icons.palette, size: 16, color: Colors.grey) : null,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () =>
-                                  Navigator.of(sheetContext).pop(false),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.grey[700],
-                                side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 13,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: const Text('\uCDE8\uC18C'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () =>
-                                  Navigator.of(sheetContext).pop(true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF3267A2),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 13,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text('\uC800\uC7A5'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    if (result != true || !mounted) {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
-      return;
-    }
-
-    final title = titleController.text.trim();
-    if (title.isEmpty) {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
-      return;
-    }
-
-    String? parseTimeStr(String text) {
-      text = text.trim();
-      if (text.isEmpty) return null;
-
-      if (text.contains(':')) {
-        final parts = text.split(':');
-        if (parts.length >= 2) {
-          final hStr = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
-          final mStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
-          final h = int.tryParse(hStr);
-          final m = int.tryParse(mStr);
-          if (h != null && m != null && h < 24 && m < 60) {
-            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-          }
-        }
-      }
-
-      final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (digits.isEmpty) return null;
-
-      int h, m;
-      if (digits.length <= 2) {
-        h = int.tryParse(digits) ?? 0;
-        m = 0;
-      } else if (digits.length == 3) {
-        h = int.tryParse(digits.substring(0, 1)) ?? 0;
-        m = int.tryParse(digits.substring(1)) ?? 0;
-      } else {
-        h = int.tryParse(digits.substring(0, 2)) ?? 0;
-        m = int.tryParse(digits.substring(2, 4)) ?? 0;
-      }
-
-      if (h >= 24 || m >= 60) return null;
-      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-    }
-
-    final sTime = parseTimeStr(startTimeController.text.trim());
-    final eTime = parseTimeStr(endTimeController.text.trim());
+    if (draft == null || !mounted) return;
 
     try {
-      await ref
-          .read(plansProvider.notifier)
-          .addPlanItem(
+      await ref.read(plansProvider.notifier).addPlanItem(
             planId: planId,
-            draft: PlanDraft(
-              title: title,
-              startTime: sTime,
-              endTime: eTime,
-              color: selectedColor,
-            ),
+            draft: draft,
           );
       _reloadSelectedPlan(planId);
-      if (!mounted) return;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('\uD56D\uBAA9 \uCD94\uAC00 \uC2E4\uD328: $e')),
+        SnackBar(content: Text('항목 추가 실패: $e')),
       );
-    } finally {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
     }
   }
 
+
+
   Future<void> _showEditItemDialog(PlanItem item, String planId) async {
-    final titleController = TextEditingController(text: item.title);
-    final startTimeController = TextEditingController(text: item.startTime?.replaceAll(':', '') ?? '');
-    final endTimeController = TextEditingController(text: item.endTime?.replaceAll(':', '') ?? '');
-    String? selectedColor = item.color;
-
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  20,
-                  24,
-                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '항목 수정',
-                            style: GoogleFonts.notoSans(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF111827),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            onPressed: () {
-                              Navigator.of(sheetContext).pop(false);
-                              _confirmDeleteItem(planId, item);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: '일정명',
-                          hintText: '일정 이름을 입력하세요',
-                          prefixIcon: Icon(Icons.event_note_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: startTimeController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [_TimeInputFormatter()],
-                        decoration: const InputDecoration(
-                          labelText: '시작 시간 (예: 1430)',
-                          hintText: '시간 입력',
-                          prefixIcon: Icon(Icons.access_time, color: Color(0xFF3267A2)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: endTimeController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [_TimeInputFormatter()],
-                        decoration: const InputDecoration(
-                          labelText: '종료 시간 (선택, 예: 1530)',
-                          hintText: '시간 입력',
-                          prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12,
-                        children: _planColors.map((c) {
-                          final isSelected = selectedColor == c;
-                          return GestureDetector(
-                            onTap: () => setDialogState(() => selectedColor = c),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: c == null ? Colors.grey[200] : Color(int.parse(c.substring(1, 7), radix: 16) + 0xFF000000),
-                                border: isSelected ? Border.all(color: Colors.black54, width: 2) : Border.all(color: Colors.transparent, width: 2),
-                              ),
-                              child: c == null ? const Icon(Icons.palette, size: 16, color: Colors.grey) : null,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.of(sheetContext).pop(false),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.grey[700],
-                                side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(vertical: 13),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: const Text('취소'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.of(sheetContext).pop(true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF3267A2),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 13),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text('수정'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
+    final draft = await showPlanItemFormSheet(
+      context,
+      isEdit: true,
+      initial: item,
     );
-
-    if (result != true || !mounted) {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
-      return;
-    }
-
-    final title = titleController.text.trim();
-    if (title.isEmpty) {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
-      return;
-    }
-
-    String? parseTimeStr(String text) {
-      text = text.trim();
-      if (text.isEmpty) return null;
-
-      if (text.contains(':')) {
-        final parts = text.split(':');
-        if (parts.length >= 2) {
-          final hStr = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
-          final mStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
-          final h = int.tryParse(hStr);
-          final m = int.tryParse(mStr);
-          if (h != null && m != null && h < 24 && m < 60) {
-            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-          }
-        }
-      }
-
-      final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (digits.isEmpty) return null;
-
-      int h, m;
-      if (digits.length <= 2) {
-        h = int.tryParse(digits) ?? 0;
-        m = 0;
-      } else if (digits.length == 3) {
-        h = int.tryParse(digits.substring(0, 1)) ?? 0;
-        m = int.tryParse(digits.substring(1)) ?? 0;
-      } else {
-        h = int.tryParse(digits.substring(0, 2)) ?? 0;
-        m = int.tryParse(digits.substring(2, 4)) ?? 0;
-      }
-
-      if (h >= 24 || m >= 60) return null;
-      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-    }
-
-    final sTime = parseTimeStr(startTimeController.text.trim());
-    final eTime = parseTimeStr(endTimeController.text.trim());
+    if (draft == null || !mounted) return;
 
     try {
       await ref.read(plansProvider.notifier).updatePlanItem(
             itemId: item.id,
-            draft: PlanDraft(
-              title: title,
-              startTime: sTime,
-              endTime: eTime,
-              color: selectedColor,
-            ),
+            draft: draft,
           );
       _reloadSelectedPlan(planId);
     } catch (e) {
       if (!mounted) return;
-    } finally {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('항목 수정 실패: $e')),
+      );
     }
   }
 
@@ -2226,64 +1966,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     }
   }
 
-  Future<void> _confirmRemoveCollaborator(String planId, String email) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: Text(
-            '\uACF5\uB3D9 \uC791\uC5C5\uC790 \uC0AD\uC81C',
-            style: GoogleFonts.notoSans(fontWeight: FontWeight.w800),
-          ),
-          content: Text(
-            '\u201C$email\u201D\uC744 \uBCF5\uC815\uD560\uAE4C\uC694?',
-            style: GoogleFonts.notoSans(height: 1.5),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('\uCDE8\uC18C'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB45309),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('\uC0AD\uC81C'),
-            ),
-          ],
-        );
-      },
-    );
 
-    if (ok != true) return;
-
-    try {
-      await ref
-          .read(plansProvider.notifier)
-          .removeCollaborator(planId: planId, email: email);
-      _reloadSelectedPlan(planId);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '\uACF5\uB3D9 \uC791\uC5C5\uC790\uAC00 \uC81C\uAC70\uB418\uC5C8\uC2B5\uB2C8\uB2E4.',
-            style: GoogleFonts.notoSans(),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('\uC0AD\uC81C \uC2E4\uD328: $e')));
-    }
-  }
 
   void _reloadSelectedPlan(String planId) {
     setState(() {
@@ -2990,460 +2673,40 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
     String planId, {
     TimeOfDay? initialTime,
   }) async {
-    final titleController = TextEditingController();
-    final startTimeController = TextEditingController(
-      text: initialTime != null
-          ? '${initialTime.hour.toString().padLeft(2, '0')}${initialTime.minute.toString().padLeft(2, '0')}'
-          : '',
+    final draft = await showPlanItemFormSheet(
+      context,
+      isEdit: false,
+      initialTime: initialTime,
     );
-    final endTimeController = TextEditingController();
-    String? selectedColor;
-
-    String? parseTimeStr(String text) {
-      text = text.trim();
-      if (text.isEmpty) return null;
-
-      if (text.contains(':')) {
-        final parts = text.split(':');
-        if (parts.length >= 2) {
-          final hStr = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
-          final mStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
-          final h = int.tryParse(hStr);
-          final m = int.tryParse(mStr);
-          if (h != null && m != null && h < 24 && m < 60) {
-            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-          }
-        }
-        return 'INVALID';
-      }
-
-      final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (digits.isEmpty) return 'INVALID';
-
-      int h, m;
-      if (digits.length <= 2) {
-        h = int.tryParse(digits) ?? 0;
-        m = 0;
-      } else if (digits.length == 3) {
-        h = int.tryParse(digits.substring(0, 1)) ?? 0;
-        m = int.tryParse(digits.substring(1)) ?? 0;
-      } else {
-        h = int.tryParse(digits.substring(0, 2)) ?? 0;
-        m = int.tryParse(digits.substring(2, 4)) ?? 0;
-      }
-
-      if (h >= 24 || m >= 60) return 'INVALID';
-      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-    }
-
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  20,
-                  24,
-                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        '\uD56D\uBAA9 \uCD94\uAC00',
-                        style: GoogleFonts.notoSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF111827),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: '\uC77C\uC815\uBA85',
-                          hintText: '\uC77C\uC815 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694',
-                          prefixIcon: Icon(Icons.event_note_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Start time row
-                      TextField(
-                        controller: startTimeController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [_TimeInputFormatter()],
-                        decoration: const InputDecoration(
-                          labelText: '시작 시간 (예: 1430 또는 14:30)',
-                          hintText: '시간 입력',
-                          prefixIcon: Icon(Icons.access_time, color: Color(0xFF3267A2)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // End time row
-                      TextField(
-                        controller: endTimeController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [_TimeInputFormatter()],
-                        decoration: const InputDecoration(
-                          labelText: '종료 시간 (선택, 예: 1530 또는 15:30)',
-                          hintText: '시간 입력',
-                          prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12,
-                        children: _planColors.map((c) {
-                          final isSelected = selectedColor == c;
-                          return GestureDetector(
-                            onTap: () => setDialogState(() => selectedColor = c),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: c == null ? Colors.grey[200] : Color(int.parse(c.substring(1, 7), radix: 16) + 0xFF000000),
-                                border: isSelected ? Border.all(color: Colors.black54, width: 2) : Border.all(color: Colors.transparent, width: 2),
-                              ),
-                              child: c == null ? const Icon(Icons.palette, size: 16, color: Colors.grey) : null,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () =>
-                                  Navigator.of(sheetContext).pop(false),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.grey[700],
-                                side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 13,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: const Text('\uCDE8\uC18C'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.of(sheetContext).pop(true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF3267A2),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 13,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text('\uCD94\uAC00'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    if (result != true || !mounted) {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
-      return;
-    }
-
-    final title = titleController.text.trim();
-    if (title.isEmpty) {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
-      return;
-    }
-
-    final sParsed = parseTimeStr(startTimeController.text);
-    final eParsed = parseTimeStr(endTimeController.text);
-    final sTime = sParsed == 'INVALID' ? null : sParsed;
-    final eTime = eParsed == 'INVALID' ? null : eParsed;
+    if (draft == null || !mounted) return;
 
     try {
-      await ref
-          .read(plansProvider.notifier)
-          .addPlanItem(
+      await ref.read(plansProvider.notifier).addPlanItem(
             planId: planId,
-            draft: PlanDraft(
-              title: title,
-              startTime: sTime,
-              endTime: eTime,
-              color: selectedColor,
-            ),
+            draft: draft,
           );
       await _refreshPlan();
-      if (!mounted) return;
     } catch (e) {
       if (!mounted) return;
-    } finally {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
     }
   }
+
   Future<void> _showEditItemDialog(PlanItem item, String planId) async {
-    final titleController = TextEditingController(text: item.title);
-    final startTimeController = TextEditingController(text: item.startTime?.replaceAll(':', '') ?? '');
-    final endTimeController = TextEditingController(text: item.endTime?.replaceAll(':', '') ?? '');
-    String? selectedColor = item.color;
-
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  20,
-                  24,
-                  MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '항목 수정',
-                            style: GoogleFonts.notoSans(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF111827),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            onPressed: () {
-                              Navigator.of(sheetContext).pop(false);
-                              _confirmDeleteItem(planId, item);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: '일정명',
-                          hintText: '일정 이름을 입력하세요',
-                          prefixIcon: Icon(Icons.event_note_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: startTimeController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [_TimeInputFormatter()],
-                        decoration: const InputDecoration(
-                          labelText: '시작 시간 (예: 1430)',
-                          hintText: '시간 입력',
-                          prefixIcon: Icon(Icons.access_time, color: Color(0xFF3267A2)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: endTimeController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [_TimeInputFormatter()],
-                        decoration: const InputDecoration(
-                          labelText: '종료 시간 (선택, 예: 1530)',
-                          hintText: '시간 입력',
-                          prefixIcon: Icon(Icons.access_time_filled, color: Color(0xFF9CA3AF)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12,
-                        children: _planColors.map((c) {
-                          final isSelected = selectedColor == c;
-                          return GestureDetector(
-                            onTap: () => setDialogState(() => selectedColor = c),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: c == null ? Colors.grey[200] : Color(int.parse(c.substring(1, 7), radix: 16) + 0xFF000000),
-                                border: isSelected ? Border.all(color: Colors.black54, width: 2) : Border.all(color: Colors.transparent, width: 2),
-                              ),
-                              child: c == null ? const Icon(Icons.palette, size: 16, color: Colors.grey) : null,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.of(sheetContext).pop(false),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.grey[700],
-                                side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(vertical: 13),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: const Text('취소'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.of(sheetContext).pop(true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF3267A2),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 13),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text('수정'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
+    final draft = await showPlanItemFormSheet(
+      context,
+      isEdit: true,
+      initial: item,
     );
-
-    if (result != true || !mounted) {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
-      return;
-    }
-
-    final title = titleController.text.trim();
-    if (title.isEmpty) {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
-      return;
-    }
-
-    String? parseTimeStr(String text) {
-      text = text.trim();
-      if (text.isEmpty) return null;
-
-      if (text.contains(':')) {
-        final parts = text.split(':');
-        if (parts.length >= 2) {
-          final hStr = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
-          final mStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
-          final h = int.tryParse(hStr);
-          final m = int.tryParse(mStr);
-          if (h != null && m != null && h < 24 && m < 60) {
-            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-          }
-        }
-      }
-
-      final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (digits.isEmpty) return null;
-
-      int h, m;
-      if (digits.length <= 2) {
-        h = int.tryParse(digits) ?? 0;
-        m = 0;
-      } else if (digits.length == 3) {
-        h = int.tryParse(digits.substring(0, 1)) ?? 0;
-        m = int.tryParse(digits.substring(1)) ?? 0;
-      } else {
-        h = int.tryParse(digits.substring(0, 2)) ?? 0;
-        m = int.tryParse(digits.substring(2, 4)) ?? 0;
-      }
-
-      if (h >= 24 || m >= 60) return null;
-      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-    }
-
-    final sTime = parseTimeStr(startTimeController.text.trim());
-    final eTime = parseTimeStr(endTimeController.text.trim());
+    if (draft == null || !mounted) return;
 
     try {
       await ref.read(plansProvider.notifier).updatePlanItem(
             itemId: item.id,
-            draft: PlanDraft(
-              title: title,
-              startTime: sTime,
-              endTime: eTime,
-              color: selectedColor,
-            ),
+            draft: draft,
           );
       await _refreshPlan();
     } catch (e) {
       if (!mounted) return;
-    } finally {
-      titleController.dispose();
-      startTimeController.dispose();
-      endTimeController.dispose();
     }
   }
 
@@ -3786,5 +3049,161 @@ class _TimeInputFormatter extends TextInputFormatter {
     }
 
     return newValue;
+  }
+}
+
+// ─────────────────────────────────────────────
+// 공유 카드 미리보기 바텀시트
+// ─────────────────────────────────────────────
+class _SharePreviewSheet extends StatefulWidget {
+  final GlobalKey shareCardKey;
+  final PlanSummary plan;
+  final List<PlanItem> items;
+
+  const _SharePreviewSheet({
+    required this.shareCardKey,
+    required this.plan,
+    required this.items,
+  });
+
+  @override
+  State<_SharePreviewSheet> createState() => _SharePreviewSheetState();
+}
+
+class _SharePreviewSheetState extends State<_SharePreviewSheet> {
+  bool _isSharing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F0A1E),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 30,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 핸들
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 제목
+              Row(
+                children: [
+                  const Text('📤', style: TextStyle(fontSize: 20)),
+                  const SizedBox(width: 10),
+                  Text(
+                    '일정 카드 공유',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '아래 카드를 이미지로 저장하거나\n인스타, 카카오톡 등에 공유할 수 있어요.',
+                  style: GoogleFonts.notoSans(
+                    fontSize: 13,
+                    color: Colors.white.withValues(alpha: 0.55),
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 카드 미리보기 (캡처 대상)
+              Center(
+                child: PlanShareCard(
+                  repaintKey: widget.shareCardKey,
+                  plan: widget.plan,
+                  items: widget.items,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // 공유 버튼
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _isSharing ? null : _onShare,
+                  icon: _isSharing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.ios_share_rounded, size: 20),
+                  label: Text(
+                    _isSharing ? '이미지 준비 중...' : '공유하기',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6C63FF),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onShare() async {
+    setState(() => _isSharing = true);
+    try {
+      // 렌더 완료 대기
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // RenderBox 위치 획득 (iPad 팝오버 대응)
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+
+      await captureAndShare(
+        repaintKey: widget.shareCardKey,
+        shareText: '${widget.plan.name} — Loci로 만든 나의 하루 일정 🌸',
+        pixelRatio: 3.0,
+        sharePositionOrigin: origin,
+      );
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
 import 'package:placelist/providers/plans_provider.dart';
+import 'package:placelist/widgets/map_marker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StoreDetailPage extends ConsumerStatefulWidget {
@@ -80,7 +82,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    "\uC0C1\uC138 \uC18C\uAC1C",
+                    "상세 소개",
                     style: GoogleFonts.notoSans(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -89,7 +91,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "${store.name}\uC5D0 \uB300\uD55C \uC815\uBCF4\uAC00 \uC5C5\uB370\uC774\uD2B8\uB420 \uC608\uC815\uC785\uB2C8\uB2E4.",
+                    "${store.name}은(는) ${store.region != null && store.region!.isNotEmpty ? '${store.region}에' : '좋은 위치에'} 위치한 공간입니다. ${store.categoryTags.isNotEmpty ? '\'${store.categoryTags.join(', ')}\' 분위기를 느껴보세요.' : '다양한 메뉴와 아늑한 공간을 제공합니다.'}",
                     style: GoogleFonts.notoSans(
                       fontSize: 15,
                       height: 1.6,
@@ -158,10 +160,13 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             itemBuilder: (context, index) {
               return Container(
                 color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
-                child: Image.network(
-                  imageUrls[index],
+                child: CachedNetworkImage(
+                  imageUrl: imageUrls[index],
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => Container(
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (context, url, error) => Container(
                     color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
                     child: Center(
                       child: Icon(
@@ -240,7 +245,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        "파노라마",
+                        "3D 파노라마 (데모)",
                         style: GoogleFonts.notoSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -734,15 +739,14 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   consumeSymbolTapEvents: false,
                 ),
                 forceGesture: true,
-                onMapReady: (controller) {
-                  final marker = NMarker(
-                    id: store.id ?? 'marker',
-                    position: NLatLng(lat, lng),
+                onMapReady: (controller) async {
+                  final marker = await buildCustomMarker(
+                    context: context,
+                    store: store,
+                    isSelected: true,
+                    isDark: Theme.of(context).brightness == Brightness.dark,
                   );
                   controller.addOverlayAll({marker});
-                  final infoWindow =
-                      NInfoWindow.onMarker(id: marker.info.id, text: store.name);
-                  marker.openInfoWindow(infoWindow);
                 },
               ),
             ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../DB/store.dart';
@@ -13,10 +15,11 @@ class FavoritesNotifier extends StateNotifier<Set<String>> {
   }
 
   final _supabase = Supabase.instance.client;
+  StreamSubscription<AuthState>? _authSub;
 
   void _init() {
     // 사용자가 바뀔 때마다 찜 목록을 다시 불러옵니다.
-    _supabase.auth.onAuthStateChange.listen((data) {
+    _authSub = _supabase.auth.onAuthStateChange.listen((data) {
       if (data.session?.user != null) {
         fetchFavorites();
       } else {
@@ -28,6 +31,12 @@ class FavoritesNotifier extends StateNotifier<Set<String>> {
     if (_supabase.auth.currentUser != null) {
       fetchFavorites();
     }
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 
   Future<void> fetchFavorites() async {
@@ -42,7 +51,7 @@ class FavoritesNotifier extends StateNotifier<Set<String>> {
 
       state = data.map((item) => item['store_id'].toString()).toSet();
     } catch (e) {
-      print('찜 목록 로드 실패: $e');
+      debugPrint('찜 목록 로드 실패: $e');
     }
   }
 
@@ -84,7 +93,7 @@ class FavoritesNotifier extends StateNotifier<Set<String>> {
       } else {
         state = {...state}..remove(storeId);
       }
-      print('찜 토글 실패: $e');
+      debugPrint('찜 토글 실패: $e');
       rethrow; // UI에서 에러 처리 가능하도록 rethrow
     }
   }

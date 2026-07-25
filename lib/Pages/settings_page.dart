@@ -174,7 +174,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
+                      color: Colors.black.withValues(alpha: 0.12),
                       blurRadius: 30,
                       offset: const Offset(0, 12),
                     ),

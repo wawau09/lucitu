@@ -28,12 +28,19 @@ Map<String, List<Category>> get categoriesByGroup {
   return map;
 }
 
+final Expando<List<Category>> _storeCategoryCache = Expando<List<Category>>();
+
 /// Returns matched [Category] objects for a store based on its [category_tags] field.
-/// Falls back to name-based heuristics if no tags are present.
+/// Uses Expando memoization cache to avoid repeated string matching and iterations.
 List<Category> getStoreCategories(Store store) {
+  final cached = _storeCategoryCache[store];
+  if (cached != null) return cached;
+
+  final List<Category> categories;
+
   // If the store has category_tags from the DB, use those directly
   if (store.categoryTags.isNotEmpty) {
-    final categories = <Category>[];
+    final list = <Category>[];
     for (final tag in store.categoryTags) {
       final normalizedTag = tag.toLowerCase().trim();
       try {
@@ -56,31 +63,33 @@ List<Category> getStoreCategories(Store store) {
             return false;
           },
         );
-        if (!categories.contains(cat)) {
-          categories.add(cat);
+        if (!list.contains(cat)) {
+          list.add(cat);
         }
       } catch (_) {
         // Tag not found in allCategories — skip
       }
     }
-    return categories;
-  }
+    categories = list;
+  } else {
+    // Fallback: name-based heuristics (for data without tags)
+    final list = <Category>[];
+    final name = store.name.toLowerCase();
 
-  // Fallback: name-based heuristics (for data without tags)
-  final categories = <Category>[];
-  final name = store.name.toLowerCase();
-
-  for (final cat in allCategories) {
-    final keywords = categoryKeywords[cat.id];
-    if (keywords != null) {
-      final matches = keywords.any((kw) => name.contains(kw));
-      if (matches) {
-        if (!categories.contains(cat)) {
-          categories.add(cat);
+    for (final cat in allCategories) {
+      final keywords = categoryKeywords[cat.id];
+      if (keywords != null) {
+        final matches = keywords.any((kw) => name.contains(kw));
+        if (matches) {
+          if (!list.contains(cat)) {
+            list.add(cat);
+          }
         }
       }
     }
+    categories = list;
   }
 
+  _storeCategoryCache[store] = categories;
   return categories;
 }

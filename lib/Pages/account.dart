@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,13 +17,14 @@ class _AccountPageState extends State<AccountPage> {
   User? _user;
   bool _isLoading = false;
   String _avatarIcon = 'cat';
+  StreamSubscription<AuthState>? _authSub;
 
   @override
   void initState() {
     super.initState();
     _user = Supabase.instance.client.auth.currentUser;
     _loadAvatar();
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (mounted) {
         setState(() {
           _user = data.session?.user;
@@ -30,6 +32,12 @@ class _AccountPageState extends State<AccountPage> {
         if (_user != null) _loadAvatar();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAvatar() async {
@@ -93,6 +101,7 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   Widget _buildLoggedOutView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: SingleChildScrollView(
         child: Padding(
@@ -100,10 +109,10 @@ class _AccountPageState extends State<AccountPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.account_circle_outlined,
                 size: 80,
-                color: Colors.grey,
+                color: isDark ? Colors.white38 : Colors.grey,
               ),
               const SizedBox(height: 16),
               Text(
@@ -111,7 +120,7 @@ class _AccountPageState extends State<AccountPage> {
                 style: GoogleFonts.notoSans(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -120,7 +129,7 @@ class _AccountPageState extends State<AccountPage> {
                 "즐겨찾는 카페를 저장하려면 로그인하세요.",
                 style: GoogleFonts.notoSans(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: isDark ? Colors.white54 : Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -140,13 +149,15 @@ class _AccountPageState extends State<AccountPage> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black87,
+                      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                      foregroundColor: isDark ? Colors.white : Colors.black87,
                       elevation: 1,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: Colors.grey.shade300),
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : Colors.grey.shade300,
+                        ),
                       ),
                     ),
                   ),

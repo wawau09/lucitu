@@ -304,7 +304,7 @@ class PlanDatabase {
     if (rows.isEmpty) return 0;
     final value = rows.first['sort_order'];
     final current = value is num
-        ? (value as num).toInt()
+        ? value.toInt()
         : int.tryParse(value?.toString() ?? '');
     return (current ?? -1) + 1;
   }

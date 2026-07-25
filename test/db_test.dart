@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/supabase_config.dart';
@@ -30,12 +31,12 @@ void main() {
     final client = Supabase.instance.client;
     try {
       final List<dynamic> data = await client.from('cafes').select('id, name').order('id');
-      print('Total stores fetched: ${data.length}');
+      debugPrint('Total stores fetched: ${data.length}');
       for (var row in data) {
-        print('Store ID ${row['id']} (${row['name']})');
+        debugPrint('Store ID ${row['id']} (${row['name']})');
       }
     } catch (e) {
-      print('Error querying stores table: $e');
+      debugPrint('Error querying stores table: $e');
     }
   });
 }

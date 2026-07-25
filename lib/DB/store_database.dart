@@ -15,11 +15,19 @@ class StoreDatabase {
     });
   }
 
-  Future<List<Store>> getStores() async {
-    final List<dynamic> rows = await _client
+  Future<List<Store>> getStores({int? limit, int? offset}) async {
+    dynamic query = _client
         .from(_table)
         .select('id, name, latitude, longitude, category_tags, image_urls, region, menu_board')
         .order('id');
+
+    if (offset != null && limit != null) {
+      query = query.range(offset, offset + limit - 1);
+    } else if (limit != null) {
+      query = query.limit(limit);
+    }
+
+    final List<dynamic> rows = await query;
 
     final storesById = <String, Map<String, dynamic>>{};
 

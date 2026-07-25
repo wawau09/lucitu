@@ -121,7 +121,26 @@ class FavoritesListPage extends ConsumerWidget {
                   ref
                       .read(favoritesProvider.notifier)
                       .toggleFavorite(store.id!)
-                      .catchError((e) {
+                      .then((_) {
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('\'${store.name}\' 찜 해제되었습니다.'),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        action: SnackBarAction(
+                          label: '실행 취소',
+                          onPressed: () {
+                            ref
+                                .read(favoritesProvider.notifier)
+                                .toggleFavorite(store.id!);
+                          },
+                        ),
+                      ),
+                    );
+                  }).catchError((e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('찜 처리 중 오류가 발생했습니다. 다시 시도해 주세요.'),

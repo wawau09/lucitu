@@ -20,6 +20,8 @@ class ClockScheduleWidget extends StatefulWidget {
 class _ClockScheduleWidgetState extends State<ClockScheduleWidget> {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AspectRatio(
       aspectRatio: 1,
       child: GestureDetector(
@@ -57,7 +59,7 @@ class _ClockScheduleWidgetState extends State<ClockScheduleWidget> {
           }
         },
         child: CustomPaint(
-          painter: ClockSchedulePainter(items: widget.items),
+          painter: ClockSchedulePainter(items: widget.items, isDark: isDark),
         ),
       ),
     );
@@ -77,8 +79,9 @@ class _ClockScheduleWidgetState extends State<ClockScheduleWidget> {
 
 class ClockSchedulePainter extends CustomPainter {
   final List<PlanItem> items;
+  final bool isDark;
 
-  ClockSchedulePainter({required this.items});
+  ClockSchedulePainter({required this.items, this.isDark = false});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -87,12 +90,12 @@ class ClockSchedulePainter extends CustomPainter {
 
     // Background circle
     final bgPaint = Paint()
-      ..color = Colors.white
+      ..color = isDark ? const Color(0xFF1C1C1E) : Colors.white
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, bgPaint);
 
     final borderPaint = Paint()
-      ..color = const Color(0xFFE8E1D9)
+      ..color = isDark ? Colors.white24 : const Color(0xFFE8E1D9)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawCircle(center, radius, borderPaint);
@@ -126,7 +129,7 @@ class ClockSchedulePainter extends CustomPainter {
       }
 
       final slicePaint = Paint()
-        ..color = sliceColor.withOpacity(0.85)
+        ..color = sliceColor.withValues(alpha: isDark ? 0.70 : 0.85)
         ..style = PaintingStyle.fill;
         
       canvas.drawArc(
@@ -147,7 +150,7 @@ class ClockSchedulePainter extends CustomPainter {
         final textSpan = TextSpan(
           text: item.title,
           style: GoogleFonts.notoSans(
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
@@ -167,7 +170,9 @@ class ClockSchedulePainter extends CustomPainter {
           height: textPainter.height + 4,
         );
         final textBgPaint = Paint()
-          ..color = Colors.white.withOpacity(0.6)
+          ..color = isDark
+              ? const Color(0xFF2C2C2E).withValues(alpha: 0.8)
+              : Colors.white.withValues(alpha: 0.8)
           ..style = PaintingStyle.fill;
         canvas.drawRRect(RRect.fromRectAndRadius(bgRect, const Radius.circular(4)), textBgPaint);
 
@@ -178,11 +183,11 @@ class ClockSchedulePainter extends CustomPainter {
 
     // Draw lines and ticks
     final linePaint = Paint()
-      ..color = const Color(0xFFE8E1D9)
+      ..color = isDark ? Colors.white24 : const Color(0xFFE8E1D9)
       ..strokeWidth = 1;
       
     final textStyle = GoogleFonts.notoSans(
-      color: Colors.grey.shade500,
+      color: isDark ? Colors.white54 : Colors.grey.shade600,
       fontSize: 12,
       fontWeight: FontWeight.w600,
     );
@@ -220,7 +225,7 @@ class ClockSchedulePainter extends CustomPainter {
     }
     
     // Draw center dot
-    canvas.drawCircle(center, 4, Paint()..color = const Color(0xFF3267A2));
+    canvas.drawCircle(center, 4, Paint()..color = isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2));
   }
 
   double _timeToDouble(String? timeStr) {

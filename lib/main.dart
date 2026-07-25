@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,7 +8,7 @@ import 'package:cupertino_native_better/cupertino_native_better.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'supabase_config.dart';
 import 'package:placelist/Pages/account.dart';
-import 'package:placelist/Pages/search.dart';
+import 'package:placelist/Pages/plan_page.dart';
 import 'package:placelist/Pages/terms_agreement_page.dart';
 import 'Pages/main_page.dart';
 import 'package:placelist/providers/navigation_provider.dart';
@@ -19,7 +20,7 @@ Future<void> main() async {
 
   if (!kIsWeb) {
     await FlutterNaverMap().init(
-      clientId: '0w1sxphr42',
+      clientId: naverMapClientId,
       onAuthFailed: (error) {
         debugPrint('Naver Map Auth Failed: $error');
       },
@@ -43,6 +44,7 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> {
   bool _isShowingTerms = false;
+  StreamSubscription<AuthState>? _authSub;
 
   @override
   void initState() {
@@ -57,7 +59,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     }
 
     // 로그인 상태 변경 감지 (OAuth 리다이렉트 후 포함)
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final user = data.session?.user;
       if (user != null) {
         // 약간의 딜레이를 줘서 앱이 완전히 준비된 후 실행
@@ -68,6 +70,12 @@ class _MyAppState extends ConsumerState<MyApp> {
         });
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 
   /// 사용자가 약관에 동의했는지 확인하고, 미동의 시 약관 동의 시트를 표시합니다.
