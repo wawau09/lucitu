@@ -10,7 +10,6 @@ import 'package:placelist/data/category_data.dart';
 import 'package:placelist/providers/category_provider.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
-import 'package:placelist/providers/search_history_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
 import 'package:placelist/widgets/category_section.dart';
 import 'package:placelist/widgets/map_marker.dart';
@@ -49,7 +48,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final query = value.trim();
     if (query.isNotEmpty) {
       ref.read(searchQueryProvider.notifier).state = query;
-      ref.read(searchHistoryProvider.notifier).addQuery(query);
     }
   }
 
@@ -58,7 +56,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final selectedCategories = ref.watch(selectedCategoriesProvider);
     final storesAsync = ref.watch(storesProvider);
     final searchQuery = ref.watch(searchQueryProvider);
-    final searchHistory = ref.watch(searchHistoryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen<String>(searchQueryProvider, (previous, next) {
@@ -146,34 +143,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 ],
               ),
             ),
-
-            // 최근 검색어 Chip 목록 (검색어가 비어있거나 히스토리가 있을 때)
-            if (searchHistory.isNotEmpty)
-              Container(
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: searchHistory.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 6),
-                  itemBuilder: (context, index) {
-                    final item = searchHistory[index];
-                    return InputChip(
-                      label: Text(item, style: const TextStyle(fontSize: 12)),
-                      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
-                      deleteIcon: const Icon(Icons.close, size: 14),
-                      onDeleted: () {
-                        ref.read(searchHistoryProvider.notifier).removeQuery(item);
-                      },
-                      onPressed: () {
-                        _searchController.text = item;
-                        ref.read(searchQueryProvider.notifier).state = item;
-                        _onSearchSubmitted(item);
-                      },
-                    );
-                  },
-                ),
-              ),
 
             const SizedBox(height: 4),
             const CategoryFilterSection(),

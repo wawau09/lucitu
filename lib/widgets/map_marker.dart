@@ -15,9 +15,17 @@ Future<NMarker> buildCustomMarker({
   bool isSelected = false,
   bool isDark = false,
 }) async {
+  final textLength = store.name.length;
+  final hasRating = store.rating != null && store.rating! > 0;
+  final extraWidth = hasRating ? 44.0 : 12.0;
+  final estimatedWidth = (textLength * 13.5 + 34.0 + extraWidth).clamp(95.0, 250.0);
+  final width = isSelected ? estimatedWidth + 14.0 : estimatedWidth;
+  final height = isSelected ? 56.0 : 48.0;
+  final markerSize = Size(width, height);
+
   final overlayImage = await NOverlayImage.fromWidget(
     widget: _MarkerWidget(store: store, isSelected: isSelected, isDark: isDark),
-    size: isSelected ? const Size(100, 60) : const Size(86, 50),
+    size: markerSize,
     context: context,
   );
 
@@ -25,7 +33,7 @@ Future<NMarker> buildCustomMarker({
     id: store.id ?? store.name,
     position: NLatLng(store.latitude!, store.longitude!),
     icon: overlayImage,
-    size: isSelected ? const Size(100, 60) : const Size(86, 50),
+    size: markerSize,
     anchor: const NPoint(0.5, 1.0),
   );
   marker.setZIndex(isSelected ? 10 : 1);

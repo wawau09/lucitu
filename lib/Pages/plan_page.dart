@@ -791,129 +791,136 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
+  String _getFormattedTimeRange(PlanItem item) {
+    final start = _formatItemTime(item.startTime);
+    if (start == '시간 미정') return start;
+    if (item.endTime != null && item.endTime!.isNotEmpty) {
+      final end = _formatItemTime(item.endTime);
+      return '$start ~ $end';
+    }
+    return start;
+  }
+
   Widget _buildScheduleRow(PlanItem item, {required VoidCallback onDelete, required String planId}) {
     Color? bgColor;
     Color? borderColor;
     if (item.color != null) {
       final baseColor = Color(int.parse(item.color!.substring(1, 7), radix: 16) + 0xFF000000);
-      bgColor = baseColor.withOpacity(0.1);
-      borderColor = baseColor.withOpacity(0.3);
+      bgColor = baseColor.withValues(alpha: 0.1);
+      borderColor = baseColor.withValues(alpha: 0.3);
     }
+
+    final timeStr = _getFormattedTimeRange(item);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GestureDetector(
         onTap: () => _showEditItemDialog(item, planId),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: bgColor ?? Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: borderColor ?? const Color(0xFFE8E1D9)),
           ),
           child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 48,
-              child: Text(
-                _formatItemTime(item.startTime),
-                style: GoogleFonts.notoSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF3267A2),
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 계획명 (일정명)
+                    Text(
+                      item.title,
+                      style: GoogleFonts.notoSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    // 계획명 밑에 표시되는 시간
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time_rounded,
+                          size: 13,
+                          color: Color(0xFF6C63FF),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          timeStr,
+                          style: GoogleFonts.notoSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6C63FF),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              width: 10,
-              height: 10,
-              margin: const EdgeInsets.only(top: 6),
-              decoration: const BoxDecoration(
-                color: Color(0xFF3267A2),
-                shape: BoxShape.circle,
+              IconButton(
+                onPressed: onDelete,
+                icon: const Icon(Icons.close_rounded, size: 18),
+                color: const Color(0xFFB45309),
+                tooltip: '삭제',
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: GoogleFonts.notoSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF111827),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              onPressed: onDelete,
-              icon: const Icon(Icons.close_rounded, size: 18),
-              color: const Color(0xFFB45309),
-              tooltip: '\uC0AD\uC81C',
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildTimelineRow(PlanItem item) {
+    final timeStr = _getFormattedTimeRange(item);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 48,
-            child: Text(
-              _formatItemTime(item.startTime),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE8E1D9)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 계획명
+            Text(
+              item.title,
               style: GoogleFonts.notoSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF3267A2),
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF111827),
               ),
             ),
-          ),
-          const SizedBox(width: 6),
-          Container(
-            width: 10,
-            height: 10,
-            margin: const EdgeInsets.only(top: 6),
-            decoration: const BoxDecoration(
-              color: Color(0xFF3267A2),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE8E1D9)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: GoogleFonts.notoSans(
-                      fontSize: 13,
-                      color: const Color(0xFF6B7280),
-                    ),
+            const SizedBox(height: 4),
+            // 계획명 밑에 표시되는 시간
+            Row(
+              children: [
+                const Icon(
+                  Icons.access_time_rounded,
+                  size: 13,
+                  color: Color(0xFF6C63FF),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  timeStr,
+                  style: GoogleFonts.notoSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF6C63FF),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
