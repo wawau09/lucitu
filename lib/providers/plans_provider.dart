@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:placelist/DB/plan.dart';
 import 'package:placelist/DB/plan_database.dart';
@@ -10,9 +11,10 @@ class PlansNotifier extends StateNotifier<AsyncValue<List<PlanSummary>>> {
 
   final PlanDatabase _db = PlanDatabase();
   final SupabaseClient _client = Supabase.instance.client;
+  StreamSubscription<AuthState>? _authSub;
 
   void _init() {
-    _client.auth.onAuthStateChange.listen((data) {
+    _authSub = _client.auth.onAuthStateChange.listen((data) {
       if (data.session?.user == null) {
         state = const AsyncValue.data([]);
       } else {
@@ -25,6 +27,12 @@ class PlansNotifier extends StateNotifier<AsyncValue<List<PlanSummary>>> {
     } else {
       refresh();
     }
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 
   Future<void> refresh() async {

@@ -44,8 +44,8 @@ class StoreDatabase {
       final List<dynamic> reviewRows = await _client
           .from('store_reviews')
           .select(
-              'store_id, user_id, drink, hygiene, atmosphere, final_score, created_at')
-          .order('created_at');
+              'store_id, user_id, drink, hygiene, atmosphere, final_score, comment, created_at')
+          .order('created_at', ascending: false);
 
       for (final row in reviewRows) {
         final review = Map<String, dynamic>.from(row as Map);
@@ -59,6 +59,7 @@ class StoreDatabase {
           'hygiene': review['hygiene'],
           'atmosphere': review['atmosphere'],
           'final': review['final_score'],
+          'comment': review['comment'],
           'created_at': review['created_at'],
         });
       }

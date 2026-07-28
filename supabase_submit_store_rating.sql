@@ -6,9 +6,13 @@ create table if not exists public.store_reviews (
   hygiene real not null check (hygiene >= 1 and hygiene <= 5),
   atmosphere real not null check (atmosphere >= 1 and atmosphere <= 5),
   final_score real not null check (final_score >= 1 and final_score <= 5),
+  comment text,
   created_at timestamptz not null default now(),
   unique (store_id, user_id)
 );
+
+-- 기존 테이블이 있다면 comment 컬럼 추가
+alter table public.store_reviews add column if not exists comment text;
 
 alter table public.store_reviews enable row level security;
 
@@ -26,12 +30,16 @@ create policy "store_reviews_insert_own"
   to authenticated
   with check (auth.uid() = user_id);
 
+drop function if exists public.submit_store_rating(text, numeric, numeric, numeric, numeric);
+drop function if exists public.submit_store_rating(text, numeric, numeric, numeric, numeric, text);
+
 create or replace function public.submit_store_rating(
   p_store_id text,
   p_drink numeric,
   p_hygiene numeric,
   p_atmosphere numeric,
-  p_final numeric
+  p_final numeric,
+  p_comment text default null
 )
 returns jsonb
 language plpgsql
@@ -60,7 +68,8 @@ begin
     drink,
     hygiene,
     atmosphere,
-    final_score
+    final_score,
+    comment
   )
   values (
     p_store_id,
@@ -68,7 +77,8 @@ begin
     p_drink::real,
     p_hygiene::real,
     p_atmosphere::real,
-    p_final::real
+    p_final::real,
+    p_comment
   );
 
   select coalesce(
@@ -79,9 +89,10 @@ begin
         'hygiene', hygiene,
         'atmosphere', atmosphere,
         'final', final_score,
+        'comment', comment,
         'created_at', created_at
       )
-      order by created_at
+      order by created_at desc
     ),
     '[]'::jsonb
   )
@@ -96,5 +107,5 @@ exception
 end;
 $$;
 
-revoke all on function public.submit_store_rating(text, numeric, numeric, numeric, numeric) from public;
-grant execute on function public.submit_store_rating(text, numeric, numeric, numeric, numeric) to authenticated;
+revoke all on function public.submit_store_rating(text, numeric, numeric, numeric, numeric, text) from public;
+grant execute on function public.submit_store_rating(text, numeric, numeric, numeric, numeric, text) to authenticated;

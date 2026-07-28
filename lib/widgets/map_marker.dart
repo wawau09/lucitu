@@ -14,29 +14,46 @@ Future<NMarker> buildCustomMarker({
   required Store store,
   bool isSelected = false,
   bool isDark = false,
+  double? overrideLat,
+  double? overrideLng,
+  int? clusterIndex,
+  int? clusterTotal,
+  int? zIndex,
 }) async {
   final textLength = store.name.length;
   final hasRating = store.rating != null && store.rating! > 0;
-  final extraWidth = hasRating ? 44.0 : 12.0;
-  final estimatedWidth = (textLength * 13.5 + 34.0 + extraWidth).clamp(95.0, 250.0);
+  final isCluster = clusterTotal != null && clusterTotal > 1;
+  final extraWidth = (hasRating ? 44.0 : 12.0) + (isCluster ? 32.0 : 0.0);
+  final estimatedWidth = (textLength * 13.5 + 34.0 + extraWidth).clamp(95.0, 270.0);
   final width = isSelected ? estimatedWidth + 14.0 : estimatedWidth;
   final height = isSelected ? 56.0 : 48.0;
   final markerSize = Size(width, height);
 
   final overlayImage = await NOverlayImage.fromWidget(
-    widget: _MarkerWidget(store: store, isSelected: isSelected, isDark: isDark),
+    widget: _MarkerWidget(
+      store: store,
+      isSelected: isSelected,
+      isDark: isDark,
+      clusterIndex: clusterIndex,
+      clusterTotal: clusterTotal,
+    ),
     size: markerSize,
     context: context,
   );
 
+  final lat = overrideLat ?? store.latitude!;
+  final lng = overrideLng ?? store.longitude!;
+
   final marker = NMarker(
     id: store.id ?? store.name,
-    position: NLatLng(store.latitude!, store.longitude!),
+    position: NLatLng(lat, lng),
     icon: overlayImage,
     size: markerSize,
     anchor: const NPoint(0.5, 1.0),
   );
-  marker.setZIndex(isSelected ? 10 : 1);
+  
+  final defaultZIndex = isSelected ? 100 : (clusterIndex != null ? 1 + clusterIndex : 1);
+  marker.setZIndex(zIndex ?? defaultZIndex);
 
   return marker;
 }
@@ -49,11 +66,15 @@ class _MarkerWidget extends StatelessWidget {
   final Store store;
   final bool isSelected;
   final bool isDark;
+  final int? clusterIndex;
+  final int? clusterTotal;
 
   const _MarkerWidget({
     required this.store,
     this.isSelected = false,
     this.isDark = false,
+    this.clusterIndex,
+    this.clusterTotal,
   });
 
   @override
@@ -76,6 +97,8 @@ class _MarkerWidget extends StatelessWidget {
     final ratingText = rating != null && rating > 0
         ? rating.toStringAsFixed(1)
         : null;
+
+    final isCluster = clusterTotal != null && clusterTotal! > 1 && clusterIndex != null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -138,6 +161,26 @@ class _MarkerWidget extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ],
+              if (isCluster) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.3)
+                        : const Color(0xFFFF9800).withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${clusterIndex! + 1}/${clusterTotal!}',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : const Color(0xFFE65100),
+                    ),
                   ),
                 ),
               ],

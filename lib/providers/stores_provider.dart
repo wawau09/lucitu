@@ -39,6 +39,7 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
     required double hygiene,
     required double atmosphere,
     required double finalScore,
+    String? comment,
   }) async {
     final user = _client.auth.currentUser;
     if (user == null) {
@@ -55,6 +56,8 @@ class StoresNotifier extends StateNotifier<AsyncValue<List<Store>>> {
           'p_hygiene': hygiene,
           'p_atmosphere': atmosphere,
           'p_final': finalScore,
+          if (comment != null && comment.trim().isNotEmpty)
+            'p_comment': comment.trim(),
         },
       );
 

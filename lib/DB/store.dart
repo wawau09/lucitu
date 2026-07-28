@@ -133,6 +133,7 @@ class Store {
       'category_tags': categoryTags,
       'image_urls': imageUrls,
       if (reviews != null) 'reviews': reviews,
+      if (rating != null) 'rating': rating,
       if (region != null) 'region': region,
       if (menuBoard != null) 'menu_board': menuBoard,
     };

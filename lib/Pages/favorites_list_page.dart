@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -159,13 +160,33 @@ class FavoritesListPage extends ConsumerWidget {
 
   Widget _buildStoreImage(Store store, bool isDark) {
     if (store.imageUrls.isNotEmpty) {
-      return Image.network(
-        store.imageUrls.first,
+      return CachedNetworkImage(
+        imageUrl: store.imageUrls.first,
         width: 80,
         height: 80,
         fit: BoxFit.cover,
-        errorBuilder: (context, e, s) =>
-            Container(width: 80, height: 80, color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200]),
+        placeholder: (context, url) => Container(
+          width: 80,
+          height: 80,
+          color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          width: 80,
+          height: 80,
+          color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+          child: Icon(
+            Icons.broken_image,
+            color: isDark ? Colors.white24 : Colors.grey[400],
+            size: 24,
+          ),
+        ),
       );
     }
     return Container(width: 80, height: 80, color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200]);

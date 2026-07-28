@@ -10,6 +10,7 @@ import 'package:placelist/widgets/clock_schedule.dart';
 import 'package:placelist/widgets/plan_share_card.dart';
 import 'package:placelist/widgets/plan_item_form_sheet.dart';
 import 'package:placelist/widgets/plan/plan_collaborator_section.dart';
+import 'package:placelist/widgets/plan/plan_card_item.dart';
 import 'package:placelist/utils/share_helper.dart';
 import 'package:placelist/Pages/cupertino_planner_page.dart';
 
@@ -147,7 +148,20 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                         color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE),
                       ),
                       itemBuilder: (context, index) {
-                        return _buildPlanCard(plan: plans[index], isDark: isDark);
+                        final plan = plans[index];
+                        return PlanCardItem(
+                          plan: plan,
+                          isDark: isDark,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PlanDetailPage(planId: plan.id),
+                              ),
+                            );
+                          },
+                          onDelete: () => _confirmDeletePlan(plan),
+                        );
                       },
                     ),
                   );
@@ -223,126 +237,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
-  Widget _buildPlanCard({required PlanSummary plan, required bool isDark}) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => PlanDetailPage(planId: plan.id)),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 100,
-                height: 100,
-                color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
-                child: Icon(
-                  Icons.event_note,
-                  size: 40,
-                  color: isDark ? Colors.white24 : Colors.grey[400],
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: SizedBox(
-                height: 100,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            plan.name,
-                            style: GoogleFonts.notoSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (plan.sharedWithMe)
-                          _buildPill(
-                            label: '공유중',
-                            background: isDark ? const Color(0xFF1E3A5F) : const Color(0xFFF0F6FF),
-                            foreground: isDark ? const Color(0xFF82B1FF) : const Color(0xFF2F5E8F),
-                          )
-                        else
-                          _buildPill(
-                            label: '내 일정',
-                            background: isDark ? const Color(0xFF2D3748) : const Color(0xFFF5F7FB),
-                            foreground: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF374151),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          color: isDark ? Colors.white38 : Colors.grey[600],
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            _formatDate(plan.planDate),
-                            style: GoogleFonts.notoSans(
-                              fontSize: 14,
-                              color: isDark ? Colors.white54 : Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Text(
-                          '코드: ${plan.planCode}',
-                          style: GoogleFonts.notoSans(
-                            fontSize: 12,
-                            color: isDark ? Colors.white30 : Colors.grey[500],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (plan.isOwner)
-                          IconButton(
-                            onPressed: () => _confirmDeletePlan(plan),
-                            icon: Icon(
-                              Icons.delete_outline,
-                              size: 20,
-                              color: isDark ? Colors.white38 : Colors.grey,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          )
-                        else
-                          const SizedBox(height: 20),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildPill({
     required String label,

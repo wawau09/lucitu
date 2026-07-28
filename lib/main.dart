@@ -148,29 +148,33 @@ class _MyAppState extends ConsumerState<MyApp> {
       ),
       home: PopScope(
         canPop: false,
-        child: Scaffold(
-          extendBody: true,
-          backgroundColor: Colors.white,
-          body: IndexedStack(index: currentIndex, children: screens),
-          bottomNavigationBar: CNTabBar(
-            currentIndex: currentIndex,
-            onTap: (index) => ref.read(navigationProvider.notifier).setIndex(index),
-            tint: const Color(0xFF3267A2),
-            items: const [
-              CNTabBarItem(
-                icon: CNSymbol('calendar'),
-                activeIcon: CNSymbol('calendar'),
+        child: Builder(
+          builder: (context) {
+            return Scaffold(
+              extendBody: true,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              body: IndexedStack(index: currentIndex, children: screens),
+              bottomNavigationBar: CNTabBar(
+                currentIndex: currentIndex,
+                onTap: (index) => ref.read(navigationProvider.notifier).setIndex(index),
+                tint: const Color(0xFF3267A2),
+                items: const [
+                  CNTabBarItem(
+                    icon: CNSymbol('calendar'),
+                    activeIcon: CNSymbol('calendar'),
+                  ),
+                  CNTabBarItem(
+                    icon: CNSymbol('house'),
+                    activeIcon: CNSymbol('house.fill'),
+                  ),
+                  CNTabBarItem(
+                    icon: CNSymbol('person'),
+                    activeIcon: CNSymbol('person.fill'),
+                  ),
+                ],
               ),
-              CNTabBarItem(
-                icon: CNSymbol('house'),
-                activeIcon: CNSymbol('house.fill'),
-              ),
-              CNTabBarItem(
-                icon: CNSymbol('person'),
-                activeIcon: CNSymbol('person.fill'),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

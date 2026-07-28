@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ----------------------------------------------------
@@ -54,6 +55,7 @@ class TravelEvent {
   final String id;
   final String title;
   final String startTime;
+  final String? endTime;
   final String category; // 관광, 식도락, 숙소, 교통, 기타
   final int cost;
   final String status; // Todo, In Progress, Done
@@ -65,6 +67,7 @@ class TravelEvent {
     required this.id,
     required this.title,
     required this.startTime,
+    this.endTime,
     required this.category,
     required this.cost,
     required this.status,
@@ -86,6 +89,20 @@ class ChecklistItem {
     required this.checked,
     required this.sortOrder,
   });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'title': title,
+        'checked': checked,
+        'sortOrder': sortOrder,
+      };
+
+  factory ChecklistItem.fromMap(Map<String, dynamic> map) => ChecklistItem(
+        id: map['id']?.toString() ?? '',
+        title: map['title']?.toString() ?? '',
+        checked: map['checked'] == true,
+        sortOrder: map['sortOrder'] is num ? (map['sortOrder'] as num).toInt() : 0,
+      );
 }
 
 // ----------------------------------------------------
@@ -166,12 +183,51 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     return '${isNegative ? '-' : ''}₩${buffer.toString()}';
   }
 
+  Future<void> _saveChecklistToLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final listMap = _checklist.map((c) => c.toMap()).toList();
+      await prefs.setString('checklist_${widget.planId}', jsonEncode(listMap));
+    } catch (e) {
+      debugPrint('Error saving local checklist: $e');
+    }
+  }
+
+  Future<List<ChecklistItem>> _loadChecklistFromLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('checklist_${widget.planId}');
+      if (raw != null && raw.isNotEmpty) {
+        final List<dynamic> jsonList = jsonDecode(raw);
+        return jsonList
+            .map((e) => ChecklistItem.fromMap(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading local checklist: $e');
+    }
+    return [];
+  }
+
   /// Sync data from Supabase
   Future<void> _fetchPlanData() async {
+    // 1. SharedPreferences 로컬 캐시 먼저 로드 (실시간 UX)
+    final cachedChecklist = await _loadChecklistFromLocal();
+    if (cachedChecklist.isNotEmpty && mounted) {
+      setState(() {
+        _checklist = cachedChecklist;
+      });
+    }
+
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
         _loadLocalMockData();
+        if (cachedChecklist.isNotEmpty) {
+          setState(() {
+            _checklist = cachedChecklist;
+          });
+        }
         setState(() => _isLoading = false);
         return;
       }
@@ -185,6 +241,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
       if (planRow == null) {
         _loadLocalMockData();
+        if (cachedChecklist.isNotEmpty) {
+          setState(() {
+            _checklist = cachedChecklist;
+          });
+        }
         setState(() => _isLoading = false);
         return;
       }
@@ -225,6 +286,9 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           }
         } catch (_) {}
 
+        final endTimeRaw = row['end_time']?.toString() ?? noteMap['end_time']?.toString();
+        final endTime = (endTimeRaw != null && endTimeRaw.isNotEmpty) ? endTimeRaw : null;
+
         final category = noteMap['category']?.toString() ?? '';
         if (category == 'checklist') {
           loadedChecklist.add(ChecklistItem(
@@ -238,6 +302,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             id: row['id']?.toString() ?? '',
             title: title,
             startTime: startTime,
+            endTime: endTime,
             category: category.isNotEmpty ? category : '관광',
             cost: noteMap['cost'] is num ? (noteMap['cost'] as num).toInt() : 0,
             status: noteMap['status']?.toString() ?? 'Todo',
@@ -254,13 +319,23 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         _planCode = planRow['plan_code']?.toString() ?? '';
         _participants = loadedParticipants;
         _events = loadedEvents;
-        _checklist = loadedChecklist;
+        if (loadedChecklist.isNotEmpty) {
+          _checklist = loadedChecklist;
+          _saveChecklistToLocal();
+        } else if (cachedChecklist.isNotEmpty) {
+          _checklist = cachedChecklist;
+        }
         _isOffline = false;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching data: $e');
       _loadLocalMockData();
+      if (cachedChecklist.isNotEmpty) {
+        setState(() {
+          _checklist = cachedChecklist;
+        });
+      }
       setState(() => _isLoading = false);
     }
   }
@@ -406,11 +481,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           'status': newEvent.status,
           'description': newEvent.description,
           'participants': newEvent.participantNames,
+          'end_time': newEvent.endTime,
         };
         final row = await Supabase.instance.client.from('plan_items').insert({
           'plan_id': widget.planId,
           'title': newEvent.title,
           'start_time': newEvent.startTime,
+          'end_time': newEvent.endTime,
           'note': jsonEncode(noteMap),
           'sort_order': newEvent.sortOrder,
         }).select().single();
@@ -420,6 +497,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             id: row['id']?.toString() ?? '',
             title: newEvent.title,
             startTime: newEvent.startTime,
+            endTime: newEvent.endTime,
             category: newEvent.category,
             cost: newEvent.cost,
             status: newEvent.status,
@@ -445,6 +523,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         id: localId,
         title: event.title,
         startTime: event.startTime,
+        endTime: event.endTime,
         category: event.category,
         cost: event.cost,
         status: event.status,
@@ -466,10 +545,12 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           'status': updatedEvent.status,
           'description': updatedEvent.description,
           'participants': updatedEvent.participantNames,
+          'end_time': updatedEvent.endTime,
         };
         await Supabase.instance.client.from('plan_items').update({
           'title': updatedEvent.title,
           'start_time': updatedEvent.startTime,
+          'end_time': updatedEvent.endTime,
           'note': jsonEncode(noteMap),
           'sort_order': updatedEvent.sortOrder,
         }).eq('id', updatedEvent.id);
@@ -503,10 +584,25 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     });
   }
 
-  /// Add Checklist Item with Supabase Sync
+  /// Add Checklist Item with Supabase Sync & Persistent Local Storage
   Future<void> _addChecklistItem(String title) async {
     final nextOrder = _checklist.length;
-    if (!_isOffline) {
+    final localId = 'local_c_${DateTime.now().millisecondsSinceEpoch}';
+    final newItem = ChecklistItem(
+      id: localId,
+      title: title,
+      checked: false,
+      sortOrder: nextOrder,
+    );
+
+    // 1. 로컬 상태 & SharedPreferences에 영구 저장 (유실 방지)
+    setState(() {
+      _checklist.add(newItem);
+    });
+    await _saveChecklistToLocal();
+
+    // 2. Supabase DB와 비동기 동기화
+    if (!_isOffline && !widget.planId.startsWith('mock_')) {
       try {
         final noteMap = {
           'category': 'checklist',
@@ -519,28 +615,25 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           'sort_order': nextOrder,
         }).select().single();
 
-        setState(() {
-          _checklist.add(ChecklistItem(
-            id: row['id']?.toString() ?? '',
-            title: title,
-            checked: false,
-            sortOrder: nextOrder,
-          ));
-        });
+        final dbId = row['id']?.toString();
+        if (dbId != null && dbId.isNotEmpty) {
+          final idx = _checklist.indexWhere((c) => c.id == localId);
+          if (idx != -1) {
+            setState(() {
+              _checklist[idx] = ChecklistItem(
+                id: dbId,
+                title: title,
+                checked: false,
+                sortOrder: nextOrder,
+              );
+            });
+            await _saveChecklistToLocal();
+          }
+        }
       } catch (e) {
         debugPrint('DB Checklist add error: $e');
-        _addChecklistOffline(title, nextOrder);
       }
-    } else {
-      _addChecklistOffline(title, nextOrder);
     }
-  }
-
-  void _addChecklistOffline(String title, int sortOrder) {
-    final localId = 'local_c_${DateTime.now().millisecondsSinceEpoch}';
-    setState(() {
-      _checklist.add(ChecklistItem(id: localId, title: title, checked: false, sortOrder: sortOrder));
-    });
   }
 
   /// Toggle Checklist Checked Status
@@ -549,6 +642,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     setState(() {
       item.checked = newChecked;
     });
+    await _saveChecklistToLocal();
 
     if (!_isOffline && !item.id.startsWith('mock_') && !item.id.startsWith('local_')) {
       try {
@@ -567,6 +661,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
   /// Delete Checklist Item
   Future<void> _deleteChecklistItem(String id) async {
+    setState(() {
+      _checklist.removeWhere((c) => c.id == id);
+    });
+    await _saveChecklistToLocal();
+
     if (!_isOffline && !id.startsWith('mock_') && !id.startsWith('local_')) {
       try {
         await Supabase.instance.client.from('plan_items').delete().eq('id', id);
@@ -574,9 +673,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         debugPrint('DB Checklist delete error: $e');
       }
     }
-    setState(() {
-      _checklist.removeWhere((c) => c.id == id);
-    });
   }
 
   /// Batch Delete Checked Checklist Items
@@ -772,7 +868,9 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     final descController = TextEditingController(text: existingEvent?.description ?? '');
     final costController = TextEditingController(text: existingEvent?.cost.toString() ?? '');
     String selectedCategory = existingEvent?.category ?? '관광';
-    String selectedTime = existingEvent?.startTime ?? '09:00';
+    String selectedStartTime = existingEvent?.startTime ?? '09:00';
+    String? selectedEndTime = existingEvent?.endTime;
+    bool hasEndTime = selectedEndTime != null && selectedEndTime.isNotEmpty;
     List<String> selectedParticipants = existingEvent != null
         ? List<String>.from(existingEvent.participantNames)
         : [];
@@ -912,37 +1010,109 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     const SizedBox(height: 16),
 
                     // Time Select
-                    Text('시간 설정', style: labelStyle),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('시간 설정', style: labelStyle),
+                        GestureDetector(
+                          onTap: () {
+                            setSheetState(() {
+                              if (hasEndTime) {
+                                hasEndTime = false;
+                                selectedEndTime = null;
+                              } else {
+                                hasEndTime = true;
+                                selectedEndTime = selectedStartTime;
+                              }
+                            });
+                          },
+                          child: Text(
+                            hasEndTime ? '- 종료 시간 삭제' : '+ 종료 시간 추가',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF0A84FF) : const Color(0xFF007AFF),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        final parts = selectedTime.split(':');
-                        int initHour = int.tryParse(parts[0]) ?? 9;
-                        int initMin = int.tryParse(parts[1]) ?? 0;
-                        final tod = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay(hour: initHour, minute: initMin),
-                        );
-                        if (tod != null) {
-                          final hrStr = tod.hour.toString().padLeft(2, '0');
-                          final mnStr = tod.minute.toString().padLeft(2, '0');
-                          setSheetState(() => selectedTime = '$hrStr:$mnStr');
-                        }
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
-                          borderRadius: BorderRadius.circular(10),
+                    Row(
+                      children: [
+                        // Start Time Button
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              final parts = selectedStartTime.split(':');
+                              int initHour = int.tryParse(parts[0]) ?? 9;
+                              int initMin = int.tryParse(parts[1]) ?? 0;
+                              final tod = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay(hour: initHour, minute: initMin),
+                              );
+                              if (tod != null) {
+                                final hrStr = tod.hour.toString().padLeft(2, '0');
+                                final mnStr = tod.minute.toString().padLeft(2, '0');
+                                setSheetState(() => selectedStartTime = '$hrStr:$mnStr');
+                              }
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    hasEndTime ? '시작 $selectedStartTime' : selectedStartTime,
+                                    style: textStyle,
+                                  ),
+                                  Icon(CupertinoIcons.clock, size: 16, color: isDark ? Colors.white60 : Colors.black45),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(selectedTime, style: textStyle),
-                            Icon(CupertinoIcons.clock, size: 18, color: isDark ? Colors.white60 : Colors.black45),
-                          ],
-                        ),
-                      ),
+                        if (hasEndTime) ...[
+                          const SizedBox(width: 8),
+                          // End Time Button
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () async {
+                                final parts = (selectedEndTime ?? selectedStartTime).split(':');
+                                int initHour = int.tryParse(parts[0]) ?? 10;
+                                int initMin = int.tryParse(parts[1]) ?? 0;
+                                final tod = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(hour: initHour, minute: initMin),
+                                );
+                                if (tod != null) {
+                                  final hrStr = tod.hour.toString().padLeft(2, '0');
+                                  final mnStr = tod.minute.toString().padLeft(2, '0');
+                                  setSheetState(() => selectedEndTime = '$hrStr:$mnStr');
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('종료 ${selectedEndTime ?? selectedStartTime}', style: textStyle),
+                                    Icon(CupertinoIcons.clock, size: 16, color: isDark ? Colors.white60 : Colors.black45),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 16),
 
@@ -1021,12 +1191,14 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                             onPressed: () {
                               if (titleController.text.trim().isEmpty) return;
                               final parsedCost = int.tryParse(costController.text.trim()) ?? 0;
+                              final finalEndTime = hasEndTime ? selectedEndTime : null;
 
                               if (isEdit) {
                                 final updated = TravelEvent(
                                   id: existingEvent.id,
                                   title: titleController.text.trim(),
-                                  startTime: selectedTime,
+                                  startTime: selectedStartTime,
+                                  endTime: finalEndTime,
                                   category: selectedCategory,
                                   cost: parsedCost,
                                   status: existingEvent.status,
@@ -1039,7 +1211,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                 final added = TravelEvent(
                                   id: '',
                                   title: titleController.text.trim(),
-                                  startTime: selectedTime,
+                                  startTime: selectedStartTime,
+                                  endTime: finalEndTime,
                                   category: selectedCategory,
                                   cost: parsedCost,
                                   status: 'Todo',
@@ -1072,6 +1245,14 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
   }
 
+  String _formatTimeRange(String start, String? end) {
+    if (start.isEmpty) return '시간 미정';
+    if (end != null && end.isNotEmpty && end != start) {
+      return '$start ~ $end';
+    }
+    return start;
+  }
+
   /// Cycle Event status Todo -> In Progress -> Done
   void _cycleEventStatus(TravelEvent e) {
     String nextStatus = 'Todo';
@@ -1087,6 +1268,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       id: e.id,
       title: e.title,
       startTime: e.startTime,
+      endTime: e.endTime,
       category: e.category,
       cost: e.cost,
       status: nextStatus,
@@ -1849,55 +2031,42 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Left Side: Time (09:00)
+          // Left Side: Time (09:00 or 09:00 ~ 11:00)
           SizedBox(
-            width: 44,
+            width: 52,
             child: Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: Text(
-                event.startTime,
-                style: GoogleFonts.outfit(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white54 : Colors.black54,
-                ),
-                textAlign: TextAlign.center,
+              padding: const EdgeInsets.only(top: 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    event.startTime,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (event.endTime != null &&
+                      event.endTime!.isNotEmpty &&
+                      event.endTime != event.startTime) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '~ ${event.endTime}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white38 : Colors.black38,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
-          // Middle Side: Vertical Connection Line + Interactive Status Circle Dot
-          SizedBox(
-            width: 16,
-            child: Column(
-              children: [
-                Container(
-                  height: 24,
-                  width: 2,
-                  color: isFirst ? Colors.transparent : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA)),
-                ),
-                GestureDetector(
-                  onTap: () => _cycleEventStatus(event),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: statusColor.withOpacity(0.2),
-                      border: Border.all(color: statusColor, width: 2),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isLast ? Colors.transparent : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           // Right Side: Card UI
           Expanded(
             child: Padding(
@@ -1937,6 +2106,25 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                   fontWeight: FontWeight.bold,
                                   color: isDark ? Colors.white : Colors.black87,
                                 ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    CupertinoIcons.clock,
+                                    size: 11,
+                                    color: isDark ? const Color(0xFF0A84FF) : const Color(0xFF007AFF),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _formatTimeRange(event.startTime, event.endTime),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? const Color(0xFF0A84FF) : const Color(0xFF007AFF),
+                                    ),
+                                  ),
+                                ],
                               ),
                               if (event.description.isNotEmpty) ...[
                                 const SizedBox(height: 4),

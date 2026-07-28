@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
 import 'package:placelist/widgets/category_section.dart';
 import 'package:placelist/widgets/map_marker.dart';
+import 'package:placelist/utils/map_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
@@ -24,9 +26,11 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   late final TextEditingController _searchController;
+  Timer? _debounceTimer;
   bool _isMapView = false;
   String _sortBy = 'default'; // 'default', 'rating', 'name'
   Store? _selectedMapStore;
+  NaverMapController? _mapController;
 
   @override
   void initState() {
@@ -36,6 +40,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -44,11 +49,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     return store.imageUrls.isNotEmpty ? store.imageUrls.first : null;
   }
 
+  void _onSearchChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        ref.read(searchQueryProvider.notifier).state = value;
+      }
+    });
+  }
+
   void _onSearchSubmitted(String value) {
+    _debounceTimer?.cancel();
     final query = value.trim();
-    if (query.isNotEmpty) {
-      ref.read(searchQueryProvider.notifier).state = query;
-    }
+    ref.read(searchQueryProvider.notifier).state = query;
   }
 
   @override
@@ -87,9 +100,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         controller: _searchController,
                         textAlignVertical: TextAlignVertical.center,
                         style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                        onChanged: (value) {
-                          ref.read(searchQueryProvider.notifier).state = value;
-                        },
+                        onChanged: _onSearchChanged,
                         onSubmitted: _onSearchSubmitted,
                         decoration: InputDecoration(
                           prefixIcon: const Icon(
@@ -102,6 +113,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                               ? IconButton(
                                   icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
                                   onPressed: () {
+                                    _debounceTimer?.cancel();
                                     _searchController.clear();
                                     ref.read(searchQueryProvider.notifier).state = '';
                                   },
@@ -291,6 +303,45 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
+  Future<void> _renderMapMarkers(
+    NaverMapController controller,
+    List<MapStoreItem> mapStoreItems,
+    bool isDark,
+  ) async {
+    final markers = <NMarker>{};
+    for (final item in mapStoreItems) {
+      final isSelected = _selectedMapStore?.id == item.store.id;
+      final marker = await buildCustomMarker(
+        context: context,
+        store: item.store,
+        isSelected: isSelected,
+        isDark: isDark,
+        overrideLat: item.displayLat,
+        overrideLng: item.displayLng,
+        clusterIndex: item.clusterIndex,
+        clusterTotal: item.clusterTotal,
+      );
+      marker.setOnTapListener((NMarker m) async {
+        if (!mounted) return;
+        setState(() {
+          _selectedMapStore = item.store;
+        });
+        controller.updateCamera(
+          NCameraUpdate.scrollAndZoomTo(
+            target: NLatLng(item.displayLat, item.displayLng),
+            zoom: 15.5,
+          ),
+        );
+        await _renderMapMarkers(controller, mapStoreItems, isDark);
+      });
+      markers.add(marker);
+    }
+    controller.clearOverlays();
+    if (markers.isNotEmpty) {
+      controller.addOverlayAll(markers);
+    }
+  }
+
   Widget _buildMapView(List<Store> stores, bool isDark) {
     if (kIsWeb) {
       return Center(
@@ -301,9 +352,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       );
     }
 
-    final validStores = stores.where((s) => s.latitude != null && s.longitude != null).toList();
+    final mapStoreItems = groupStoresByLocation(stores);
 
-    if (validStores.isEmpty) {
+    if (mapStoreItems.isEmpty) {
       return Center(
         child: Text(
           "지도에 표시할 위치 정보가 없습니다.",
@@ -312,8 +363,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       );
     }
 
-    final initialLat = validStores.first.latitude!;
-    final initialLng = validStores.first.longitude!;
+    final initialLat = mapStoreItems.first.displayLat;
+    final initialLng = mapStoreItems.first.displayLng;
 
     return Stack(
       children: [
@@ -327,60 +378,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             indoorEnable: true,
           ),
           onMapReady: (controller) async {
-            final markers = <NMarker>{};
-            for (final store in validStores) {
-              if (store.latitude == null || store.longitude == null) continue;
-              final isSelected = _selectedMapStore?.id == store.id;
-              final marker = await buildCustomMarker(
-                context: context,
-                store: store,
-                isSelected: isSelected,
-                isDark: isDark,
-              );
-              marker.setOnTapListener((NMarker m) async {
-                if (!mounted) return;
-                setState(() {
-                  _selectedMapStore = store;
-                });
-                // 탭한 마커 위치로 지도를 부드럽게 이동 및 줌인
-                if (store.latitude != null && store.longitude != null) {
-                  controller.updateCamera(
-                    NCameraUpdate.scrollAndZoomTo(
-                      target: NLatLng(store.latitude!, store.longitude!),
-                      zoom: 15.5,
-                    ),
-                  );
-                }
-                // 선택 마커 강조 갱신
-                controller.clearOverlays();
-                for (final s in validStores) {
-                  if (s.latitude == null || s.longitude == null) continue;
-                  final updated = await buildCustomMarker(
-                    context: context,
-                    store: s,
-                    isSelected: s.id == store.id,
-                    isDark: isDark,
-                  );
-                  updated.setOnTapListener((NMarker m2) async {
-                    if (!mounted) return;
-                    setState(() => _selectedMapStore = s);
-                    if (s.latitude != null && s.longitude != null) {
-                      controller.updateCamera(
-                        NCameraUpdate.scrollAndZoomTo(
-                          target: NLatLng(s.latitude!, s.longitude!),
-                          zoom: 15.5,
-                        ),
-                      );
-                    }
-                  });
-                  controller.addOverlayAll({updated});
-                }
-              });
-              markers.add(marker);
-            }
-            if (markers.isNotEmpty) {
-              controller.addOverlayAll(markers);
-            }
+            _mapController = controller;
+            await _renderMapMarkers(controller, mapStoreItems, isDark);
           },
         ),
         if (_selectedMapStore != null)
@@ -388,124 +387,241 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             left: 16,
             right: 16,
             bottom: 100,
-            child: _buildStorePreviewCard(_selectedMapStore!, isDark),
+            child: _buildStorePreviewCard(_selectedMapStore!, mapStoreItems, isDark),
           ),
       ],
     );
   }
 
-  Widget _buildStorePreviewCard(Store store, bool isDark) {
+  Widget _buildStorePreviewCard(
+    Store store,
+    List<MapStoreItem> mapStoreItems,
+    bool isDark,
+  ) {
     final imageUrl = _getMainImageUrl(store);
+    MapStoreItem? currentItem;
+    for (final item in mapStoreItems) {
+      if (item.store.id == store.id) {
+        currentItem = item;
+        break;
+      }
+    }
+
+    final isCluster = currentItem != null && currentItem.clusterTotal > 1;
+
     return Card(
       elevation: 8,
       color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    width: 70,
-                    height: 70,
-                    color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
-                    child: const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    width: 70,
-                    height: 70,
-                    color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
-                    child: Icon(
-                      Icons.broken_image,
-                      color: isDark ? Colors.white24 : Colors.grey[400],
-                      size: 24,
-                    ),
+            if (isCluster) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F4F8),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0),
                   ),
                 ),
-              ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    store.name,
-                    style: GoogleFonts.notoSans(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 14),
-                      const SizedBox(width: 2),
-                      Text(
-                        (store.rating ?? 0.0).toStringAsFixed(1),
-                        style: GoogleFonts.notoSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white70 : Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          store.region ?? '',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.layers_rounded, size: 14, color: Color(0xFF6C63FF)),
+                        const SizedBox(width: 6),
+                        Text(
+                          '같은 위치 장소 (${currentItem.clusterTotal}개)',
                           style: GoogleFonts.notoSans(
                             fontSize: 12,
-                            color: isDark ? Colors.white38 : Colors.grey[600],
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white70 : Colors.black87,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: currentItem.clusterStores.asMap().entries.map((entry) {
+                          final idx = entry.key;
+                          final clusterStore = entry.value;
+                          final isThisSelected = clusterStore.id == store.id;
+
+                          final targetItem = mapStoreItems.firstWhere(
+                            (it) => it.store.id == clusterStore.id,
+                            orElse: () => currentItem!,
+                          );
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: GestureDetector(
+                              onTap: () {
+                                if (!isThisSelected) {
+                                  setState(() {
+                                    _selectedMapStore = clusterStore;
+                                  });
+                                  if (_mapController != null) {
+                                    _mapController!.updateCamera(
+                                      NCameraUpdate.scrollAndZoomTo(
+                                        target: NLatLng(targetItem.displayLat, targetItem.displayLng),
+                                        zoom: 15.5,
+                                      ),
+                                    );
+                                    _renderMapMarkers(_mapController!, mapStoreItems, isDark);
+                                  }
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: isThisSelected
+                                      ? const Color(0xFF6C63FF)
+                                      : (isDark ? const Color(0xFF1C1C1E) : Colors.white),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isThisSelected
+                                        ? const Color(0xFF8A84FF)
+                                        : (isDark ? Colors.white24 : Colors.grey.shade300),
+                                  ),
+                                ),
+                                child: Text(
+                                  '${idx + 1}. ${clusterStore.name}',
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 11,
+                                    fontWeight: isThisSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isThisSelected
+                                        ? Colors.white
+                                        : (isDark ? Colors.white70 : Colors.black87),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            Row(
+              children: [
+                if (imageUrl != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: 70,
+                      height: 70,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        width: 70,
+                        height: 70,
+                        color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        width: 70,
+                        height: 70,
+                        color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                        child: Icon(
+                          Icons.broken_image,
+                          color: isDark ? Colors.white24 : Colors.grey[400],
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        store.name,
+                        style: GoogleFonts.notoSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 14),
+                          const SizedBox(width: 2),
+                          Text(
+                            (store.rating ?? 0.0).toStringAsFixed(1),
+                            style: GoogleFonts.notoSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              store.region ?? '',
+                              style: GoogleFonts.notoSans(
+                                fontSize: 12,
+                                color: isDark ? Colors.white38 : Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StoreDetailPage(store: store),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StoreDetailPage(store: store),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3267A2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3267A2),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('상세보기'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, size: 18),
-              onPressed: () {
-                setState(() {
-                  _selectedMapStore = null;
-                });
-              },
+                  child: const Text('상세보기'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () {
+                    setState(() {
+                      _selectedMapStore = null;
+                    });
+                    if (_mapController != null) {
+                      _renderMapMarkers(_mapController!, mapStoreItems, isDark);
+                    }
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -552,24 +668,27 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         if (imageUrl == null) {
                           return Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]);
                         }
-                        return Image.network(
-                          imageUrl,
+                        return CachedNetworkImage(
+                          imageUrl: imageUrl,
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
+                          placeholder: (context, url) => Container(
+                            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
+                            child: const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
+                            child: Icon(
+                              Icons.broken_image,
+                              color: isDark ? Colors.white24 : Colors.grey[400],
+                              size: 24,
+                            ),
+                          ),
                         );
                       }),
                     ),
