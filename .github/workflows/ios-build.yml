@@ -31,7 +31,12 @@ jobs:
           rm -f ios/Podfile.lock
 
       - name: Build iOS (No Sign)
-        run: flutter build ios --no-codesign --release
+        run: |
+          flutter build ios --no-codesign --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --dart-define=SUPABASE_STORAGE_BUCKET=image \
+            --dart-define=NAVER_MAP_CLIENT_ID=${{ secrets.NAVER_MAP_CLIENT_ID }}
 
       - name: Build IPA
         run: |
