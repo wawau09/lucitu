@@ -7,19 +7,37 @@
         {
             "name": "placelist",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define=SUPABASE_URL=https://mgebziaamxgrhudurklz.supabase.co",
+                "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1nZWJ6aWFhbXhncmh1ZHVya2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MzU5MjUsImV4cCI6MjA2NTExMTkyNX0.mKMtBL4j2wQwO7FR-2OWtjthxzfiYNuGGEqpmYr3QCM",
+                "--dart-define=SUPABASE_STORAGE_BUCKET=image",
+                "--dart-define=NAVER_MAP_CLIENT_ID=IzHzC15FEEKUARLbzCqBEpXAPR0u70fWt2ncElsr"
+            ]
         },
         {
             "name": "placelist (profile mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "toolArgs": [
+                "--dart-define=SUPABASE_URL=https://mgebziaamxgrhudurklz.supabase.co",
+                "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1nZWJ6aWFhbXhncmh1ZHVya2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MzU5MjUsImV4cCI6MjA2NTExMTkyNX0.mKMtBL4j2wQwO7FR-2OWtjthxzfiYNuGGEqpmYr3QCM",
+                "--dart-define=SUPABASE_STORAGE_BUCKET=image",
+                "--dart-define=NAVER_MAP_CLIENT_ID=IzHzC15FEEKUARLbzCqBEpXAPR0u70fWt2ncElsr"
+            ]
         },
         {
             "name": "placelist (release mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
+            "flutterMode": "release",
+            "toolArgs": [
+                "--dart-define=SUPABASE_URL=https://mgebziaamxgrhudurklz.supabase.co",
+                "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1nZWJ6aWFhbXhncmh1ZHVya2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MzU5MjUsImV4cCI6MjA2NTExMTkyNX0.mKMtBL4j2wQwO7FR-2OWtjthxzfiYNuGGEqpmYr3QCM",
+                "--dart-define=SUPABASE_STORAGE_BUCKET=image",
+                "--dart-define=NAVER_MAP_CLIENT_ID=IzHzC15FEEKUARLbzCqBEpXAPR0u70fWt2ncElsr"
+            ]
         },
         {
             "name": "flutter_naver_map",
