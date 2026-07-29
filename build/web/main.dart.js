@@ -32772,7 +32772,7 @@ var $async$aVX=A.p(function(a,b){if(a===1)return A.q(b,r)
 for(;;)switch(s){case 0:if($.a7==null)A.aBc()
 $.a7.toString
 s=2
-return A.m(A.ayS("",""),$async$aVX)
+return A.m(A.ayS("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1nZWJ6aWFhbXhncmh1ZHVya2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MzU5MjUsImV4cCI6MjA2NTExMTkyNX0.mKMtBL4j2wQwO7FR-2OWtjthxzfiYNuGGEqpmYr3QCM","https://mgebziaamxgrhudurklz.supabase.co"),$async$aVX)
 case 2:if($.a7==null)A.aBc()
 q=$.a7
 q.toString

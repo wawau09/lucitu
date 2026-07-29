@@ -1,11 +1,12 @@
 const String supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
-  defaultValue: '',
+  defaultValue: 'https://mgebziaamxgrhudurklz.supabase.co',
 );
 
 const String supabaseAnonKey = String.fromEnvironment(
   'SUPABASE_ANON_KEY',
-  defaultValue: '',
+  defaultValue:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1nZWJ6aWFhbXhncmh1ZHVya2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MzU5MjUsImV4cCI6MjA2NTExMTkyNX0.mKMtBL4j2wQwO7FR-2OWtjthxzfiYNuGGEqpmYr3QCM',
 );
 
 const String supabaseStorageBucket = String.fromEnvironment(
@@ -15,6 +16,6 @@ const String supabaseStorageBucket = String.fromEnvironment(
 
 const String naverMapClientId = String.fromEnvironment(
   'NAVER_MAP_CLIENT_ID',
-  defaultValue: '',
+  defaultValue: 'IzHzC15FEEKUARLbzCqBEpXAPR0u70fWt2ncElsr',
 );
 
