@@ -80,6 +80,58 @@
         infoWindow.open(map, marker);
       }
     }
+
+    function initNaverMapMulti(element, stores) {
+      if (!stores || stores.length === 0) return;
+      var first = stores[0];
+      var mapOptions = {
+        center: new naver.maps.LatLng(first.lat, first.lng),
+        zoom: 13,
+        mapDataControl: false,
+        scaleControl: false,
+      };
+      var map = new naver.maps.Map(element, mapOptions);
+
+      var stopScrollEvent = function(e) {
+        e.stopPropagation();
+      };
+      element.addEventListener('wheel', stopScrollEvent, { passive: true });
+      element.addEventListener('touchstart', stopScrollEvent, { passive: true });
+      element.addEventListener('touchmove', stopScrollEvent, { passive: true });
+      element.addEventListener('touchend', stopScrollEvent, { passive: true });
+
+      var bounds = new naver.maps.LatLngBounds();
+      stores.forEach(function(s) {
+        if (s.lat && s.lng) {
+          var loc = new naver.maps.LatLng(s.lat, s.lng);
+          bounds.extend(loc);
+          var marker = new naver.maps.Marker({
+            position: loc,
+            map: map,
+            title: s.name || ''
+          });
+          if (s.name) {
+            var infoWindow = new naver.maps.InfoWindow({
+              content: '<div style="padding:8px 12px; font-family: sans-serif; font-size: 13px; font-weight: bold; border-radius: 8px; background-color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.15); color: #111;">' + s.name + '</div>',
+              borderWidth: 0,
+              disableAnchor: true,
+              backgroundColor: 'transparent',
+              pixelOffset: new naver.maps.Point(0, -10)
+            });
+            naver.maps.Event.addListener(marker, 'click', function() {
+              if (infoWindow.getMap()) {
+                infoWindow.close();
+              } else {
+                infoWindow.open(map, marker);
+              }
+            });
+          }
+        }
+      });
+      if (stores.length > 1) {
+        map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+      }
+    }
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>

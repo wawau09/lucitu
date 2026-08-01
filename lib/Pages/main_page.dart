@@ -16,6 +16,8 @@ import 'package:placelist/widgets/category_section.dart';
 import 'package:placelist/widgets/map_marker.dart';
 import 'package:placelist/utils/map_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:placelist/Pages/map_stub.dart'
+    if (dart.library.html) 'package:placelist/Pages/map_web.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -344,11 +346,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   Widget _buildMapView(List<Store> stores, bool isDark) {
     if (kIsWeb) {
-      return Center(
-        child: Text(
-          '웹 환경에서는 기본 지도 호환 모드로 작동합니다.',
-          style: GoogleFonts.notoSans(color: isDark ? Colors.white70 : Colors.black87),
+      return Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
         ),
+        child: getWebMapStores(stores),
       );
     }
 
