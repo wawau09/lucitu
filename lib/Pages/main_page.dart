@@ -234,7 +234,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 ),
                 error: (err, stack) => ErrorRetryWidget(
                   message: err.toString(),
-                  onRetry: () => ref.read(storesProvider.notifier).refresh(),
+                  onRetry: () => ref.read(storesProvider.notifier).fetchStores(),
                 ),
                 data: (storesList) {
                   var stores = List<Store>.from(storesList);
