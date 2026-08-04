@@ -105,3 +105,12 @@ final plansProvider =
     StateNotifierProvider<PlansNotifier, AsyncValue<List<PlanSummary>>>((ref) {
   return PlansNotifier();
 });
+
+final selectedPlanIdProvider = StateProvider<String?>((ref) => null);
+
+final selectedPlanDetailProvider =
+    FutureProvider.family<PlanDetail, String>((ref, planId) async {
+  final db = PlanDatabase();
+  return db.getPlanDetail(planId);
+});
+

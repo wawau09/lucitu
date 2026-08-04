@@ -9,6 +9,11 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Git LFS Pull
+        run: git lfs pull
 
       # ➔ 구버전 혼선을 막기 위해 Xcode 안정판 버전을 지정합니다.
       - name: Set up Latest Xcode

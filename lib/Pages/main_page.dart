@@ -16,6 +16,8 @@ import 'package:placelist/widgets/category_section.dart';
 import 'package:placelist/widgets/map_marker.dart';
 import 'package:placelist/utils/map_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:placelist/widgets/shimmer_loading.dart';
+import 'package:placelist/widgets/error_retry_widget.dart';
 import 'package:placelist/Pages/map_stub.dart'
     if (dart.library.html) 'package:placelist/Pages/map_web.dart';
 
@@ -224,9 +226,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             // 메인 컨텐츠 (리스트 뷰 vs 지도 뷰)
             Expanded(
               child: storesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) =>
-                    Center(child: Text("오류가 발생했습니다: $err", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87))),
+                loading: () => ListView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: 5,
+                  itemBuilder: (context, index) => const StoreSkeletonCard(),
+                ),
+                error: (err, stack) => ErrorRetryWidget(
+                  message: err.toString(),
+                  onRetry: () => ref.read(storesProvider.notifier).refresh(),
+                ),
                 data: (storesList) {
                   var stores = List<Store>.from(storesList);
 

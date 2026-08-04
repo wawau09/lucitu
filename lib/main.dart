@@ -133,7 +133,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      navigatorObservers: [CNTabBarRouteObserver()],
+      navigatorObservers: kIsWeb ? [] : [CNTabBarRouteObserver()],
       themeMode: themeMode,
       theme: ThemeData(
         useMaterial3: true,
@@ -154,25 +154,49 @@ class _MyAppState extends ConsumerState<MyApp> {
               extendBody: true,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               body: IndexedStack(index: currentIndex, children: screens),
-              bottomNavigationBar: CNTabBar(
-                currentIndex: currentIndex,
-                onTap: (index) => ref.read(navigationProvider.notifier).setIndex(index),
-                tint: const Color(0xFF3267A2),
-                items: const [
-                  CNTabBarItem(
-                    icon: CNSymbol('calendar'),
-                    activeIcon: CNSymbol('calendar'),
-                  ),
-                  CNTabBarItem(
-                    icon: CNSymbol('house'),
-                    activeIcon: CNSymbol('house.fill'),
-                  ),
-                  CNTabBarItem(
-                    icon: CNSymbol('person'),
-                    activeIcon: CNSymbol('person.fill'),
-                  ),
-                ],
-              ),
+              bottomNavigationBar: kIsWeb
+                  ? NavigationBar(
+                      selectedIndex: currentIndex,
+                      onDestinationSelected: (index) =>
+                          ref.read(navigationProvider.notifier).setIndex(index),
+                      destinations: const [
+                        NavigationDestination(
+                          icon: Icon(Icons.calendar_today_outlined),
+                          selectedIcon: Icon(Icons.calendar_today),
+                          label: '플래너',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.home_outlined),
+                          selectedIcon: Icon(Icons.home),
+                          label: '홈',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.person_outline),
+                          selectedIcon: Icon(Icons.person),
+                          label: '내 정보',
+                        ),
+                      ],
+                    )
+                  : CNTabBar(
+                      currentIndex: currentIndex,
+                      onTap: (index) =>
+                          ref.read(navigationProvider.notifier).setIndex(index),
+                      tint: const Color(0xFF3267A2),
+                      items: const [
+                        CNTabBarItem(
+                          icon: CNSymbol('calendar'),
+                          activeIcon: CNSymbol('calendar'),
+                        ),
+                        CNTabBarItem(
+                          icon: CNSymbol('house'),
+                          activeIcon: CNSymbol('house.fill'),
+                        ),
+                        CNTabBarItem(
+                          icon: CNSymbol('person'),
+                          activeIcon: CNSymbol('person.fill'),
+                        ),
+                      ],
+                    ),
             );
           },
         ),

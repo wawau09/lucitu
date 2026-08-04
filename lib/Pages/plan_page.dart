@@ -12,6 +12,9 @@ import 'package:placelist/widgets/plan_item_form_sheet.dart';
 import 'package:placelist/widgets/plan/plan_collaborator_section.dart';
 import 'package:placelist/widgets/plan/plan_card_item.dart';
 import 'package:placelist/utils/share_helper.dart';
+import 'package:placelist/widgets/plan/plan_header_widget.dart';
+import 'package:placelist/widgets/shimmer_loading.dart';
+import 'package:placelist/widgets/error_retry_widget.dart';
 import 'package:placelist/Pages/cupertino_planner_page.dart';
 
 class PlanPage extends ConsumerStatefulWidget {
@@ -40,7 +43,9 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     try {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim();
-      if (text != null && text.toUpperCase().startsWith('PL-') && text.length >= 8) {
+      if (text != null &&
+          ((text.length >= 4 && text.length <= 8 && RegExp(r'^[A-Za-z0-9]+$').hasMatch(text)) ||
+              (text.toUpperCase().startsWith('PL-') && text.length >= 8))) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -92,40 +97,24 @@ class _PlanPageState extends ConsumerState<PlanPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '내 일정',
-                    style: GoogleFonts.notoSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.refresh, color: isDark ? Colors.white70 : Colors.black87),
-                        onPressed: () =>
-                            ref.read(plansProvider.notifier).refresh(),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.add, color: isDark ? Colors.white70 : Colors.black87),
-                        onPressed: _showPlanActionChooser,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            PlanHeaderWidget(
+              isDark: isDark,
+              onRefresh: () => ref.read(plansProvider.notifier).refresh(),
+              onAddPlan: _showPlanActionChooser,
             ),
             Divider(height: 1, color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEEEEEE)),
             Expanded(
               child: plansAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => _buildErrorState(err.toString(), isDark),
+                loading: () => ListView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: 4,
+                  itemBuilder: (context, index) => const PlanSkeletonCard(),
+                ),
+                error: (err, stack) => ErrorRetryWidget(
+                  message: err.toString(),
+                  onRetry: () => ref.read(plansProvider.notifier).refresh(),
+                ),
                 data: (plans) {
                   if (user == null) {
                     return _buildLoggedOutState(isDark);
@@ -1122,232 +1111,242 @@ class _PlanPageState extends ConsumerState<PlanPage> {
             return Dialog(
               backgroundColor: Colors.transparent,
               insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 40,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // ── Header gradient banner ──
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF4A90E2), Color(0xFF6C63FF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 40,
+                        offset: const Offset(0, 16),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Text('✈️', style: TextStyle(fontSize: 26)),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            '새 일정 만들기',
-                            style: GoogleFonts.notoSansKr(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // ── Header gradient banner ──
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF4A90E2), Color(0xFF6C63FF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '특별한 하루를 계획해 보세요',
-                            style: GoogleFonts.notoSansKr(
-                              fontSize: 13,
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // ── Form body ──
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '일정 이름',
-                            style: GoogleFonts.notoSansKr(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF6B7280),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF9FAFB),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFE5E7EB)),
-                            ),
-                            child: TextField(
-                              controller: nameController,
-                              style: GoogleFonts.notoSansKr(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF111827),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: '예) 제주도 당일치기 🌊',
-                                hintStyle: GoogleFonts.notoSansKr(
-                                  color: const Color(0xFF9CA3AF),
-                                  fontSize: 14,
-                                ),
-                                prefixIcon: const Icon(Icons.edit_outlined, color: Color(0xFF9CA3AF), size: 20),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            '여행 날짜',
-                            style: GoogleFonts.notoSansKr(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF6B7280),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: selectedDate,
-                                firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                                lastDate: DateTime.now().add(const Duration(days: 3650)),
-                                builder: (context, child) => Theme(
-                                  data: Theme.of(context).copyWith(
-                                    colorScheme: const ColorScheme.light(
-                                      primary: Color(0xFF4A90E2),
-                                      onPrimary: Colors.white,
-                                    ),
-                                  ),
-                                  child: child!,
-                                ),
-                              );
-                              if (picked == null) return;
-                              setDialogState(() => selectedDate = picked);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0F6FF),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0xFF4A90E2).withOpacity(0.3)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.calendar_today_rounded, color: Color(0xFF4A90E2), size: 18),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    _formatDate(selectedDate),
-                                    style: GoogleFonts.notoSansKr(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF4A90E2),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  const Icon(Icons.chevron_right_rounded, color: Color(0xFF4A90E2), size: 18),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                        ],
-                      ),
-                    ),
-                    // ── Action buttons ──
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(false),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(14),
-                                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                ),
+                                child: const Text('✈️', style: TextStyle(fontSize: 26)),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                '새 일정 만들기',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
-                              child: Text(
-                                '취소',
+                              const SizedBox(height: 4),
+                              Text(
+                                '특별한 하루를 계획해 보세요',
                                 style: GoogleFonts.notoSansKr(
-                                  fontSize: 15,
+                                  fontSize: 13,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // ── Form body ──
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '일정 이름',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xFF6B7280),
+                                  letterSpacing: 0.5,
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF4A90E2), Color(0xFF6C63FF)],
+                              const SizedBox(height: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF9FAFB),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFE5E7EB)),
                                 ),
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF4A90E2).withOpacity(0.4),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton(
-                                onPressed: () => Navigator.of(dialogContext).pop(true),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                                child: Text(
-                                  '일정 생성하기 ✨',
+                                child: TextField(
+                                  controller: nameController,
                                   style: GoogleFonts.notoSansKr(
                                     fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF111827),
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: '예) 제주도 당일치기 🌊',
+                                    hintStyle: GoogleFonts.notoSansKr(
+                                      color: const Color(0xFF9CA3AF),
+                                      fontSize: 14,
+                                    ),
+                                    prefixIcon: const Icon(Icons.edit_outlined, color: Color(0xFF9CA3AF), size: 20),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                   ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(height: 20),
+                              Text(
+                                '여행 날짜',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF6B7280),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedDate,
+                                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                                    lastDate: DateTime.now().add(const Duration(days: 3650)),
+                                    builder: (context, child) => Theme(
+                                      data: Theme.of(context).copyWith(
+                                        colorScheme: const ColorScheme.light(
+                                          primary: Color(0xFF4A90E2),
+                                          onPrimary: Colors.white,
+                                        ),
+                                      ),
+                                      child: child!,
+                                    ),
+                                  );
+                                  if (picked == null) return;
+                                  setDialogState(() => selectedDate = picked);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF0F6FF),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: const Color(0xFF4A90E2).withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.calendar_today_rounded, color: Color(0xFF4A90E2), size: 18),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        _formatDate(selectedDate),
+                                        style: GoogleFonts.notoSansKr(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFF4A90E2),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      const Icon(Icons.chevron_right_rounded, color: Color(0xFF4A90E2), size: 18),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        // ── Action buttons ──
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                    ),
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '취소',
+                                      style: GoogleFonts.notoSansKr(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF4A90E2), Color(0xFF6C63FF)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF4A90E2).withOpacity(0.4),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ElevatedButton(
+                                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        '일정 생성하기 ✨',
+                                        style: GoogleFonts.notoSansKr(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -1411,273 +1410,286 @@ class _PlanPageState extends ConsumerState<PlanPage> {
             return Dialog(
               backgroundColor: Colors.transparent,
               insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 40,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // ── Header gradient banner ──
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFFFF8C42), Color(0xFFFF6B6B)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 40,
+                        offset: const Offset(0, 16),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Text('🎟️', style: TextStyle(fontSize: 26)),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            '코드로 참가하기',
-                            style: GoogleFonts.notoSansKr(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // ── Header gradient banner ──
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFFF8C42), Color(0xFFFF6B6B)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '초대 코드를 입력해 일정에 합류하세요',
-                            style: GoogleFonts.notoSansKr(
-                              fontSize: 13,
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // ── Code input body ──
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '초대 코드',
-                            style: GoogleFonts.notoSansKr(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF6B7280),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF7F0),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: errorMsg != null
-                                    ? Colors.redAccent.withOpacity(0.5)
-                                    : const Color(0xFFFF8C42).withOpacity(0.3),
-                              ),
-                            ),
-                            child: TextField(
-                              controller: codeController,
-                              textCapitalization: TextCapitalization.characters,
-                              style: GoogleFonts.robotoMono(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF111827),
-                                letterSpacing: 4,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLength: 8,
-                              onChanged: (_) {
-                                if (errorMsg != null) {
-                                  setDialogState(() => errorMsg = null);
-                                }
-                              },
-                              decoration: InputDecoration(
-                                hintText: 'ABC12345',
-                                hintStyle: GoogleFonts.robotoMono(
-                                  color: const Color(0xFF9CA3AF),
-                                  fontSize: 18,
-                                  letterSpacing: 4,
-                                ),
-                                prefixIcon: const Icon(Icons.confirmation_num_outlined, color: Color(0xFFFF8C42), size: 20),
-                                border: InputBorder.none,
-                                counterText: '',
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              ),
-                            ),
-                          ),
-                          if (errorMsg != null) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.error_outline, color: Colors.redAccent, size: 14),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    errorMsg!,
-                                    style: GoogleFonts.notoSansKr(
-                                      fontSize: 12,
-                                      color: Colors.redAccent,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF7ED),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFFF8C42).withOpacity(0.2)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Text('💡', style: TextStyle(fontSize: 14)),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    '초대 코드는 일정 상세 화면에서 확인할 수 있어요',
-                                    style: GoogleFonts.notoSansKr(
-                                      fontSize: 12,
-                                      color: const Color(0xFFB45309),
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                        ],
-                      ),
-                    ),
-                    // ── Action buttons ──
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(14),
-                                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                ),
+                                child: const Text('🎟️', style: TextStyle(fontSize: 26)),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                '코드로 참가하기',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
-                              child: Text(
-                                '취소',
+                              const SizedBox(height: 4),
+                              Text(
+                                '초대 코드를 입력해 일정에 합류하세요',
                                 style: GoogleFonts.notoSansKr(
-                                  fontSize: 15,
+                                  fontSize: 13,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // ── Code input body ──
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '초대 코드',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xFF6B7280),
+                                  letterSpacing: 0.5,
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: isLoading
-                                    ? const LinearGradient(colors: [Color(0xFFD1D5DB), Color(0xFF9CA3AF)])
-                                    : const LinearGradient(
-                                        colors: [Color(0xFFFF8C42), Color(0xFFFF6B6B)],
-                                      ),
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: isLoading
-                                    ? []
-                                    : [
-                                        BoxShadow(
-                                          color: const Color(0xFFFF8C42).withOpacity(0.4),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 6),
-                                        ),
-                                      ],
-                              ),
-                              child: ElevatedButton(
-                                onPressed: isLoading
-                                    ? null
-                                    : () async {
-                                        final code = codeController.text.trim().toUpperCase();
-                                        if (code.isEmpty) {
-                                          setDialogState(() => errorMsg = '코드를 입력해주세요.');
-                                          return;
-                                        }
-                                        setDialogState(() {
-                                          isLoading = true;
-                                          errorMsg = null;
-                                        });
-                                        try {
-                                          final joined = await ref
-                                              .read(plansProvider.notifier)
-                                              .joinPlanByCode(planCode: code);
-                                          if (!mounted) return;
-                                          Navigator.of(dialogContext).pop();
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => PlanDetailPage(planId: joined.id),
-                                            ),
-                                          );
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                '🎉 "${joined.name}" 일정에 참가했습니다!',
-                                                style: GoogleFonts.notoSans(),
-                                              ),
-                                              behavior: SnackBarBehavior.floating,
-                                              backgroundColor: const Color(0xFFFF8C42),
-                                            ),
-                                          );
-                                        } catch (e) {
-                                          setDialogState(() {
-                                            isLoading = false;
-                                            errorMsg = '코드를 찾을 수 없습니다. 다시 확인해주세요.';
-                                          });
-                                        }
-                                      },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
+                              const SizedBox(height: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF7F0),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: errorMsg != null
+                                        ? Colors.redAccent
+                                        : const Color(0xFFFF8C42).withOpacity(0.4),
                                   ),
                                 ),
-                                child: isLoading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
+                                child: TextField(
+                                  controller: codeController,
+                                  enabled: !isLoading,
+                                  textCapitalization: TextCapitalization.characters,
+                                  onChanged: (_) {
+                                    if (errorMsg != null) {
+                                      setDialogState(() => errorMsg = null);
+                                    }
+                                  },
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                    color: const Color(0xFF111827),
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: '1ADB',
+                                    hintStyle: GoogleFonts.notoSansKr(
+                                      color: const Color(0xFFD1D5DB),
+                                      letterSpacing: 2,
+                                      fontWeight: FontWeight.normal,
+                                    ),
+                                    prefixIcon: const Icon(Icons.confirmation_num_outlined, color: Color(0xFFFF8C42), size: 20),
+                                    border: InputBorder.none,
+                                    counterText: '',
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  ),
+                                ),
+                              ),
+                              if (errorMsg != null) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 14),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        errorMsg!,
+                                        style: GoogleFonts.notoSansKr(
+                                          fontSize: 12,
+                                          color: Colors.redAccent,
                                         ),
-                                      )
-                                    : Text(
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF7ED),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFF8C42).withOpacity(0.2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Text('💡', style: TextStyle(fontSize: 14)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        '초대 코드는 일정 상세 화면에서 확인할 수 있어요',
+                                        style: GoogleFonts.notoSansKr(
+                                          fontSize: 12,
+                                          color: const Color(0xFFB45309),
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                            ],
+                          ),
+                        ),
+                        // ── Action buttons ──
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                    ),
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '취소',
+                                      style: GoogleFonts.notoSansKr(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: isLoading
+                                        ? const LinearGradient(colors: [Color(0xFFD1D5DB), Color(0xFF9CA3AF)])
+                                        : const LinearGradient(
+                                            colors: [Color(0xFFFF8C42), Color(0xFFFF6B6B)],
+                                          ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    boxShadow: isLoading
+                                        ? []
+                                        : [
+                                            BoxShadow(
+                                              color: const Color(0xFFFF8C42).withOpacity(0.4),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
+                                  ),
+                                  child: ElevatedButton(
+                                    onPressed: isLoading
+                                        ? null
+                                        : () async {
+                                            final code = codeController.text.trim();
+                                            if (code.isEmpty) {
+                                              setDialogState(() => errorMsg = '초대 코드를 입력해 주세요.');
+                                              return;
+                                            }
+                                            setDialogState(() {
+                                              isLoading = true;
+                                              errorMsg = null;
+                                            });
+                                            try {
+                                              final joined = await ref
+                                                  .read(plansProvider.notifier)
+                                                  .joinPlanByCode(planCode: code);
+                                              if (!mounted) return;
+                                              Navigator.of(dialogContext).pop();
+                                              _reloadSelectedPlan(joined.id);
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => PlanDetailPage(planId: joined.id),
+                                                ),
+                                              );
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    '🎉 "${joined.name}" 일정에 참가했습니다!',
+                                                    style: GoogleFonts.notoSans(),
+                                                  ),
+                                                  behavior: SnackBarBehavior.floating,
+                                                  backgroundColor: const Color(0xFFFF8C42),
+                                                ),
+                                              );
+                                            } catch (e) {
+                                              setDialogState(() {
+                                                isLoading = false;
+                                                errorMsg = '코드를 찾을 수 없습니다. 다시 확인해주세요.';
+                                              });
+                                            }
+                                          },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    child: isLoading
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              '참가하기 🎟️',
+                                              style: GoogleFonts.notoSansKr(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
                                         '참가하기 🎟️',
                                         style: GoogleFonts.notoSansKr(
                                           fontSize: 15,
@@ -2631,7 +2643,7 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
               controller: codeController,
               decoration: const InputDecoration(
                 labelText: '\uC77C\uC815 \uCF54\uB4DC',
-                hintText: 'PL-260603-ABCD',
+                hintText: '1ADB',
               ),
               textCapitalization: TextCapitalization.characters,
             ),

@@ -5,105 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-// ----------------------------------------------------
-// Models for Travel Planner Dashboard
-// ----------------------------------------------------
-
-class Participant {
-  final String id;
-  final String name;
-  final String emoji;
-  final String role;
-  final String email;
-
-  Participant({
-    required this.id,
-    required this.name,
-    required this.emoji,
-    required this.role,
-    required this.email,
-  });
-
-  factory Participant.fromRoleString(String id, String email, String roleStr) {
-    final parts = roleStr.split('|');
-    if (parts.length >= 3) {
-      return Participant(
-        id: id,
-        name: parts[0],
-        emoji: parts[1],
-        role: parts[2],
-        email: email,
-      );
-    }
-    return Participant(
-      id: id,
-      name: email.split('@').first,
-      emoji: '✈️',
-      role: roleStr,
-      email: email,
-    );
-  }
-
-  String toRoleString() {
-    return '$name|$emoji|$role';
-  }
-}
-
-class TravelEvent {
-  final String id;
-  final String title;
-  final String startTime;
-  final String? endTime;
-  final String category; // 관광, 식도락, 숙소, 교통, 기타
-  final int cost;
-  final String status; // Todo, In Progress, Done
-  final String description;
-  final List<String> participantNames;
-  final int sortOrder;
-
-  TravelEvent({
-    required this.id,
-    required this.title,
-    required this.startTime,
-    this.endTime,
-    required this.category,
-    required this.cost,
-    required this.status,
-    required this.description,
-    required this.participantNames,
-    required this.sortOrder,
-  });
-}
-
-class ChecklistItem {
-  final String id;
-  final String title;
-  bool checked;
-  final int sortOrder;
-
-  ChecklistItem({
-    required this.id,
-    required this.title,
-    required this.checked,
-    required this.sortOrder,
-  });
-
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'title': title,
-        'checked': checked,
-        'sortOrder': sortOrder,
-      };
-
-  factory ChecklistItem.fromMap(Map<String, dynamic> map) => ChecklistItem(
-        id: map['id']?.toString() ?? '',
-        title: map['title']?.toString() ?? '',
-        checked: map['checked'] == true,
-        sortOrder: map['sortOrder'] is num ? (map['sortOrder'] as num).toInt() : 0,
-      );
-}
+import 'package:placelist/models/planner_model.dart';
 
 // ----------------------------------------------------
 // Cupertino Travel Planner Dashboard Page
@@ -130,6 +32,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   String _planName = '';
   DateTime _planDate = DateTime(2026, 7, 12);
   String _planCode = '';
+  int _targetBudget = 300000;
 
   bool? _isDarkOverride;
 
@@ -143,7 +46,28 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   @override
   void initState() {
     super.initState();
+    _loadTargetBudget();
     _fetchPlanData();
+  }
+
+  Future<void> _loadTargetBudget() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt('target_budget_${widget.planId}');
+    if (saved != null && mounted) {
+      setState(() {
+        _targetBudget = saved;
+      });
+    }
+  }
+
+  Future<void> _saveTargetBudget(int newBudget) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('target_budget_${widget.planId}', newBudget);
+    if (mounted) {
+      setState(() {
+        _targetBudget = newBudget;
+      });
+    }
   }
 
   @override
@@ -343,7 +267,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   void _loadLocalMockData() {
     _planName = '우리들의 감성 제주';
     _planDate = DateTime(2026, 7, 12);
-    _planCode = 'PL-MOCK-1234';
+    _planCode = '1ADB';
     _participants = [
       Participant(id: 'mock_p1', name: '민수', emoji: '🐶', role: '드라이버 🚗', email: 'minsu@traveler.com'),
       Participant(id: 'mock_p2', name: '수연', emoji: '🐱', role: '총무 💰', email: 'suyeon@traveler.com'),
@@ -1716,12 +1640,101 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
   }
 
+  void _showEditTargetBudgetDialog() {
+    final controller = TextEditingController(
+        text: _targetBudget > 0 ? _targetBudget.toString() : '');
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            '목표 예산 설정',
+            style: GoogleFonts.notoSansKr(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '이번 일정의 목표 지출 금액을 설정해 보세요.',
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 13,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                decoration: InputDecoration(
+                  labelText: '목표 예산 (원)',
+                  labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                  hintText: '예) 300000',
+                  hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
+                  suffixText: '원',
+                  suffixStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [100000, 200000, 300000, 500000, 1000000].map((preset) {
+                  return ActionChip(
+                    label: Text('${preset ~/ 10000}만원'),
+                    backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+                    labelStyle: TextStyle(
+                      color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF007AFF),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onPressed: () {
+                      controller.text = preset.toString();
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('취소', style: TextStyle(color: isDark ? Colors.white60 : Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final parsed = int.tryParse(controller.text.trim());
+                if (parsed != null && parsed >= 0) {
+                  _saveTargetBudget(parsed);
+                }
+                Navigator.pop(ctx);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF007AFF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('저장'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// 4. Expense Tracker Widget & Custom Painted Doughnut Chart
   Widget _buildExpenseWidget(Color cardBg, bool isDark) {
     final breakdown = _getCategoryBreakdown();
     final total = _getTotalExpense();
-    const budget = 300000;
-    final progress = total / budget;
+    final budget = _targetBudget;
+    final progress = budget > 0 ? total / budget : 0.0;
 
     final categoryColors = {
       '관광': const Color(0xFF007AFF),
@@ -1747,13 +1760,58 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '지출 리포트',
-            style: GoogleFonts.notoSansKr(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '지출 리포트',
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              Flexible(
+                child: InkWell(
+                  onTap: _showEditTargetBudgetDialog,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.pencil,
+                          size: 12,
+                          color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF007AFF),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '목표 예산: ${_formatKRW(budget)}',
+                              style: GoogleFonts.notoSansKr(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF007AFF),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Row(
@@ -1763,7 +1821,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 alignment: Alignment.center,
                 children: [
                   CustomPaint(
-                    size: const Size(110, 110),
+                    size: const Size(115, 115),
                     painter: DoughnutChartPainter(
                       categoryCosts: breakdown,
                       totalCost: total,
@@ -1781,19 +1839,26 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text(
-                        _formatKRW(total),
-                        style: GoogleFonts.outfit(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black87,
+                      const SizedBox(height: 2),
+                      SizedBox(
+                        width: 72,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _formatKRW(total),
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: 20),
               // Category legend breakdown
               Expanded(
                 child: Column(
@@ -1825,17 +1890,20 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           Text(
                             '${pct.toStringAsFixed(0)}%',
                             style: GoogleFonts.outfit(
-                              fontSize: 11,
+                              fontSize: 10,
                               color: isDark ? Colors.white38 : Colors.black38,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _formatKRW(item.value),
-                            style: GoogleFonts.outfit(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white54 : Colors.black54,
+                          const SizedBox(width: 6),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _formatKRW(item.value),
+                              style: GoogleFonts.outfit(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white54 : Colors.black54,
+                              ),
                             ),
                           ),
                         ],
@@ -1854,16 +1922,21 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               Text(
                 '목표 예산 대비',
                 style: GoogleFonts.notoSansKr(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: isDark ? Colors.white54 : Colors.black54,
                 ),
               ),
-              Text(
-                '${(progress * 100).toStringAsFixed(0)}% (${_formatKRW(budget)} 기준)',
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: progress > 1.0 ? Colors.redAccent : const Color(0xFF007AFF),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '${(progress * 100).toStringAsFixed(0)}% (${_formatKRW(budget)} 기준)',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: progress > 1.0 ? Colors.redAccent : const Color(0xFF007AFF),
+                    ),
+                  ),
                 ),
               ),
             ],

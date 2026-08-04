@@ -274,7 +274,7 @@ begin
     v_user_id,
     btrim(p_name),
     p_plan_date,
-    'PL-' || to_char(p_plan_date, 'YYMMDD') || '-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 4))
+    upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 4))
   )
   returning * into v_plan;
 
