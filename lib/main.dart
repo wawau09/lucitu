@@ -15,6 +15,8 @@ import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/theme_provider.dart';
 
 
+ValueNotifier<String?> naverMapAuthErrorNotifier = ValueNotifier<String?>(null);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -23,6 +25,7 @@ Future<void> main() async {
       clientId: naverMapClientId,
       onAuthFailed: (error) {
         debugPrint('Naver Map Auth Failed: $error');
+        naverMapAuthErrorNotifier.value = error.toString();
       },
     );
   }
@@ -146,6 +149,70 @@ class _MyAppState extends ConsumerState<MyApp> {
         brightness: Brightness.dark,
         colorSchemeSeed: const Color(0xFF3267A2),
       ),
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child ?? const SizedBox(),
+            ValueListenableBuilder<String?>(
+              valueListenable: naverMapAuthErrorNotifier,
+              builder: (context, authError, _) {
+                if (authError == null) return const SizedBox();
+                return SafeArea(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD32F2F),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4)),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '🚨 네이버 지도 인증 실패 (iOS Log)',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  SelectableText(
+                                    'Error: $authError\nClient ID: $naverMapClientId',
+                                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => naverMapAuthErrorNotifier.value = null,
+                              child: const Icon(Icons.close, color: Colors.white70, size: 20),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
       home: PopScope(
         canPop: false,
         child: Builder(
