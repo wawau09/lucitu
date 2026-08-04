@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">map.naver.com</domain>
+        <domain includeSubdomains="true">map.naver.net</domain>
+        <domain includeSubdomains="true">oapi.map.naver.com</domain>
+        <domain includeSubdomains="true">naver.net</domain>
+        <domain includeSubdomains="true">naver.com</domain>
+    </domain-config>
+</network-security-config>
