@@ -12,6 +12,7 @@ import 'package:placelist/Pages/plan_page.dart';
 import 'package:placelist/Pages/terms_agreement_page.dart';
 import 'Pages/main_page.dart';
 import 'package:placelist/providers/navigation_provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:placelist/providers/theme_provider.dart';
 
 
@@ -21,11 +22,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (!kIsWeb) {
+    final info = await PackageInfo.fromPlatform();
     await FlutterNaverMap().init(
       clientId: naverMapClientId,
       onAuthFailed: (error) {
         debugPrint('Naver Map Auth Failed: $error');
-        naverMapAuthErrorNotifier.value = error.toString();
+        naverMapAuthErrorNotifier.value =
+            '$error\n📌 내 앱의 실제 Bundle ID: ${info.packageName}';
       },
     );
   }
