@@ -5,12 +5,16 @@ on:
     branches: [ main ] 
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           lfs: true
 
       - name: Git LFS Pull
@@ -58,6 +62,12 @@ jobs:
           echo ""
           echo "=== Installed Pods ==="
           pod list 2>/dev/null | grep -i naver || echo "Naver pods not found in list"
+
+      - name: Commit updated lockfiles to repository
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update Podfile.lock & pubspec.lock from CI [skip ci]"
+          file_pattern: "ios/Podfile.lock pubspec.lock"
 
       - name: Build iOS (No Sign)
         run: |
