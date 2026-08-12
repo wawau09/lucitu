@@ -3,6 +3,7 @@ name: iOS Test Build
 on:
   push:
     branches: [ main ] 
+  workflow_dispatch:
 
 jobs:
   build:
@@ -29,11 +30,34 @@ jobs:
       - name: Disable Swift Package Manager
         run: flutter config --no-enable-swift-package-manager
 
+      - name: Diagnose iOS Config
+        run: |
+          echo "=== Info.plist Naver Map Keys ==="
+          /usr/libexec/PlistBuddy -c "Print :NMFClientId" ios/Runner/Info.plist 2>/dev/null || echo "NMFClientId: NOT SET"
+          /usr/libexec/PlistBuddy -c "Print :NMFNcpKeyId" ios/Runner/Info.plist 2>/dev/null || echo "NMFNcpKeyId: NOT SET"
+          echo ""
+          echo "=== Bundle Identifier (from pbxproj) ==="
+          grep "PRODUCT_BUNDLE_IDENTIFIER" ios/Runner.xcodeproj/project.pbxproj | head -3
+          echo ""
+          echo "=== Podfile iOS Version ==="
+          head -2 ios/Podfile
+          echo ""
+          echo "=== Flutter Doctor ==="
+          flutter doctor -v
+
       - name: Clear Cache & Upgrade dependencies
         run: |
           flutter clean
           flutter pub upgrade
           rm -f ios/Podfile.lock
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+          echo ""
+          echo "=== Installed Pods ==="
+          pod list 2>/dev/null | grep -i naver || echo "Naver pods not found in list"
 
       - name: Build iOS (No Sign)
         run: |
