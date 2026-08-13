@@ -57,7 +57,7 @@ jobs:
       - name: Install CocoaPods
         run: |
           cd ios
-          pod install
+          pod install || pod update
           echo ""
           echo "=== Installed Pods (from Podfile.lock) ==="
           grep -i naver Podfile.lock || echo "Naver pods not found in lockfile"
