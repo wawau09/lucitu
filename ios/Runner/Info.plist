@@ -7,6 +7,8 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NMFClientId</key>
+	<string>0w1sxphr42</string>
 	<key>NMFNcpKeyId</key>
 	<string>0w1sxphr42</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
