@@ -431,97 +431,182 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (isCluster) ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F4F8),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Builder(
+                builder: (context) {
+                  final clusterStores = currentItem!.clusterStores;
+                  final totalCount = currentItem.clusterTotal;
+                  final currentIndex = clusterStores.indexWhere((s) => s.id == store.id);
+                  final validIndex = currentIndex >= 0 ? currentIndex : 0;
+
+                  void selectClusterStore(int newIndex) {
+                    final targetStore = clusterStores[newIndex];
+                    final targetItem = mapStoreItems.firstWhere(
+                      (it) => it.store.id == targetStore.id,
+                      orElse: () => currentItem!,
+                    );
+                    setState(() {
+                      _selectedMapStore = targetStore;
+                    });
+                    if (_mapController != null) {
+                      _mapController!.updateCamera(
+                        NCameraUpdate.scrollAndZoomTo(
+                          target: NLatLng(targetItem.displayLat, targetItem.displayLng),
+                          zoom: 15.5,
+                        ),
+                      );
+                      _renderMapMarkers(_mapController!, mapStoreItems, isDark);
+                    }
+                  }
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F4F8),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.layers_rounded, size: 14, color: Color(0xFF6C63FF)),
-                        const SizedBox(width: 6),
-                        Text(
-                          '같은 위치 장소 (${currentItem.clusterTotal}개)',
-                          style: GoogleFonts.notoSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white70 : Colors.black87,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.layers_rounded, size: 16, color: Color(0xFF6C63FF)),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '같은 위치 장소 (${validIndex + 1} / $totalCount)',
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white70 : Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    final prevIdx = (validIndex - 1 + totalCount) % totalCount;
+                                    selectClusterStore(prevIdx);
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF3A3A3C) : Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isDark ? Colors.white24 : Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.chevron_left_rounded, size: 16, color: isDark ? Colors.white : Colors.black87),
+                                        Text(
+                                          '이전',
+                                          style: GoogleFonts.notoSans(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: isDark ? Colors.white : Colors.black87,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                InkWell(
+                                  onTap: () {
+                                    final nextIdx = (validIndex + 1) % totalCount;
+                                    selectClusterStore(nextIdx);
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF6C63FF),
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: const [
+                                        BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '다음',
+                                          style: GoogleFonts.notoSans(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: clusterStores.asMap().entries.map((entry) {
+                              final idx = entry.key;
+                              final clusterStore = entry.value;
+                              final isThisSelected = clusterStore.id == store.id;
+
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (!isThisSelected) {
+                                      selectClusterStore(idx);
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: isThisSelected
+                                          ? const Color(0xFF6C63FF)
+                                          : (isDark ? const Color(0xFF1C1C1E) : Colors.white),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isThisSelected
+                                            ? const Color(0xFF8A84FF)
+                                            : (isDark ? Colors.white24 : Colors.grey.shade300),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${idx + 1}. ${clusterStore.name}',
+                                      style: GoogleFonts.notoSans(
+                                        fontSize: 11,
+                                        fontWeight: isThisSelected ? FontWeight.bold : FontWeight.normal,
+                                        color: isThisSelected
+                                            ? Colors.white
+                                            : (isDark ? Colors.white70 : Colors.black87),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: currentItem.clusterStores.asMap().entries.map((entry) {
-                          final idx = entry.key;
-                          final clusterStore = entry.value;
-                          final isThisSelected = clusterStore.id == store.id;
-
-                          final targetItem = mapStoreItems.firstWhere(
-                            (it) => it.store.id == clusterStore.id,
-                            orElse: () => currentItem!,
-                          );
-
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: GestureDetector(
-                              onTap: () {
-                                if (!isThisSelected) {
-                                  setState(() {
-                                    _selectedMapStore = clusterStore;
-                                  });
-                                  if (_mapController != null) {
-                                    _mapController!.updateCamera(
-                                      NCameraUpdate.scrollAndZoomTo(
-                                        target: NLatLng(targetItem.displayLat, targetItem.displayLng),
-                                        zoom: 15.5,
-                                      ),
-                                    );
-                                    _renderMapMarkers(_mapController!, mapStoreItems, isDark);
-                                  }
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: isThisSelected
-                                      ? const Color(0xFF6C63FF)
-                                      : (isDark ? const Color(0xFF1C1C1E) : Colors.white),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: isThisSelected
-                                        ? const Color(0xFF8A84FF)
-                                        : (isDark ? Colors.white24 : Colors.grey.shade300),
-                                  ),
-                                ),
-                                child: Text(
-                                  '${idx + 1}. ${clusterStore.name}',
-                                  style: GoogleFonts.notoSans(
-                                    fontSize: 11,
-                                    fontWeight: isThisSelected ? FontWeight.bold : FontWeight.normal,
-                                    color: isThisSelected
-                                        ? Colors.white
-                                        : (isDark ? Colors.white70 : Colors.black87),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ],
             Row(

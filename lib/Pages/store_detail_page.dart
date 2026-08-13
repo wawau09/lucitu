@@ -7,11 +7,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/store.dart';
 import 'package:placelist/Pages/map_stub.dart'
     if (dart.library.html) 'package:placelist/Pages/map_web.dart';
+import 'package:placelist/Pages/owner_order_management_page.dart';
+import 'package:placelist/providers/cart_provider.dart';
 import 'package:placelist/providers/category_provider.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
+import 'package:placelist/providers/order_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
+import 'package:placelist/utils/currency_formatter.dart';
 import 'package:placelist/widgets/map_marker.dart';
+import 'package:placelist/widgets/order/cart_sheet.dart';
+import 'package:placelist/widgets/order/menu_option_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:placelist/widgets/store_detail/add_to_plan_sheet.dart';
@@ -28,6 +34,26 @@ class StoreDetailPage extends ConsumerStatefulWidget {
 }
 
 class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _orderSectionKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToOrderSection() {
+    final context = _orderSectionKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final storesAsync = ref.watch(storesProvider);
@@ -46,9 +72,27 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.storefront_rounded),
+            tooltip: '사장님 관리 화면',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OwnerOrderManagementPage(
+                    storeId: store.id ?? 'default_store',
+                    storeName: store.name,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -93,6 +137,14 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   if (store.categoryTags.isNotEmpty)
                     _buildCategoryChips(store.categoryTags, isDark),
                   const SizedBox(height: 32),
+
+                  // In-App Order Section
+                  KeyedSubtree(
+                    key: _orderSectionKey,
+                    child: _buildOrderSection(context, ref, store, isDark),
+                  ),
+                  const SizedBox(height: 32),
+
                   if (store.menuBoard != null && store.menuBoard!.isNotEmpty) ...[
                     StoreDetailMenuBoard(menu: store.menuBoard!, isDark: isDark),
                     const SizedBox(height: 32),
@@ -109,6 +161,7 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
           ],
         ),
       ),
+      bottomNavigationBar: _buildStickyCartBar(context, ref, store, isDark),
     );
   }
 
@@ -939,6 +992,270 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
             }),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildOrderSection(
+    BuildContext context,
+    WidgetRef ref,
+    Store store,
+    bool isDark,
+  ) {
+    final menusAsync = ref.watch(storeMenusProvider(store.id ?? 'default'));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.coffee_rounded, color: Color(0xFF6C63FF), size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  "실시간 픽업 주문",
+                  style: GoogleFonts.notoSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6C63FF).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '앱 전용 주문 가능',
+                style: GoogleFonts.notoSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF6C63FF),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        menusAsync.when(
+          data: (menus) {
+            if (menus.isEmpty) {
+              return Text(
+                '등록된 주문 메뉴가 없습니다.',
+                style: GoogleFonts.notoSans(color: Colors.grey),
+              );
+            }
+
+            return Column(
+              children: menus.map((menuItem) {
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 0,
+                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF9FAFB),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: isDark ? Colors.white10 : Colors.grey.shade200,
+                    ),
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => MenuOptionSheet(
+                          storeId: store.id ?? 'default_store',
+                          storeName: store.name,
+                          menuItem: menuItem,
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          if (menuItem.imageUrl != null)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                menuItem.imageUrl!,
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: 72,
+                                  height: 72,
+                                  color: isDark ? Colors.white12 : Colors.grey.shade300,
+                                  child: const Icon(Icons.coffee, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? Colors.white12 : Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        menuItem.category,
+                                        style: GoogleFonts.notoSans(
+                                          fontSize: 10,
+                                          color: isDark ? Colors.white70 : Colors.grey[700],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        menuItem.name,
+                                        style: GoogleFonts.notoSans(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? Colors.white : Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (menuItem.description != null &&
+                                    menuItem.description!.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    menuItem.description!,
+                                    style: GoogleFonts.notoSans(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.white54 : Colors.grey[600],
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${formatCurrency(menuItem.price)}원',
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF6C63FF),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6C63FF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '담기',
+                              style: GoogleFonts.notoSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Text('메뉴 불러오기 실패: $err'),
+        ),
+      ],
+    );
+  }
+
+  Widget? _buildStickyCartBar(
+    BuildContext context,
+    WidgetRef ref,
+    Store store,
+    bool isDark,
+  ) {
+    final cartState = ref.watch(cartProvider);
+    final hasItemsInThisStore =
+        cartState.storeId == (store.id ?? 'default_store') && !cartState.isEmpty;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2)),
+        ],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: () {
+              if (hasItemsInThisStore) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const CartSheet(),
+                );
+              } else {
+                _scrollToOrderSection();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6C63FF),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 2,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  hasItemsInThisStore
+                      ? Icons.shopping_bag_rounded
+                      : Icons.local_cafe_rounded,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  hasItemsInThisStore
+                      ? '장바구니 보기 (${cartState.totalCount}개 · ${formatCurrency(cartState.totalAmount)}원)'
+                      : '☕ 픽업 주문하기',
+                  style: GoogleFonts.notoSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
