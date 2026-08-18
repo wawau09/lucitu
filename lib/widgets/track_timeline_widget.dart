@@ -27,27 +27,29 @@ class TrackTimelineWidget extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF22243A), const Color(0xFF1A1C2E)]
-              : [const Color(0xFF2D3048), const Color(0xFF242638)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final w = constraints.maxWidth;
-          final painter = _TrackPainter(events: events, width: w);
+          final painter = _TrackPainter(
+            events: events,
+            width: w,
+            isDark: isDark,
+          );
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapUp: (details) {
@@ -73,6 +75,7 @@ class TrackTimelineWidget extends StatelessWidget {
 class _TrackPainter extends CustomPainter {
   final List<TravelEvent> events;
   final double width;
+  final bool isDark;
 
   // ---- Layout constants ----
   static const int itemsPerRow = 3;
@@ -84,10 +87,28 @@ class _TrackPainter extends CustomPainter {
   static const double dotRadius = 7.0;
   static const double trackStrokeWidth = 3.0;
 
-  // ---- Dot colour ----
-  static const Color dotColor = Color(0xFFFFC107);
+  _TrackPainter({
+    required this.events,
+    required this.width,
+    required this.isDark,
+  });
 
-  _TrackPainter({required this.events, required this.width});
+  // Color tokens based on theme
+  Color get _trackColor => isDark
+      ? Colors.white.withOpacity(0.22)
+      : const Color(0xFFC7C7CC);
+
+  Color get _dotColor => isDark
+      ? const Color(0xFFFFB300)
+      : const Color(0xFFFF9500);
+
+  Color get _timeTextColor => isDark
+      ? Colors.white
+      : const Color(0xFF1C1C1E);
+
+  Color get _titleTextColor => isDark
+      ? Colors.white.withOpacity(0.75)
+      : const Color(0xFF48484A);
 
   int get _rowCount =>
       events.isEmpty ? 0 : (events.length / itemsPerRow).ceil();
@@ -143,7 +164,7 @@ class _TrackPainter extends CustomPainter {
   // ---- Track serpentine path ----
   void _drawTrackPath(Canvas canvas) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.15)
+      ..color = _trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = trackStrokeWidth
       ..strokeCap = StrokeCap.round
@@ -212,18 +233,18 @@ class _TrackPainter extends CustomPainter {
         pos,
         dotRadius + 5,
         Paint()
-          ..color = dotColor.withOpacity(0.18)
+          ..color = _dotColor.withOpacity(isDark ? 0.22 : 0.28)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
       );
 
       // Solid dot
-      canvas.drawCircle(pos, dotRadius, Paint()..color = dotColor);
+      canvas.drawCircle(pos, dotRadius, Paint()..color = _dotColor);
 
       // Specular highlight
       canvas.drawCircle(
         Offset(pos.dx - 1.5, pos.dy - 2),
         2.2,
-        Paint()..color = Colors.white.withOpacity(0.45),
+        Paint()..color = Colors.white.withOpacity(isDark ? 0.6 : 0.8),
       );
 
       // Time label above dot
@@ -233,7 +254,7 @@ class _TrackPainter extends CustomPainter {
         position: Offset(pos.dx, pos.dy - dotRadius - 6),
         fontSize: 10.5,
         fontWeight: FontWeight.w700,
-        color: Colors.white.withOpacity(0.9),
+        color: _timeTextColor,
         maxWidth: 80,
         anchorBottom: true,
       );
@@ -244,8 +265,8 @@ class _TrackPainter extends CustomPainter {
         text: event.title,
         position: Offset(pos.dx, pos.dy + dotRadius + 6),
         fontSize: 10.0,
-        fontWeight: FontWeight.w500,
-        color: Colors.white.withOpacity(0.6),
+        fontWeight: FontWeight.w600,
+        color: _titleTextColor,
         maxWidth: maxTextWidth,
         anchorBottom: false,
       );
@@ -303,6 +324,7 @@ class _TrackPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _TrackPainter oldDelegate) {
     return !identical(oldDelegate.events, events) ||
-        oldDelegate.width != width;
+        oldDelegate.width != width ||
+        oldDelegate.isDark != isDark;
   }
 }

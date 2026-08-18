@@ -109,6 +109,32 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     return '${isNegative ? '-' : ''}₩${buffer.toString()}';
   }
 
+  Future<void> _saveEventsToLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final listMap = _events.map((e) => e.toMap()).toList();
+      await prefs.setString('events_${widget.planId}', jsonEncode(listMap));
+    } catch (e) {
+      debugPrint('Error saving local events: $e');
+    }
+  }
+
+  Future<List<TravelEvent>> _loadEventsFromLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('events_${widget.planId}');
+      if (raw != null && raw.isNotEmpty) {
+        final List<dynamic> jsonList = jsonDecode(raw);
+        return jsonList
+            .map((e) => TravelEvent.fromMap(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading local events: $e');
+    }
+    return [];
+  }
+
   Future<void> _saveChecklistToLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -139,9 +165,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   Future<void> _fetchPlanData() async {
     // 1. SharedPreferences 로컬 캐시 먼저 로드 (실시간 UX)
     final cachedChecklist = await _loadChecklistFromLocal();
-    if (cachedChecklist.isNotEmpty && mounted) {
+    final cachedEvents = await _loadEventsFromLocal();
+    if (mounted) {
       setState(() {
-        _checklist = cachedChecklist;
+        if (cachedChecklist.isNotEmpty) _checklist = cachedChecklist;
+        if (cachedEvents.isNotEmpty) _events = cachedEvents;
       });
     }
 
@@ -149,10 +177,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
         _loadLocalMockData();
+        if (cachedEvents.isNotEmpty) {
+          setState(() => _events = cachedEvents);
+        }
         if (cachedChecklist.isNotEmpty) {
-          setState(() {
-            _checklist = cachedChecklist;
-          });
+          setState(() => _checklist = cachedChecklist);
         }
         setState(() => _isLoading = false);
         return;
@@ -167,10 +196,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
       if (planRow == null) {
         _loadLocalMockData();
+        if (cachedEvents.isNotEmpty) {
+          setState(() => _events = cachedEvents);
+        }
         if (cachedChecklist.isNotEmpty) {
-          setState(() {
-            _checklist = cachedChecklist;
-          });
+          setState(() => _checklist = cachedChecklist);
         }
         setState(() => _isLoading = false);
         return;
@@ -244,7 +274,12 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         _planDate = parsedDate;
         _planCode = planRow['plan_code']?.toString() ?? '';
         _participants = loadedParticipants;
-        _events = loadedEvents;
+        if (loadedEvents.isNotEmpty) {
+          _events = loadedEvents;
+          _saveEventsToLocal();
+        } else if (cachedEvents.isNotEmpty) {
+          _events = cachedEvents;
+        }
         if (loadedChecklist.isNotEmpty) {
           _checklist = loadedChecklist;
           _saveChecklistToLocal();
@@ -257,6 +292,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     } catch (e) {
       debugPrint('Error fetching data: $e');
       _loadLocalMockData();
+      if (cachedEvents.isNotEmpty) {
+        setState(() {
+          _events = cachedEvents;
+        });
+      }
       if (cachedChecklist.isNotEmpty) {
         setState(() {
           _checklist = cachedChecklist;
@@ -397,42 +437,46 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     });
   }
 
-  /// Add Event with Supabase Sync
+  /// Add Event with Supabase Sync & Persistent Local Storage
   Future<void> _addTravelEvent(TravelEvent newEvent) async {
-    if (!_isOffline) {
+    final noteMap = {
+      'category': newEvent.category,
+      'cost': newEvent.cost,
+      'status': newEvent.status,
+      'description': newEvent.description,
+      'participants': newEvent.participantNames,
+      'end_time': newEvent.endTime,
+    };
+
+    if (!_isOffline && !widget.planId.startsWith('mock_')) {
       try {
-        final noteMap = {
-          'category': newEvent.category,
-          'cost': newEvent.cost,
-          'status': newEvent.status,
-          'description': newEvent.description,
-          'participants': newEvent.participantNames,
-          'end_time': newEvent.endTime,
-        };
         final row = await Supabase.instance.client.from('plan_items').insert({
           'plan_id': widget.planId,
           'title': newEvent.title,
           'start_time': newEvent.startTime,
-          'end_time': newEvent.endTime,
           'note': jsonEncode(noteMap),
           'sort_order': newEvent.sortOrder,
         }).select().single();
 
+        final createdEvent = TravelEvent(
+          id: row['id']?.toString() ?? '',
+          title: newEvent.title,
+          startTime: newEvent.startTime,
+          endTime: newEvent.endTime,
+          category: newEvent.category,
+          cost: newEvent.cost,
+          status: newEvent.status,
+          description: newEvent.description,
+          participantNames: newEvent.participantNames,
+          sortOrder: newEvent.sortOrder,
+        );
+
         setState(() {
-          _events.add(TravelEvent(
-            id: row['id']?.toString() ?? '',
-            title: newEvent.title,
-            startTime: newEvent.startTime,
-            endTime: newEvent.endTime,
-            category: newEvent.category,
-            cost: newEvent.cost,
-            status: newEvent.status,
-            description: newEvent.description,
-            participantNames: newEvent.participantNames,
-            sortOrder: newEvent.sortOrder,
-          ));
+          _events.add(createdEvent);
           _events.sort((a, b) => a.startTime.compareTo(b.startTime));
         });
+        await _saveEventsToLocal();
+        return;
       } catch (e) {
         debugPrint('DB Event addition error: $e');
         _addEventOffline(newEvent);
@@ -459,10 +503,20 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       ));
       _events.sort((a, b) => a.startTime.compareTo(b.startTime));
     });
+    _saveEventsToLocal();
   }
 
-  /// Update Event with Supabase Sync
+  /// Update Event with Supabase Sync & Persistent Local Storage
   Future<void> _updateTravelEvent(TravelEvent updatedEvent) async {
+    setState(() {
+      final index = _events.indexWhere((e) => e.id == updatedEvent.id);
+      if (index != -1) {
+        _events[index] = updatedEvent;
+        _events.sort((a, b) => a.startTime.compareTo(b.startTime));
+      }
+    });
+    await _saveEventsToLocal();
+
     if (!_isOffline && !updatedEvent.id.startsWith('mock_') && !updatedEvent.id.startsWith('local_')) {
       try {
         final noteMap = {
@@ -476,7 +530,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         await Supabase.instance.client.from('plan_items').update({
           'title': updatedEvent.title,
           'start_time': updatedEvent.startTime,
-          'end_time': updatedEvent.endTime,
           'note': jsonEncode(noteMap),
           'sort_order': updatedEvent.sortOrder,
         }).eq('id', updatedEvent.id);
@@ -484,17 +537,15 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         debugPrint('DB Event update error: $e');
       }
     }
-    setState(() {
-      final index = _events.indexWhere((e) => e.id == updatedEvent.id);
-      if (index != -1) {
-        _events[index] = updatedEvent;
-        _events.sort((a, b) => a.startTime.compareTo(b.startTime));
-      }
-    });
   }
 
-  /// Delete Event with Supabase Sync
+  /// Delete Event with Supabase Sync & Persistent Local Storage
   Future<void> _deleteTravelEvent(String eventId) async {
+    setState(() {
+      _events.removeWhere((e) => e.id == eventId);
+    });
+    await _saveEventsToLocal();
+
     if (!_isOffline && !eventId.startsWith('mock_') && !eventId.startsWith('local_')) {
       try {
         await Supabase.instance.client
@@ -505,9 +556,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         debugPrint('DB Event deletion error: $e');
       }
     }
-    setState(() {
-      _events.removeWhere((e) => e.id == eventId);
-    });
   }
 
   /// Add Checklist Item with Supabase Sync & Persistent Local Storage
@@ -1093,6 +1141,19 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     // Action buttons
                     Row(
                       children: [
+                        if (isEdit) ...[
+                          CupertinoButton(
+                            color: Colors.redAccent.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            onPressed: () {
+                              _deleteTravelEvent(existingEvent.id);
+                              Navigator.pop(context);
+                            },
+                            child: const Icon(CupertinoIcons.trash, color: Colors.redAccent, size: 18),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         Expanded(
                           child: CupertinoButton(
                             color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
@@ -1330,32 +1391,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                               const SizedBox(height: 12),
 
                               // Race-track visual timeline
-                              if (filteredEvents.isNotEmpty)
-                                TrackTimelineWidget(
-                                  events: filteredEvents,
-                                  isDark: isDark,
-                                  onEventTap: (event) =>
-                                      _showEventBottomSheet(existingEvent: event),
-                                ),
-                              if (filteredEvents.isNotEmpty)
-                                const SizedBox(height: 16),
-
-                              // Chronological Timeline items list
                               filteredEvents.isEmpty
                                   ? _buildEmptyTimelineState(cardBg, isDark)
-                                  : ListView.builder(
-                                      shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: filteredEvents.length,
-                                      itemBuilder: (context, index) {
-                                        return _buildTimelineItem(
-                                          event: filteredEvents[index],
-                                          isFirst: index == 0,
-                                          isLast: index == filteredEvents.length - 1,
-                                          cardBg: cardBg,
-                                          isDark: isDark,
-                                        );
-                                      },
+                                  : TrackTimelineWidget(
+                                      events: filteredEvents,
+                                      isDark: isDark,
+                                      onEventTap: (event) =>
+                                          _showEventBottomSheet(existingEvent: event),
                                     ),
                               const SizedBox(height: 16),
 
@@ -2090,233 +2132,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
   }
 
-  /// 5. Individual Timeline Event Card with Vertical Line connecting nodes
-  Widget _buildTimelineItem({
-    required TravelEvent event,
-    required bool isFirst,
-    required bool isLast,
-    required Color cardBg,
-    required bool isDark,
-  }) {
-    Color statusColor = const Color(0xFF007AFF); // Todo: iOS Blue
-    if (event.status == 'In Progress') {
-      statusColor = const Color(0xFFFF9500); // Orange
-    } else if (event.status == 'Done') {
-      statusColor = const Color(0xFF34C759); // Green
-    }
 
-    final categoryIcons = {
-      '관광': '🗺️',
-      '식도락': '🍔',
-      '숙소': '🏨',
-      '교통': '🚗',
-      '기타': '🛍️',
-    };
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Left Side: Time (09:00 or 09:00 ~ 11:00)
-          SizedBox(
-            width: 52,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    event.startTime,
-                    style: GoogleFonts.outfit(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white54 : Colors.black54,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (event.endTime != null &&
-                      event.endTime!.isNotEmpty &&
-                      event.endTime != event.startTime) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '~ ${event.endTime}',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white38 : Colors.black38,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Right Side: Card UI
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          categoryIcons[event.category] ?? '✈️',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                event.title,
-                                style: GoogleFonts.notoSansKr(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    CupertinoIcons.clock,
-                                    size: 11,
-                                    color: isDark ? const Color(0xFF0A84FF) : const Color(0xFF007AFF),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _formatTimeRange(event.startTime, event.endTime),
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? const Color(0xFF0A84FF) : const Color(0xFF007AFF),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (event.description.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  event.description,
-                                  style: GoogleFonts.notoSansKr(
-                                    fontSize: 11,
-                                    color: isDark ? Colors.white54 : Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        // Quick Action Buttons
-                        PopupMenuButton<String>(
-                          icon: Icon(CupertinoIcons.ellipsis_vertical, size: 14, color: isDark ? Colors.white38 : Colors.black38),
-                          padding: EdgeInsets.zero,
-                          style: ButtonStyle(
-                            padding: WidgetStateProperty.all(EdgeInsets.zero),
-                          ),
-                          onSelected: (val) {
-                            if (val == 'edit') {
-                              _showEventBottomSheet(existingEvent: event);
-                            } else if (val == 'delete') {
-                              _deleteTravelEvent(event.id);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'edit',
-                              child: Row(
-                                children: [
-                                  Icon(CupertinoIcons.pencil, size: 14),
-                                  SizedBox(width: 8),
-                                  Text('수정', style: TextStyle(fontSize: 12)),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(CupertinoIcons.trash, size: 14, color: Colors.redAccent),
-                                  SizedBox(width: 8),
-                                  Text('삭제', style: TextStyle(fontSize: 12, color: Colors.redAccent)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Card Bottom: Facepile + Cost Tag + Status Pill
-                    Row(
-                      children: [
-                        // Facepile
-                        if (event.participantNames.isNotEmpty) ...[
-                          _buildFacepile(event.participantNames),
-                          const SizedBox(width: 12),
-                        ],
-                        // Cost Tag
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _formatKRW(event.cost),
-                            style: GoogleFonts.outfit(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white54 : Colors.black54,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        // Status Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            event.status,
-                            style: GoogleFonts.outfit(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: statusColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// 6. Preparation Packing Checklist Helper
   Widget _buildChecklistWidget(Color cardBg, bool isDark) {

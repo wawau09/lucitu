@@ -62,6 +62,32 @@ class TravelEvent {
     required this.participantNames,
     required this.sortOrder,
   });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'title': title,
+        'startTime': startTime,
+        'endTime': endTime,
+        'category': category,
+        'cost': cost,
+        'status': status,
+        'description': description,
+        'participantNames': participantNames,
+        'sortOrder': sortOrder,
+      };
+
+  factory TravelEvent.fromMap(Map<String, dynamic> map) => TravelEvent(
+        id: map['id']?.toString() ?? '',
+        title: map['title']?.toString() ?? '',
+        startTime: map['startTime']?.toString() ?? '',
+        endTime: map['endTime']?.toString(),
+        category: map['category']?.toString() ?? '관광',
+        cost: map['cost'] is num ? (map['cost'] as num).toInt() : 0,
+        status: map['status']?.toString() ?? 'Todo',
+        description: map['description']?.toString() ?? '',
+        participantNames: List<String>.from(map['participantNames'] ?? []),
+        sortOrder: map['sortOrder'] is num ? (map['sortOrder'] as num).toInt() : 0,
+      );
 }
 
 class ChecklistItem {
