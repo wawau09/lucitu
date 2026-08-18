@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>사장님 전용 웹 주문관리 시스템 | PlaceList POS</title>
+  <!-- Google Fonts & Tailwind CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans KR', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f4f3ff',
+              100: '#ebe9fe',
+              500: '#6c63ff',
+              600: '#5b52e0',
+              700: '#4a41c2',
+            },
+            kakao: {
+              bg: '#FEE500',
+              text: '#191919',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .dark .glass-card {
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .pulse-glow {
+      animation: pulse-border 2s infinite;
+    }
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(108, 99, 255, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(108, 99, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(108, 99, 255, 0); }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-200 min-h-screen">
+  
+  <!-- Header Navbar -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-brand-500/30">
+          ☕
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
+            <span>사장님 전용 주문 관리 Web</span>
+            <span id="connectionBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> 실시간 연결됨
+            </span>
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">웹상에서 실시간 주문 접수, 제조 상태 변경 및 카카오톡 알림 전송</p>
+        </div>
+      </div>
+
+      <!-- Config & Stats Bar -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Store Selector -->
+        <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+          <span class="text-slate-500 dark:text-slate-400 font-medium">매장 ID:</span>
+          <input type="text" id="storeIdInput" value="s1" class="bg-transparent font-bold w-20 text-center text-brand-600 dark:text-brand-400 focus:outline-none" />
+          <button id="btnReload" class="hover:text-brand-500 text-slate-400">🔄</button>
+        </div>
+
+        <!-- Sound Toggle -->
+        <button id="soundToggle" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-700">
+          <span id="soundIcon">🔔</span>
+          <span id="soundLabel">주문 알림음 켜짐</span>
+        </button>
+
+        <!-- Dark Mode Toggle -->
+        <button id="themeToggle" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+          🌙
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 md:px-6 py-6">
+    
+    <!-- Top Summary Dashboard KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="glass-card p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold mb-1">
+          <span>대기중 주문</span>
+          <span class="text-amber-500">⏳</span>
+        </div>
+        <div class="text-2xl font-black text-amber-500" id="kpiPending">0</div>
+        <div class="text-[11px] text-slate-400 mt-1">접수 대기 상태</div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold mb-1">
+          <span>제조 중</span>
+          <span class="text-brand-500">☕</span>
+        </div>
+        <div class="text-2xl font-black text-brand-500" id="kpiPreparing">0</div>
+        <div class="text-[11px] text-slate-400 mt-1">조리/제조 진행중</div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold mb-1">
+          <span>픽업 대기</span>
+          <span class="text-emerald-500">✅</span>
+        </div>
+        <div class="text-2xl font-black text-emerald-500" id="kpiReady">0</div>
+        <div class="text-[11px] text-slate-400 mt-1">제조 완료 (알림발송됨)</div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold mb-1">
+          <span>오늘 누적 매출</span>
+          <span class="text-indigo-500">💰</span>
+        </div>
+        <div class="text-2xl font-black text-slate-900 dark:text-white" id="kpiTotalSales">0원</div>
+        <div class="text-[11px] text-slate-400 mt-1" id="kpiCompletedCount">완료 0건</div>
+      </div>
+    </div>
+
+    <!-- Status Filter Tabs -->
+    <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+      <button class="filter-tab px-4 py-2 rounded-xl font-bold text-xs transition bg-brand-500 text-white shadow-md shadow-brand-500/20" data-status="all">
+        전체 주문 (<span id="countAll">0</span>)
+      </button>
+      <button class="filter-tab px-4 py-2 rounded-xl font-semibold text-xs transition bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700" data-status="pending">
+        대기중 (<span id="countPending">0</span>)
+      </button>
+      <button class="filter-tab px-4 py-2 rounded-xl font-semibold text-xs transition bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700" data-status="preparing">
+        제조중 (<span id="countPreparing">0</span>)
+      </button>
+      <button class="filter-tab px-4 py-2 rounded-xl font-semibold text-xs transition bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700" data-status="ready">
+        픽업대기 (<span id="countReady">0</span>)
+      </button>
+      <button class="filter-tab px-4 py-2 rounded-xl font-semibold text-xs transition bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700" data-status="completed">
+        완료 (<span id="countCompleted">0</span>)
+      </button>
+    </div>
+
+    <!-- Orders Grid List -->
+    <div id="ordersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Loading State Skeleton -->
+      <div class="col-span-full py-16 text-center text-slate-400">
+        <div class="inline-block animate-spin text-3xl mb-3">🌀</div>
+        <p class="text-sm">실시간 주문 데이터를 불러오는 중입니다...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Audio Context Synthesizer for Order Alert Chime -->
+  <script>
+    let audioEnabled = true;
+    function playOrderChime() {
+      if (!audioEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        
+        // Play classic pleasant two-tone chime (E5 -> A5)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+        gain1.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start();
+        osc1.stop(ctx.currentTime + 0.3);
+
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(880, ctx.currentTime); // A5
+          gain2.gain.setValueAtTime(0.4, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start();
+          osc2.stop(ctx.currentTime + 0.6);
+        }, 180);
+      } catch (e) {
+        console.error('Audio play error:', e);
+      }
+    }
+  </script>
+
+  <!-- App Script logic -->
+  <script>
+    // Config Supabase credentials
+    const SUPABASE_URL = 'https://tnnsqwukmpyphkyctjyg.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRubnNxd3VrbXB5cGhraWN0anlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxOTA1MzUsImV4cCI6MjA1NTc2NjUzNX0.4XwV_WfFh0xW0sX_1y_v9882266802_3';
+
+    let supabase;
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (e) {
+      console.warn('Supabase init with default config');
+    }
+
+    let ordersList = [];
+    let currentFilter = 'all';
+    let storeId = 's1';
+
+    const storeIdInput = document.getElementById('storeIdInput');
+    const btnReload = document.getElementById('btnReload');
+    const ordersContainer = document.getElementById('ordersContainer');
+
+    // Filter Buttons logic
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        document.querySelectorAll('.filter-tab').forEach(t => {
+          t.classList.remove('bg-brand-500', 'text-white', 'shadow-md', 'shadow-brand-500/20');
+          t.classList.add('bg-white', 'dark:bg-slate-800', 'border', 'border-slate-200', 'dark:border-slate-700');
+        });
+        const target = e.currentTarget;
+        target.classList.remove('bg-white', 'dark:bg-slate-800', 'border', 'border-slate-200', 'dark:border-slate-700');
+        target.classList.add('bg-brand-500', 'text-white', 'shadow-md', 'shadow-brand-500/20');
+        
+        currentFilter = target.getAttribute('data-status');
+        renderOrders();
+      });
+    });
+
+    // Sound toggle
+    document.getElementById('soundToggle').addEventListener('click', () => {
+      audioEnabled = !audioEnabled;
+      document.getElementById('soundIcon').textContent = audioEnabled ? '🔔' : '🔕';
+      document.getElementById('soundLabel').textContent = audioEnabled ? '주문 알림음 켜짐' : '주문 알림음 꺼짐';
+      if (audioEnabled) playOrderChime();
+    });
+
+    // Dark mode toggle
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+
+    storeIdInput.addEventListener('change', () => {
+      storeId = storeIdInput.value.trim() || 's1';
+      fetchOrders();
+    });
+
+    btnReload.addEventListener('click', () => {
+      fetchOrders();
+    });
+
+    // Fetch Initial Orders
+    async function fetchOrders() {
+      ordersContainer.innerHTML = `
+        <div class="col-span-full py-16 text-center text-slate-400">
+          <div class="inline-block animate-spin text-3xl mb-3">🌀</div>
+          <p class="text-sm">실시간 주문 데이터를 불러오는 중입니다...</p>
+        </div>`;
+
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('store_id', storeId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+        ordersList = data || [];
+        updateKPIs();
+        renderOrders();
+      } catch (e) {
+        console.error('Fetch orders error:', e);
+        ordersContainer.innerHTML = `
+          <div class="col-span-full py-12 text-center text-rose-500">
+            <p class="font-bold text-lg">주문 불러오기 실패</p>
+            <p class="text-xs mt-1 text-slate-400">${e.message || e}</p>
+          </div>`;
+      }
+    }
+
+    // Subscribe to Realtime Postgres Changes
+    function subscribeRealtime() {
+      if (!supabase) return;
+      supabase
+        .channel(`public:orders:store_id=eq.${storeId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+          console.log('[Realtime Order Event]', payload);
+          if (payload.eventType === 'INSERT') {
+            playOrderChime();
+          }
+          fetchOrders();
+        })
+        .subscribe();
+    }
+
+    // Update Status Action
+    async function updateStatus(orderId, newStatus, userPhone, orderNumber) {
+      try {
+        const { error } = await supabase
+          .from('orders')
+          .update({ status: newStatus })
+          .eq('id', orderId);
+
+        if (error) throw error;
+
+        // Show Kakao Alimtalk Toast Notification Simulation
+        if (userPhone) {
+          showKakaoToast(newStatus, orderNumber, userPhone);
+        }
+
+        fetchOrders();
+      } catch (e) {
+        alert('상태 변경 실패: ' + e.message);
+      }
+    }
+
+    function showKakaoToast(status, orderNumber, userPhone) {
+      let statusText = '';
+      if (status === 'preparing') statusText = '주문 접수 완료 (조리 시작)';
+      else if (status === 'ready') statusText = '메뉴 준비 완료 (픽업 요청)';
+      else if (status === 'cancelled') statusText = '주문 취소 안내';
+
+      if (!statusText) return;
+
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-6 right-6 z-50 bg-kakao-bg text-kakao-text px-4 py-3 rounded-2xl shadow-2xl border border-yellow-400 flex items-start gap-3 transition-all duration-300 transform translate-y-4 opacity-0';
+      toast.innerHTML = `
+        <div class="text-2xl">💬</div>
+        <div>
+          <div class="font-extrabold text-xs flex items-center gap-1">
+            <span>[카카오톡 알림톡 전송 완료]</span>
+            <span class="bg-black/10 px-1.5 py-0.5 rounded text-[10px]">${userPhone}</span>
+          </div>
+          <p class="text-xs font-semibold mt-0.5">주문 #${orderNumber}: ${statusText}</p>
+        </div>`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Update KPIs Summary
+    function updateKPIs() {
+      const pending = ordersList.filter(o => o.status === 'pending').length;
+      const preparing = ordersList.filter(o => o.status === 'preparing' || o.status === 'accepted').length;
+      const ready = ordersList.filter(o => o.status === 'ready').length;
+      const completedList = ordersList.filter(o => o.status === 'completed');
+      
+      const totalSales = completedList.reduce((acc, o) => acc + (o.total_amount || 0), 0);
+
+      document.getElementById('kpiPending').textContent = pending;
+      document.getElementById('kpiPreparing').textContent = preparing;
+      document.getElementById('kpiReady').textContent = ready;
+      document.getElementById('kpiTotalSales').textContent = totalSales.toLocaleString() + '원';
+      document.getElementById('kpiCompletedCount').textContent = `완료 ${completedList.length}건`;
+
+      document.getElementById('countAll').textContent = ordersList.length;
+      document.getElementById('countPending').textContent = pending;
+      document.getElementById('countPreparing').textContent = preparing;
+      document.getElementById('countReady').textContent = ready;
+      document.getElementById('countCompleted').textContent = completedList.length;
+    }
+
+    // Render Orders Cards
+    function renderOrders() {
+      let filtered = ordersList;
+      if (currentFilter === 'pending') filtered = ordersList.filter(o => o.status === 'pending');
+      else if (currentFilter === 'preparing') filtered = ordersList.filter(o => o.status === 'preparing' || o.status === 'accepted');
+      else if (currentFilter === 'ready') filtered = ordersList.filter(o => o.status === 'ready');
+      else if (currentFilter === 'completed') filtered = ordersList.filter(o => o.status === 'completed');
+
+      if (filtered.length === 0) {
+        ordersContainer.innerHTML = `
+          <div class="col-span-full py-20 text-center">
+            <div class="text-5xl mb-3">☕</div>
+            <p class="text-base font-bold text-slate-500 dark:text-slate-400">접수된 주문이 없습니다.</p>
+            <p class="text-xs text-slate-400 mt-1">손님이 앱에서 주문하면 여기에 실시간으로 표시됩니다.</p>
+          </div>`;
+        return;
+      }
+
+      ordersContainer.innerHTML = filtered.map(order => {
+        const timeStr = new Date(order.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        const items = order.order_items || [];
+        
+        let badgeColor = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+        let badgeText = '접수 대기';
+        let isPending = order.status === 'pending';
+
+        if (order.status === 'pending') {
+          badgeColor = 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 animate-pulse';
+          badgeText = '⏳ 주문 대기중';
+        } else if (order.status === 'preparing' || order.status === 'accepted') {
+          badgeColor = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300';
+          badgeText = '☕ 조리/제조 중';
+        } else if (order.status === 'ready') {
+          badgeColor = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
+          badgeText = '✅ 픽업 준비 완료';
+        } else if (order.status === 'completed') {
+          badgeColor = 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+          badgeText = '🏁 픽업 완료';
+        } else if (order.status === 'cancelled') {
+          badgeColor = 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300';
+          badgeText = '❌ 주문 취소됨';
+        }
+
+        return `
+          <div class="glass-card rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition ${isPending ? 'pulse-glow border-brand-500 dark:border-brand-500' : ''}">
+            <div>
+              <!-- Header -->
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-3 mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl font-black text-brand-600 dark:text-brand-400">${order.order_number || 'A-00'}</span>
+                  <span class="text-xs text-slate-400 font-medium">${timeStr}</span>
+                </div>
+                <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold ${badgeColor}">${badgeText}</span>
+              </div>
+
+              <!-- Customer Info -->
+              <div class="mb-3 text-xs">
+                <div class="flex items-center justify-between font-semibold">
+                  <span>주문자: <strong class="text-slate-900 dark:text-white font-bold">${order.user_name || '손님'}</strong></span>
+                  <span class="text-slate-400">${order.user_phone || '연락처 미기재'}</span>
+                </div>
+                ${order.user_note ? `
+                  <div class="mt-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 font-medium">
+                    💬 요청사항: ${order.user_note}
+                  </div>` : ''}
+              </div>
+
+              <!-- Items list -->
+              <div class="space-y-2 mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
+                ${items.map(item => `
+                  <div class="flex justify-between items-start text-xs">
+                    <div>
+                      <span class="font-bold text-slate-800 dark:text-slate-200">${item.menu_name}</span>
+                      <span class="font-extrabold text-brand-500">x${item.quantity}</span>
+                      ${item.selected_options ? `<p class="text-[11px] text-slate-400 mt-0.5">${item.selected_options}</p>` : ''}
+                    </div>
+                    <span class="font-semibold text-slate-600 dark:text-slate-300">${(item.subtotal || 0).toLocaleString()}원</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Card Bottom Footer & Actions -->
+            <div>
+              <div class="flex justify-between items-center text-sm font-bold border-t border-slate-100 dark:border-slate-800 pt-3 mb-3">
+                <span class="text-xs text-slate-400">총 결제금액</span>
+                <span class="text-base text-brand-600 dark:text-brand-400 font-black">${(order.total_amount || 0).toLocaleString()}원</span>
+              </div>
+
+              <!-- Action Buttons based on order status -->
+              <div class="grid grid-cols-2 gap-2">
+                ${order.status === 'pending' ? `
+                  <button onclick="updateStatus('${order.id}', 'cancelled', '${order.user_phone || ''}', '${order.order_number}')" class="py-2.5 px-3 rounded-xl border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-bold hover:bg-rose-50 dark:hover:bg-rose-950/50 transition">
+                    주문 거절
+                  </button>
+                  <button onclick="updateStatus('${order.id}', 'preparing', '${order.user_phone || ''}', '${order.order_number}')" class="py-2.5 px-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold shadow-md shadow-brand-500/20 transition">
+                    주문 접수
+                  </button>
+                ` : ''}
+
+                ${(order.status === 'preparing' || order.status === 'accepted') ? `
+                  <button onclick="updateStatus('${order.id}', 'ready', '${order.user_phone || ''}', '${order.order_number}')" class="col-span-2 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-extrabold shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition">
+                    <span>☕ 제조 완료 (카카오 알림 전송)</span>
+                  </button>
+                ` : ''}
+
+                ${order.status === 'ready' ? `
+                  <button onclick="updateStatus('${order.id}', 'completed', '${order.user_phone || ''}', '${order.order_number}')" class="col-span-2 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold transition">
+                    🏁 픽업 완료 처리
+                  </button>
+                ` : ''}
+
+                ${(order.status === 'completed' || order.status === 'cancelled') ? `
+                  <div class="col-span-2 text-center text-xs text-slate-400 py-1 font-medium">
+                    처리 완료된 주문입니다.
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Init
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchOrders();
+      subscribeRealtime();
+    });
+  </script>
+</body>
+
+</html>

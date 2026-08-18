@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/models/planner_model.dart';
+import 'package:placelist/widgets/track_timeline_widget.dart';
 
 // ----------------------------------------------------
 // Cupertino Travel Planner Dashboard Page
@@ -1326,7 +1327,18 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
                               // 5. Timeline header filters
                               _buildTimelineFilterWidget(isDark),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 12),
+
+                              // Race-track visual timeline
+                              if (filteredEvents.isNotEmpty)
+                                TrackTimelineWidget(
+                                  events: filteredEvents,
+                                  isDark: isDark,
+                                  onEventTap: (event) =>
+                                      _showEventBottomSheet(existingEvent: event),
+                                ),
+                              if (filteredEvents.isNotEmpty)
+                                const SizedBox(height: 16),
 
                               // Chronological Timeline items list
                               filteredEvents.isEmpty

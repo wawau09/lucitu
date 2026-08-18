@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:placelist/models/menu_model.dart';
 import 'package:placelist/models/order_model.dart';
 import 'package:placelist/providers/cart_provider.dart';
+import 'package:placelist/services/kakao_notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
 
@@ -207,10 +208,23 @@ class OrderService {
 
   static Future<void> updateOrderStatus(String orderId, OrderStatus newStatus) async {
     try {
-      await supabaseClient
+      final updatedOrder = await supabaseClient
           .from('orders')
           .update({'status': newStatus.value})
-          .eq('id', orderId);
+          .eq('id', orderId)
+          .select()
+          .maybeSingle();
+
+      if (updatedOrder != null && updatedOrder['user_phone'] != null) {
+        final phone = updatedOrder['user_phone'].toString();
+        final orderNumber = updatedOrder['order_number'].toString();
+        KakaoNotificationService.sendNotification(
+          userPhone: phone,
+          storeName: '플레이스리스트 카페',
+          orderNumber: orderNumber,
+          status: newStatus,
+        );
+      }
     } catch (e) {
       debugPrint('Error updating order status: $e');
     }

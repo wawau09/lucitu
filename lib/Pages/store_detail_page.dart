@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/store.dart';
 import 'package:placelist/Pages/map_stub.dart'
     if (dart.library.html) 'package:placelist/Pages/map_web.dart';
-import 'package:placelist/Pages/owner_order_management_page.dart';
 import 'package:placelist/providers/cart_provider.dart';
 import 'package:placelist/providers/category_provider.dart';
 import 'package:placelist/providers/favorites_provider.dart';
@@ -72,23 +71,6 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.storefront_rounded),
-            tooltip: '사장님 관리 화면',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => OwnerOrderManagementPage(
-                    storeId: store.id ?? 'default_store',
-                    storeName: store.name,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
