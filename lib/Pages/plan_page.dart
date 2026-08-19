@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/plan.dart';
@@ -16,6 +17,10 @@ import 'package:placelist/widgets/plan/plan_header_widget.dart';
 import 'package:placelist/widgets/shimmer_loading.dart';
 import 'package:placelist/widgets/error_retry_widget.dart';
 import 'package:placelist/Pages/cupertino_planner_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:placelist/utils/app_colors.dart';
+import 'package:placelist/providers/stores_provider.dart';
+import 'package:placelist/DB/store.dart';
 
 class PlanPage extends ConsumerStatefulWidget {
   const PlanPage({super.key});
@@ -40,6 +45,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
   }
 
   Future<void> _checkClipboardForPlanCode() async {
+    if (kIsWeb) return;
     try {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim();
@@ -444,24 +450,26 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               ),
               const SizedBox(height: 14),
               _buildDetailSection(
-                title: '\uC77C\uC815',
+                title: '일정 타임라인',
                 child: detail.items.isEmpty
                     ? _buildDetailEmptyState(
                         icon: Icons.calendar_today_outlined,
-                        message:
-                            '\uC544\uC9C1 \uC77C\uC815 \uD56D\uBAA9\uC774 \uC5C6\uC5B4\uC694.',
+                        message: '아직 일정 항목이 없어요.',
                       )
                     : Column(
-                        children: detail.items
-                            .map(
-                              (item) => _buildScheduleRow(
-                                item,
-                                onDelete: () =>
-                                    _confirmDeleteItem(detail.plan.id, item),
-                                planId: detail.plan.id,
-                              ),
-                            )
-                            .toList(),
+                        children: detail.items.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final item = entry.value;
+                          return _buildScheduleRow(
+                            item,
+                            index: index + 1,
+                            isFirst: index == 0,
+                            isLast: index == detail.items.length - 1,
+                            onDelete: () =>
+                                _confirmDeleteItem(detail.plan.id, item),
+                            planId: detail.plan.id,
+                          );
+                        }).toList(),
                       ),
               ),
               const SizedBox(height: 14),
@@ -685,76 +693,229 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     return start;
   }
 
-  Widget _buildScheduleRow(PlanItem item, {required VoidCallback onDelete, required String planId}) {
-    Color? bgColor;
-    Color? borderColor;
-    if (item.color != null) {
-      final baseColor = Color(int.parse(item.color!.substring(1, 7), radix: 16) + 0xFF000000);
-      bgColor = baseColor.withValues(alpha: 0.1);
-      borderColor = baseColor.withValues(alpha: 0.3);
+  Widget _buildScheduleRow(
+    PlanItem item, {
+    required VoidCallback onDelete,
+    required String planId,
+    int index = 1,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final stores = ref.watch(storesProvider).valueOrNull ?? [];
+    Store? matchingStore;
+    for (final s in stores) {
+      if (s.name.trim().toLowerCase() == item.title.trim().toLowerCase()) {
+        matchingStore = s;
+        break;
+      }
     }
+
+    final imageUrl = matchingStore?.imageUrls.isNotEmpty == true ? matchingStore!.imageUrls.first : null;
+    final region = matchingStore?.region;
+    final tags = (matchingStore?.categoryTags.isNotEmpty == true)
+        ? matchingStore!.categoryTags.take(2).map((t) => t.startsWith('#') ? t : '#$t').toList()
+        : [
+            if (region != null && region.isNotEmpty) '#$region',
+          ];
 
     final timeStr = _getFormattedTimeRange(item);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: GestureDetector(
-        onTap: () => _showEditItemDialog(item, planId),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: bgColor ?? Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: borderColor ?? const Color(0xFFE8E1D9)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 계획명 (일정명)
-                    Text(
-                      item.title,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. 왼쪽 세로 라인 + 번호/시간 마커
+          SizedBox(
+            width: 44,
+            child: Column(
+              children: [
+                // 상단 세로 라인
+                Container(
+                  width: 2,
+                  height: 12,
+                  color: isFirst ? Colors.transparent : (isDark ? Colors.white24 : const Color(0xFFD8D2CB)),
+                ),
+                // 번호 마커 원형 뱃지
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.accentLight : AppColors.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$index',
                       style: GoogleFonts.notoSans(
-                        fontSize: 15,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF111827),
+                        color: isDark ? AppColors.backgroundDark : Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    // 계획명 밑에 표시되는 시간
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.access_time_rounded,
-                          size: 13,
-                          color: Color(0xFF6C63FF),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          timeStr,
-                          style: GoogleFonts.notoSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6C63FF),
-                          ),
-                        ),
-                      ],
+                  ),
+                ),
+                // 하단 세로 라인
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isLast ? Colors.transparent : (isDark ? Colors.white24 : const Color(0xFFD8D2CB)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // 2. 오른쪽 타임라인 카드 (정사각형 1:1 썸네일 Radius 12 + 카페명 Bold 16px + 태그)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                onTap: () => _showEditItemDialog(item, planId),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                      width: 1,
                     ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // 카페 썸네일 (정사각형 1:1, Radius 12)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: SizedBox(
+                          width: 68,
+                          height: 68,
+                          child: imageUrl != null
+                              ? CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Container(
+                                    color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                                  ),
+                                  errorWidget: (_, __, ___) => Container(
+                                    color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4EDE6),
+                                    child: Icon(
+                                      Icons.coffee_rounded,
+                                      color: isDark ? Colors.white38 : AppColors.accent,
+                                      size: 26,
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4EDE6),
+                                  child: Icon(
+                                    Icons.coffee_rounded,
+                                    color: isDark ? Colors.white38 : AppColors.accent,
+                                    size: 26,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // 카페명 & 시간 & 태그
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // 시간 뱃지
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time_filled_rounded,
+                                  size: 12,
+                                  color: isDark ? AppColors.accentLight : AppColors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  timeStr,
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? AppColors.accentLight : AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            // 카페명 (Bold 16px)
+                            Text(
+                              item.title,
+                              style: GoogleFonts.notoSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            // 태그 (#전포 #오션뷰)
+                            if (tags.isNotEmpty)
+                              Wrap(
+                                spacing: 4,
+                                children: tags.map((t) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4F5F6),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      t,
+                                      style: GoogleFonts.notoSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? Colors.white60 : Colors.grey[700],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      // 삭제 버튼
+                      IconButton(
+                        onPressed: onDelete,
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: isDark ? Colors.white38 : Colors.grey[400],
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: '삭제',
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              IconButton(
-                onPressed: onDelete,
-                icon: const Icon(Icons.close_rounded, size: 18),
-                color: const Color(0xFFB45309),
-                tooltip: '삭제',
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

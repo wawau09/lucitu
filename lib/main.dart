@@ -14,7 +14,7 @@ import 'Pages/main_page.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:placelist/providers/theme_provider.dart';
-
+import 'package:placelist/utils/app_colors.dart';
 
 ValueNotifier<String?> naverMapAuthErrorNotifier = ValueNotifier<String?>(null);
 
@@ -142,15 +142,160 @@ class _MyAppState extends ConsumerState<MyApp> {
       navigatorObservers: kIsWeb ? [] : [CNTabBarRouteObserver()],
       themeMode: themeMode,
       theme: ThemeData(
+        fontFamily: 'Pretendard',
+        fontFamilyFallback: const ['Noto Sans KR', 'sans-serif'],
         useMaterial3: true,
         brightness: Brightness.light,
-        scaffoldBackgroundColor: Colors.white,
-        colorSchemeSeed: const Color(0xFF3267A2),
+        scaffoldBackgroundColor: AppColors.backgroundLight,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          primary: AppColors.primary,
+          surface: AppColors.surfaceLight,
+          surfaceContainerLowest: Colors.white,
+          surfaceContainerLow: AppColors.backgroundLight,
+          surfaceContainer: const Color(0xFFF2F3F5),
+          brightness: Brightness.light,
+        ),
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: AppColors.backgroundLight,
+          surfaceTintColor: Colors.transparent,
+          titleTextStyle: TextStyle(
+            fontFamily: 'Pretendard',
+            color: AppColors.textPrimaryLight,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: AppColors.textPrimaryLight),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          color: AppColors.surfaceLight,
+          surfaceTintColor: Colors.transparent,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(
+              color: AppColors.borderLight,
+              width: 1,
+            ),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          elevation: 0,
+          backgroundColor: AppColors.backgroundLight,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: AppColors.primaryContainer,
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const TextStyle(
+                fontFamily: 'Pretendard',
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: AppColors.primary,
+              );
+            }
+            return const TextStyle(
+              fontFamily: 'Pretendard',
+              fontWeight: FontWeight.normal,
+              fontSize: 12,
+              color: AppColors.textSecondaryLight,
+            );
+          }),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const IconThemeData(color: AppColors.primary);
+            }
+            return const IconThemeData(color: AppColors.textSecondaryLight);
+          }),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: AppColors.surfaceLight,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: AppColors.borderLight,
+          thickness: 1,
+          space: 1,
+        ),
       ),
       darkTheme: ThemeData(
+        fontFamily: 'Pretendard',
+        fontFamilyFallback: const ['Noto Sans KR', 'sans-serif'],
         useMaterial3: true,
         brightness: Brightness.dark,
-        colorSchemeSeed: const Color(0xFF3267A2),
+        scaffoldBackgroundColor: AppColors.backgroundDark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          primary: AppColors.accentLight,
+          surface: AppColors.surfaceDark,
+          brightness: Brightness.dark,
+        ),
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: AppColors.backgroundDark,
+          surfaceTintColor: Colors.transparent,
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          color: AppColors.surfaceDark,
+          surfaceTintColor: Colors.transparent,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(
+              color: AppColors.borderDark,
+              width: 1,
+            ),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          elevation: 0,
+          backgroundColor: AppColors.backgroundDark,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: Colors.white.withOpacity(0.12),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            backgroundColor: AppColors.accentLight,
+            foregroundColor: AppColors.backgroundDark,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: AppColors.surfaceDark,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: AppColors.borderDark,
+          thickness: 1,
+          space: 1,
+        ),
       ),
       builder: (context, child) {
         return Stack(
@@ -195,7 +340,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                                   ),
                                   const SizedBox(height: 4),
                                   SelectableText(
-                                    'Error: $authError\nClient ID: $naverMapClientId',
+                                    'Error: $authError\nClient ID: ${kIsWeb ? naverMapWebClientId : naverMapClientId}',
                                     style: const TextStyle(color: Colors.white, fontSize: 11),
                                   ),
                                 ],
@@ -251,7 +396,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                       currentIndex: currentIndex,
                       onTap: (index) =>
                           ref.read(navigationProvider.notifier).setIndex(index),
-                      tint: const Color(0xFF3267A2),
+                      tint: AppColors.primary,
                       items: const [
                         CNTabBarItem(
                           icon: CNSymbol('calendar'),

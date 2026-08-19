@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:placelist/utils/app_colors.dart';
 
 class StoreDetailMenuBoard extends StatelessWidget {
   final Map<String, dynamic> menu;
@@ -31,7 +32,7 @@ class StoreDetailMenuBoard extends StatelessWidget {
           children: [
             Icon(
               Icons.restaurant_menu,
-              color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
+              color: isDark ? AppColors.accentLight : AppColors.primary,
               size: 22,
             ),
             const SizedBox(width: 8),
@@ -78,7 +79,7 @@ class StoreDetailMenuBoard extends StatelessWidget {
                         style: GoogleFonts.notoSans(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
+                          color: isDark ? AppColors.accentLight : AppColors.primary,
                         ),
                       ),
                     ],

@@ -16,6 +16,11 @@ const String supabaseStorageBucket = String.fromEnvironment(
 
 const String naverMapClientId = String.fromEnvironment(
   'NAVER_MAP_CLIENT_ID',
-  defaultValue: '0w1sxphr42',
+  defaultValue: '0w1sxphr42', // 모바일 앱 (Android, iOS)
+);
+
+const String naverMapWebClientId = String.fromEnvironment(
+  'NAVER_MAP_WEB_CLIENT_ID',
+  defaultValue: 'yai391e7li', // 웹 (Web Dynamic Map)
 );
 

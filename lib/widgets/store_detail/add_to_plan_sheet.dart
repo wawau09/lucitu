@@ -5,6 +5,7 @@ import 'package:placelist/DB/plan.dart';
 import 'package:placelist/DB/store.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/plans_provider.dart';
+import 'package:placelist/utils/app_colors.dart';
 
 void showAddToPlanSheet(BuildContext context, WidgetRef ref, Store store) {
   showModalBottomSheet<void>(
@@ -66,7 +67,7 @@ class _AddToPlanSheetContentState extends ConsumerState<AddToPlanSheetContent> {
               children: [
                 Icon(
                   Icons.edit_calendar,
-                  color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2),
+                  color: isDark ? AppColors.accentLight : AppColors.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -116,8 +117,8 @@ class _AddToPlanSheetContentState extends ConsumerState<AddToPlanSheetContent> {
                             Navigator.pop(widget.parentContext);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3267A2),
-                            foregroundColor: Colors.white,
+                            backgroundColor: isDark ? AppColors.accentLight : AppColors.primary,
+                            foregroundColor: isDark ? AppColors.backgroundDark : Colors.white,
                           ),
                           child: const Text('일정 탭에서 일정 생성하기'),
                         ),
@@ -160,8 +161,8 @@ class _AddToPlanSheetContentState extends ConsumerState<AddToPlanSheetContent> {
                               icon: const Icon(Icons.add, size: 16),
                               label: const Text('추가'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF3267A2),
-                                foregroundColor: Colors.white,
+                                backgroundColor: isDark ? AppColors.accentLight : AppColors.primary,
+                                foregroundColor: isDark ? AppColors.backgroundDark : Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 6,

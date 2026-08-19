@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/DB/plan.dart';
+import 'package:placelist/utils/app_colors.dart';
 
 class ClockScheduleWidget extends StatefulWidget {
   final List<PlanItem> items;
@@ -225,7 +226,7 @@ class ClockSchedulePainter extends CustomPainter {
     }
     
     // Draw center dot
-    canvas.drawCircle(center, 4, Paint()..color = isDark ? const Color(0xFF64B5F6) : const Color(0xFF3267A2));
+    canvas.drawCircle(center, 4, Paint()..color = isDark ? AppColors.accentLight : AppColors.primary);
   }
 
   double _timeToDouble(String? timeStr) {

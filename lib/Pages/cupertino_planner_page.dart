@@ -8,6 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/models/planner_model.dart';
 import 'package:placelist/widgets/track_timeline_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:placelist/utils/app_colors.dart';
+import 'package:placelist/providers/stores_provider.dart';
+import 'package:placelist/DB/store.dart';
 
 // ----------------------------------------------------
 // Cupertino Travel Planner Dashboard Page
@@ -1390,14 +1394,34 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                               _buildTimelineFilterWidget(isDark),
                               const SizedBox(height: 12),
 
-                              // Race-track visual timeline
+                              // Race-track visual timeline & Detailed Timeline Cards
                               filteredEvents.isEmpty
                                   ? _buildEmptyTimelineState(cardBg, isDark)
-                                  : TrackTimelineWidget(
-                                      events: filteredEvents,
-                                      isDark: isDark,
-                                      onEventTap: (event) =>
-                                          _showEventBottomSheet(existingEvent: event),
+                                  : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        TrackTimelineWidget(
+                                          events: filteredEvents,
+                                          isDark: isDark,
+                                          onEventTap: (event) =>
+                                              _showEventBottomSheet(existingEvent: event),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        // 상세 타임라인 카드 목록
+                                        ...filteredEvents.asMap().entries.map((entry) {
+                                          final index = entry.key;
+                                          final event = entry.value;
+                                          return _buildTimelineEventCard(
+                                            event: event,
+                                            index: index + 1,
+                                            isFirst: index == 0,
+                                            isLast: index == filteredEvents.length - 1,
+                                            isDark: isDark,
+                                            onTap: () =>
+                                                _showEventBottomSheet(existingEvent: event),
+                                          );
+                                        }),
+                                      ],
                                     ),
                               const SizedBox(height: 16),
 
@@ -2128,6 +2152,261 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineEventCard({
+    required TravelEvent event,
+    required int index,
+    required bool isFirst,
+    required bool isLast,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final stores = ref.watch(storesProvider).valueOrNull ?? [];
+    Store? matchingStore;
+    for (final s in stores) {
+      if (s.name.trim().toLowerCase() == event.title.trim().toLowerCase()) {
+        matchingStore = s;
+        break;
+      }
+    }
+
+    final imageUrl = matchingStore?.imageUrls.isNotEmpty == true ? matchingStore!.imageUrls.first : null;
+    final region = matchingStore?.region;
+    final tags = (matchingStore?.categoryTags.isNotEmpty == true)
+        ? matchingStore!.categoryTags.take(2).map((t) => t.startsWith('#') ? t : '#$t').toList()
+        : [
+            if (region != null && region.isNotEmpty) '#$region',
+            '#${event.category}',
+          ];
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. 왼쪽 세로 라인 + 번호/시간 마커
+          SizedBox(
+            width: 48,
+            child: Column(
+              children: [
+                // 상단 세로 라인
+                Container(
+                  width: 2,
+                  height: 14,
+                  color: isFirst ? Colors.transparent : (isDark ? Colors.white24 : const Color(0xFFD8D2CB)),
+                ),
+                // 번호 마커 원형 뱃지
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.accentLight : AppColors.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isDark ? Colors.black : AppColors.primary).withOpacity(0.25),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$index',
+                      style: GoogleFonts.notoSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppColors.backgroundDark : Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // 시간 텍스트 (마커 아래)
+                Text(
+                  event.startTime,
+                  style: GoogleFonts.notoSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white54 : Colors.grey[600],
+                  ),
+                ),
+                // 하단 세로 라인
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isLast ? Colors.transparent : (isDark ? Colors.white24 : const Color(0xFFD8D2CB)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // 2. 오른쪽 타임라인 카드
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                onTap: onTap,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // 카페 썸네일 (정사각형 1:1, Radius 12)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: SizedBox(
+                          width: 68,
+                          height: 68,
+                          child: imageUrl != null
+                              ? CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Container(
+                                    color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                                  ),
+                                  errorWidget: (_, __, ___) => _buildFallbackThumbnail(event, isDark),
+                                )
+                              : _buildFallbackThumbnail(event, isDark),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // 카페명(Bold 16px) + 태그(#전포 #오션뷰)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // 상단 시간 및 카테고리 칩
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (isDark ? AppColors.accentLight : AppColors.primary).withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.access_time_filled_rounded,
+                                        size: 11,
+                                        color: isDark ? AppColors.accentLight : AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        event.startTime + (event.endTime != null && event.endTime!.isNotEmpty ? ' ~ ${event.endTime}' : ''),
+                                        style: GoogleFonts.notoSans(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? AppColors.accentLight : AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  event.category,
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white38 : Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 5),
+
+                            // 카페명 (Bold 16px)
+                            Text(
+                              event.title,
+                              style: GoogleFonts.notoSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+
+                            // 태그 (#전포 #오션뷰)
+                            Wrap(
+                              spacing: 4,
+                              children: tags.map((tag) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4F5F6),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    tag,
+                                    style: GoogleFonts.notoSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white60 : Colors.grey[700],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // 우측 상세 화살표
+                      Icon(
+                        CupertinoIcons.chevron_right,
+                        size: 16,
+                        color: isDark ? Colors.white24 : Colors.black26,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFallbackThumbnail(TravelEvent event, bool isDark) {
+    IconData iconData = Icons.coffee_rounded;
+    if (event.category == '숙소') iconData = Icons.hotel_rounded;
+    if (event.category == '교통') iconData = Icons.directions_bus_rounded;
+    if (event.category == '관광') iconData = Icons.photo_camera_rounded;
+
+    return Container(
+      color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4EDE6),
+      child: Center(
+        child: Icon(
+          iconData,
+          color: isDark ? Colors.white38 : AppColors.accent,
+          size: 28,
+        ),
       ),
     );
   }

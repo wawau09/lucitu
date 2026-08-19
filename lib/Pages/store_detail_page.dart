@@ -22,6 +22,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/widgets/store_detail/add_to_plan_sheet.dart';
 import 'package:placelist/widgets/store_detail/store_detail_image_header.dart';
 import 'package:placelist/widgets/store_detail/store_detail_menu_board.dart';
+import 'package:placelist/utils/app_colors.dart';
 
 class StoreDetailPage extends ConsumerStatefulWidget {
   final Store store;
@@ -423,64 +424,82 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                   ),
                 )
               else
-                Row(
+                Column(
                   children: [
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                    // 3항목 칩 뱃지 가로 나열
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
                         children: [
-                          Text(
-                            stats.finalAvg.toStringAsFixed(1),
-                            style: GoogleFonts.notoSans(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(5, (index) {
-                              return Icon(
-                                index < stats.finalAvg.round()
-                                    ? Icons.star
-                                    : Icons.star_border,
-                                color: Colors.amber,
-                                size: 18,
-                              );
-                            }),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "최종 점수 평균",
-                            style: GoogleFonts.notoSans(
-                              fontSize: 11,
-                              color: isDark ? Colors.white38 : Colors.grey[500],
-                            ),
-                          ),
+                          _buildRatingChipBadge(emoji: "☕", label: "맛", rating: stats.drinkAvg, isDark: isDark),
+                          const SizedBox(width: 6),
+                          _buildRatingChipBadge(emoji: "✨", label: "위생", rating: stats.hygieneAvg, isDark: isDark),
+                          const SizedBox(width: 6),
+                          _buildRatingChipBadge(emoji: "🌿", label: "분위기", rating: stats.atmosphereAvg, isDark: isDark),
                         ],
                       ),
                     ),
-                    Container(
-                      height: 80,
-                      width: 1,
-                      color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
-                    ),
-                    Expanded(
-                      flex: 6,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 16.0),
-                        child: Column(
-                          children: [
-                            _buildRatingBar("음료", stats.drinkAvg, isDark),
-                            const SizedBox(height: 8),
-                            _buildRatingBar("위생", stats.hygieneAvg, isDark),
-                            const SizedBox(height: 8),
-                            _buildRatingBar("분위기", stats.atmosphereAvg, isDark),
-                          ],
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 4,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                stats.finalAvg.toStringAsFixed(1),
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 44,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(5, (index) {
+                                  return Icon(
+                                    index < stats.finalAvg.round()
+                                        ? Icons.star_rounded
+                                        : Icons.star_outline_rounded,
+                                    color: Colors.amber,
+                                    size: 18,
+                                  );
+                                }),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "평점 ${stats.count}개 기준",
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 11,
+                                  color: isDark ? Colors.white38 : Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        Container(
+                          height: 84,
+                          width: 1,
+                          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                        ),
+                        Expanded(
+                          flex: 6,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 14.0),
+                            child: Column(
+                              children: [
+                                _buildRatingBar("☕", "맛", stats.drinkAvg, isDark),
+                                const SizedBox(height: 10),
+                                _buildRatingBar("✨", "위생", stats.hygieneAvg, isDark),
+                                const SizedBox(height: 10),
+                                _buildRatingBar("🌿", "분위기", stats.atmosphereAvg, isDark),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -506,12 +525,12 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3267A2),
-                    foregroundColor: Colors.white,
+                    backgroundColor: isDark ? AppColors.accentLight : AppColors.primary,
+                    foregroundColor: isDark ? AppColors.backgroundDark : Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
@@ -611,40 +630,90 @@ class _StoreDetailPageState extends ConsumerState<StoreDetailPage> {
     );
   }
 
-  Widget _buildRatingBar(String label, double rating, bool isDark) {
+  Widget _buildRatingChipBadge({
+    required String emoji,
+    required String label,
+    required double rating,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4F5F6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.notoSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            rating.toStringAsFixed(1),
+            style: GoogleFonts.notoSans(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.accentLight : AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingBar(String emoji, String label, double rating, bool isDark) {
     return Row(
       children: [
+        Text(emoji, style: const TextStyle(fontSize: 13)),
+        const SizedBox(width: 6),
         SizedBox(
-          width: 45,
+          width: 42,
           child: Text(
             label,
             style: GoogleFonts.notoSans(
               fontSize: 13,
-              color: isDark ? Colors.white70 : Colors.grey[700],
-              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white70 : Colors.grey[800],
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
+        const SizedBox(width: 6),
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
               value: (rating / 5.0).clamp(0.0, 1.0),
-              backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+              backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFECEEF1),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                rating >= 4.0
+                    ? const Color(0xFFFFB300)
+                    : (rating >= 3.0 ? const Color(0xFFFFCA28) : Colors.grey),
+              ),
               minHeight: 6,
             ),
           ),
         ),
         const SizedBox(width: 8),
         SizedBox(
-          width: 24,
+          width: 26,
           child: Text(
             rating.toStringAsFixed(1),
             style: GoogleFonts.notoSans(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white70 : Colors.black87,
+              color: isDark ? Colors.white : AppColors.textPrimaryLight,
             ),
             textAlign: TextAlign.right,
           ),

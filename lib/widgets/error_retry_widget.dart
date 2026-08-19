@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:placelist/utils/app_colors.dart';
 
 class ErrorRetryWidget extends StatelessWidget {
   final String message;
@@ -54,8 +55,8 @@ class ErrorRetryWidget extends StatelessWidget {
                 style: GoogleFonts.notoSans(fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3267A2),
-                foregroundColor: Colors.white,
+                backgroundColor: isDark ? AppColors.accentLight : AppColors.primary,
+                foregroundColor: isDark ? AppColors.backgroundDark : Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
