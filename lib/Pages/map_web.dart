@@ -26,10 +26,20 @@ Widget getWebMap(double lat, double lng, String name) {
   return HtmlElementView(viewType: viewType);
 }
 
-Widget getWebMapStores(List<Store> stores) {
+Widget getWebMapStores(
+  List<Store> stores, {
+  String? selectedStoreId,
+  void Function(String storeId)? onStoreSelected,
+}) {
   final validStores = stores.where((s) => s.latitude != null && s.longitude != null).toList();
   if (validStores.isEmpty) {
     return const Center(child: Text("지도에 표시할 위치 정보가 없습니다."));
+  }
+
+  if (onStoreSelected != null) {
+    js.context['flutterOnSelectStore'] = (String storeId) {
+      onStoreSelected(storeId);
+    };
   }
 
   final String viewType = 'naver-web-map-multi-${validStores.length}-${validStores.first.id}';
@@ -46,17 +56,23 @@ Widget getWebMapStores(List<Store> stores) {
       'lat': s.latitude,
       'lng': s.longitude,
       'name': s.name,
-      'id': s.id,
+      'id': s.id ?? '',
       'rating': s.rating ?? 0.0,
       'region': s.region ?? '',
     }).toList();
 
     Future.delayed(const Duration(milliseconds: 200), () {
-      js.context.callMethod('initNaverMapMulti', [div, js.JsObject.jsify(storesData)]);
+      js.context.callMethod('initNaverMapMulti', [div, js.JsObject.jsify(storesData), selectedStoreId ?? '']);
     });
 
     return div;
   });
 
   return HtmlElementView(viewType: viewType);
+}
+
+void selectWebMapMarker(String storeId) {
+  try {
+    js.context.callMethod('selectWebMarker', [storeId]);
+  } catch (_) {}
 }

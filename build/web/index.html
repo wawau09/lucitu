@@ -84,6 +84,30 @@
       '</div>';
     }
 
+    var webMarkersMap = {};
+    var currentWebMap = null;
+
+    window.selectWebMarker = function(storeId) {
+      var targetLoc = null;
+      Object.keys(webMarkersMap).forEach(function(id) {
+        var item = webMarkersMap[id];
+        if (item && item.marker) {
+          var isSel = (storeId && id === String(storeId));
+          item.marker.setIcon({
+            content: createMarkerHtml(item.name, item.rating, isSel),
+            anchor: new naver.maps.Point(0, 0)
+          });
+          item.marker.setZIndex(isSel ? 1000 : 1);
+          if (isSel) {
+            targetLoc = item.loc;
+          }
+        }
+      });
+      if (targetLoc && currentWebMap) {
+        currentWebMap.panTo(targetLoc);
+      }
+    };
+
     function initNaverMap(element, lat, lng, name) {
       var mapOptions = {
         center: new naver.maps.LatLng(lat, lng),
@@ -112,8 +136,9 @@
       });
     }
 
-    function initNaverMapMulti(element, stores) {
+    function initNaverMapMulti(element, stores, selectedId) {
       if (!stores || stores.length === 0) return;
+      webMarkersMap = {};
       var first = stores[0];
       var mapOptions = {
         center: new naver.maps.LatLng(first.lat, first.lng),
@@ -122,6 +147,7 @@
         scaleControl: false,
       };
       var map = new naver.maps.Map(element, mapOptions);
+      currentWebMap = map;
 
       var stopScrollEvent = function(e) {
         e.stopPropagation();
@@ -136,17 +162,30 @@
         if (s.lat && s.lng) {
           var loc = new naver.maps.LatLng(s.lat, s.lng);
           bounds.extend(loc);
+          var isSel = (selectedId && String(s.id) === String(selectedId));
           var marker = new naver.maps.Marker({
             position: loc,
             map: map,
             title: s.name || '',
+            zIndex: isSel ? 1000 : 1,
             icon: {
-              content: createMarkerHtml(s.name || '', s.rating, false),
+              content: createMarkerHtml(s.name || '', s.rating, isSel),
               anchor: new naver.maps.Point(0, 0)
             }
           });
+
+          webMarkersMap[String(s.id)] = {
+            marker: marker,
+            name: s.name || '',
+            rating: s.rating,
+            loc: loc
+          };
+
           naver.maps.Event.addListener(marker, 'click', function() {
-            map.panTo(loc);
+            window.selectWebMarker(String(s.id));
+            if (window.flutterOnSelectStore) {
+              window.flutterOnSelectStore(String(s.id));
+            }
           });
         }
       });

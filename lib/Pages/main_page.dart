@@ -365,7 +365,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
             ),
-            child: getWebMapStores(stores),
+            child: getWebMapStores(
+              stores,
+              selectedStoreId: _selectedMapStore?.id,
+              onStoreSelected: (storeId) {
+                final match = stores.firstWhere(
+                  (s) => s.id == storeId,
+                  orElse: () => stores.first,
+                );
+                setState(() {
+                  _selectedMapStore = match;
+                });
+              },
+            ),
           )
         : (mapStoreItems.isEmpty
             ? Center(
@@ -502,7 +514,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 setState(() {
                                   _selectedMapStore = null;
                                 });
-                                if (_mapController != null) {
+                                if (kIsWeb) {
+                                  selectWebMapMarker('');
+                                } else if (_mapController != null) {
                                   _renderMapMarkers(_mapController!, mapStoreItems, isDark);
                                 }
                               },
@@ -643,7 +657,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   setState(() {
                     _selectedMapStore = targetStore;
                   });
-                  if (_mapController != null) {
+                  if (kIsWeb) {
+                    selectWebMapMarker(targetStore.id ?? '');
+                  } else if (_mapController != null) {
                     _mapController!.updateCamera(
                       NCameraUpdate.scrollAndZoomTo(
                         target: NLatLng(targetItem.displayLat, targetItem.displayLng),
@@ -832,7 +848,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         setState(() {
           _selectedMapStore = store;
         });
-        if (_mapController != null) {
+        if (kIsWeb) {
+          selectWebMapMarker(store.id ?? '');
+        } else if (_mapController != null) {
           final targetItem = mapStoreItems.firstWhere(
             (it) => it.store.id == store.id,
             orElse: () => mapStoreItems.first,
