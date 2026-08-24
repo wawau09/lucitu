@@ -60,6 +60,30 @@
 
 <body>
   <script>
+    function createMarkerHtml(name, rating, isSelected) {
+      var bg = isSelected ? '#6C63FF' : '#ffffff';
+      var textColor = isSelected ? '#ffffff' : '#1C1C1E';
+      var iconColor = isSelected ? '#ffffff' : '#6C63FF';
+      var borderColor = isSelected ? '#8A84FF' : '#6C63FF';
+      var shadow = isSelected ? '0 4px 14px rgba(108,99,255,0.45)' : '0 3px 8px rgba(0,0,0,0.18)';
+      var ratingBadge = '';
+      if (rating && rating > 0) {
+        var numStr = Number(rating).toFixed(1);
+        var rBg = isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(108,99,255,0.12)';
+        var rColor = isSelected ? '#ffffff' : '#6C63FF';
+        var sColor = isSelected ? '#FFE082' : '#FFA000';
+        ratingBadge = '<div style="background:' + rBg + '; color:' + rColor + '; border-radius:6px; padding:1px 4px; font-size:9px; font-weight:700; display:flex; align-items:center; gap:2px; margin-left:4px;"><span style="color:' + sColor + ';">★</span>' + numStr + '</div>';
+      }
+      return '<div style="display:inline-flex; flex-direction:column; align-items:center; cursor:pointer; transform:translate(-50%, -100%); filter:drop-shadow(0 2px 4px rgba(0,0,0,0.15));">' +
+        '<div style="background:' + bg + '; color:' + textColor + '; border:1.5px solid ' + borderColor + '; border-radius:12px; padding:5px 9px; font-family:Pretendard, -apple-system, sans-serif; font-size:11px; font-weight:600; box-shadow:' + shadow + '; display:flex; align-items:center; white-space:nowrap; gap:4px;">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + iconColor + '"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>' +
+          '<span>' + (name || '') + '</span>' +
+          ratingBadge +
+        '</div>' +
+        '<div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:7px solid ' + borderColor + '; margin-top:-1px;"></div>' +
+      '</div>';
+    }
+
     function initNaverMap(element, lat, lng, name) {
       var mapOptions = {
         center: new naver.maps.LatLng(lat, lng),
@@ -80,18 +104,12 @@
 
       var marker = new naver.maps.Marker({
         position: new naver.maps.LatLng(lat, lng),
-        map: map
+        map: map,
+        icon: {
+          content: createMarkerHtml(name || '', 0, true),
+          anchor: new naver.maps.Point(0, 0)
+        }
       });
-      if (name) {
-        var infoWindow = new naver.maps.InfoWindow({
-          content: '<div style="padding:10px; font-family: sans-serif; font-size: 14px; border: none; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">' + name + '</div>',
-          borderWidth: 0,
-          disableAnchor: true,
-          backgroundColor: 'transparent',
-          pixelOffset: new naver.maps.Point(0, -10)
-        });
-        infoWindow.open(map, marker);
-      }
     }
 
     function initNaverMapMulti(element, stores) {
@@ -121,24 +139,15 @@
           var marker = new naver.maps.Marker({
             position: loc,
             map: map,
-            title: s.name || ''
+            title: s.name || '',
+            icon: {
+              content: createMarkerHtml(s.name || '', s.rating, false),
+              anchor: new naver.maps.Point(0, 0)
+            }
           });
-          if (s.name) {
-            var infoWindow = new naver.maps.InfoWindow({
-              content: '<div style="padding:8px 12px; font-family: sans-serif; font-size: 13px; font-weight: bold; border-radius: 8px; background-color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.15); color: #111;">' + s.name + '</div>',
-              borderWidth: 0,
-              disableAnchor: true,
-              backgroundColor: 'transparent',
-              pixelOffset: new naver.maps.Point(0, -10)
-            });
-            naver.maps.Event.addListener(marker, 'click', function() {
-              if (infoWindow.getMap()) {
-                infoWindow.close();
-              } else {
-                infoWindow.open(map, marker);
-              }
-            });
-          }
+          naver.maps.Event.addListener(marker, 'click', function() {
+            map.panTo(loc);
+          });
         }
       });
       if (stores.length > 1) {

@@ -114611,7 +114611,11 @@ A.n7(B.F,new A.b_P(p,q),t.P)
 return p},
 $S:302}
 A.b_O.prototype={
-$1(a){return A.aa(["lat",a.c,"lng",a.d,"name",a.b,"id",a.a],t.N,t.X)},
+$1(a){var s,r=a.w
+if(r==null)r=0
+s=a.x
+if(s==null)s=""
+return A.aa(["lat",a.c,"lng",a.d,"name",a.b,"id",a.a,"rating",r,"region",s],t.N,t.X)},
 $S:751}
 A.b_P.prototype={
 $0(){var s=$.b62()

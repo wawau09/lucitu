@@ -47,6 +47,8 @@ Widget getWebMapStores(List<Store> stores) {
       'lng': s.longitude,
       'name': s.name,
       'id': s.id,
+      'rating': s.rating ?? 0.0,
+      'region': s.region ?? '',
     }).toList();
 
     Future.delayed(const Duration(milliseconds: 200), () {
