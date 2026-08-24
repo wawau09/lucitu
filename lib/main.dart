@@ -365,55 +365,94 @@ class _MyAppState extends ConsumerState<MyApp> {
         canPop: false,
         child: Builder(
           builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
             return Scaffold(
               extendBody: true,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               body: IndexedStack(index: currentIndex, children: screens),
-              bottomNavigationBar: kIsWeb
-                  ? NavigationBar(
-                      selectedIndex: currentIndex,
-                      onDestinationSelected: (index) =>
-                          ref.read(navigationProvider.notifier).setIndex(index),
-                      destinations: const [
-                        NavigationDestination(
-                          icon: Icon(Icons.calendar_today_outlined),
-                          selectedIcon: Icon(Icons.calendar_today),
-                          label: '플래너',
-                        ),
-                        NavigationDestination(
-                          icon: Icon(Icons.home_outlined),
-                          selectedIcon: Icon(Icons.home),
-                          label: '홈',
-                        ),
-                        NavigationDestination(
-                          icon: Icon(Icons.person_outline),
-                          selectedIcon: Icon(Icons.person),
-                          label: '내 정보',
-                        ),
-                      ],
-                    )
-                  : CNTabBar(
-                      currentIndex: currentIndex,
-                      onTap: (index) =>
-                          ref.read(navigationProvider.notifier).setIndex(index),
-                      tint: AppColors.primary,
-                      items: const [
-                        CNTabBarItem(
-                          icon: CNSymbol('calendar'),
-                          activeIcon: CNSymbol('calendar'),
-                        ),
-                        CNTabBarItem(
-                          icon: CNSymbol('house'),
-                          activeIcon: CNSymbol('house.fill'),
-                        ),
-                        CNTabBarItem(
-                          icon: CNSymbol('person'),
-                          activeIcon: CNSymbol('person.fill'),
-                        ),
-                      ],
-                    ),
+              bottomNavigationBar: _buildCompactBottomBar(
+                context: context,
+                currentIndex: currentIndex,
+                onTap: (index) =>
+                    ref.read(navigationProvider.notifier).setIndex(index),
+                isDark: isDark,
+              ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactBottomBar({
+    required BuildContext context,
+    required int currentIndex,
+    required ValueChanged<int> onTap,
+    required bool isDark,
+  }) {
+    final items = [
+      (Icons.calendar_today_outlined, Icons.calendar_today_rounded),
+      (Icons.home_outlined, Icons.home_rounded),
+      (Icons.person_outline_rounded, Icons.person_rounded),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+            width: 0.8,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 48,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (index) {
+              final isSelected = currentIndex == index;
+              final (unselectedIcon, selectedIcon) = items[index];
+
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onTap(index),
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? (isDark
+                                ? AppColors.accentLight.withValues(alpha: 0.15)
+                                : AppColors.primary.withValues(alpha: 0.1))
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        isSelected ? selectedIcon : unselectedIcon,
+                        size: 22,
+                        color: isSelected
+                            ? (isDark ? AppColors.accentLight : AppColors.primary)
+                            : (isDark ? Colors.white38 : Colors.black38),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
         ),
       ),
     );

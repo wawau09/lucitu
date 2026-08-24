@@ -1,11 +1,13 @@
 {
     "name": "placelist",
     "short_name": "placelist",
-    "start_url": ".",
+    "start_url": "./",
+    "scope": "./",
     "display": "standalone",
-    "background_color": "#FFFFFF",
-    "theme_color": "#FFFFFF",
-    "description": "A new Flutter project.",
+    "display_override": ["standalone", "fullscreen", "minimal-ui"],
+    "background_color": "#121212",
+    "theme_color": "#6C63FF",
+    "description": "PlaceList Cafe & Travel Planner",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

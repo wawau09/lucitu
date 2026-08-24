@@ -839,6 +839,103 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
   }
 
+  /// Show iOS-style wheel time picker (scroll up/down)
+  Future<TimeOfDay?> _showWheelTimePicker({
+    required BuildContext context,
+    required TimeOfDay initialTime,
+    required bool isDark,
+  }) async {
+    TimeOfDay selectedTime = initialTime;
+    final now = DateTime.now();
+    final initialDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      initialTime.hour,
+      initialTime.minute,
+    );
+
+    return showCupertinoModalPopup<TimeOfDay>(
+      context: context,
+      builder: (BuildContext popupContext) {
+        return Container(
+          height: 290,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isDark ? Colors.white12 : Colors.black12,
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () => Navigator.of(popupContext).pop(),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            color: isDark ? Colors.white54 : CupertinoColors.systemGrey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '시간 설정',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () => Navigator.of(popupContext).pop(selectedTime),
+                        child: const Text(
+                          '완료',
+                          style: TextStyle(
+                            color: Color(0xFF007AFF),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.time,
+                    use24hFormat: false,
+                    initialDateTime: initialDateTime,
+                    onDateTimeChanged: (DateTime newDateTime) {
+                      selectedTime = TimeOfDay(
+                        hour: newDateTime.hour,
+                        minute: newDateTime.minute,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   /// Open Cupertino Modal Bottom Sheet for Add/Edit Event
   void _showEventBottomSheet({TravelEvent? existingEvent}) {
     final isEdit = existingEvent != null;
@@ -1025,9 +1122,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                               final parts = selectedStartTime.split(':');
                               int initHour = int.tryParse(parts[0]) ?? 9;
                               int initMin = int.tryParse(parts[1]) ?? 0;
-                              final tod = await showTimePicker(
+                              final tod = await _showWheelTimePicker(
                                 context: context,
                                 initialTime: TimeOfDay(hour: initHour, minute: initMin),
+                                isDark: isDark,
                               );
                               if (tod != null) {
                                 final hrStr = tod.hour.toString().padLeft(2, '0');
@@ -1063,9 +1161,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                 final parts = (selectedEndTime ?? selectedStartTime).split(':');
                                 int initHour = int.tryParse(parts[0]) ?? 10;
                                 int initMin = int.tryParse(parts[1]) ?? 0;
-                                final tod = await showTimePicker(
+                                final tod = await _showWheelTimePicker(
                                   context: context,
                                   initialTime: TimeOfDay(hour: initHour, minute: initMin),
+                                  isDark: isDark,
                                 );
                                 if (tod != null) {
                                   final hrStr = tod.hour.toString().padLeft(2, '0');
