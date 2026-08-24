@@ -355,7 +355,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildMapView(List<Store> stores, bool isDark) {
-    final mapStoreItems = groupStoresByLocation(stores);
+    final mapStoreItems = groupStoresByLocation(
+      stores,
+      selectedStoreId: _selectedMapStore?.id,
+    );
 
     final initialLat = mapStoreItems.isNotEmpty ? mapStoreItems.first.displayLat : 35.155;
     final initialLng = mapStoreItems.isNotEmpty ? mapStoreItems.first.displayLng : 129.06;
@@ -415,7 +418,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             left: 16,
             right: 16,
             bottom: 90,
-            child: _buildMapStoreFloatingCard(_selectedMapStore!, mapStoreItems, isDark),
+            child: _buildMapStoreFloatingCard(_selectedMapStore!, stores, mapStoreItems, isDark),
           ),
       ],
     );
@@ -423,13 +426,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   Widget _buildMapStoreFloatingCard(
     Store store,
+    List<Store> stores,
     List<MapStoreItem> mapStoreItems,
     bool isDark,
   ) {
     final imageUrl = _getMainImageUrl(store);
     MapStoreItem? currentItem;
     for (final item in mapStoreItems) {
-      if (item.store.id == store.id) {
+      if (item.store.id == store.id || item.clusterStores.any((s) => s.id == store.id)) {
         currentItem = item;
         break;
       }
@@ -443,20 +447,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     void selectClusterStore(int newIndex) {
       final targetStore = clusterStores[newIndex];
-      final targetItem = mapStoreItems.firstWhere(
-        (it) => it.store.id == targetStore.id,
-        orElse: () => currentItem ?? MapStoreItem(
-          store: targetStore,
-          displayLat: targetStore.latitude ?? 35.155,
-          displayLng: targetStore.longitude ?? 129.06,
-          clusterIndex: newIndex,
-          clusterTotal: totalCount,
-          clusterStores: clusterStores,
-        ),
-      );
       setState(() {
         _selectedMapStore = targetStore;
       });
+      final updatedMapStoreItems = groupStoresByLocation(stores, selectedStoreId: targetStore.id);
+      final targetItem = updatedMapStoreItems.firstWhere(
+        (it) => it.store.id == targetStore.id,
+        orElse: () => updatedMapStoreItems.first,
+      );
       if (kIsWeb) {
         selectWebMapMarker(targetStore.id ?? '');
       } else if (_mapController != null) {
@@ -466,7 +464,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             zoom: 15.5,
           ),
         );
-        _renderMapMarkers(_mapController!, mapStoreItems, isDark);
+        _renderMapMarkers(_mapController!, updatedMapStoreItems, isDark);
       }
     }
 

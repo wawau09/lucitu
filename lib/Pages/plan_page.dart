@@ -924,48 +924,46 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     final timeStr = _getFormattedTimeRange(item);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE8E1D9)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 계획명
-            Text(
-              item.title,
-              style: GoogleFonts.notoSans(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF111827),
-              ),
-            ),
-            const SizedBox(height: 4),
-            // 계획명 밑에 표시되는 시간
-            Row(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.access_time_rounded,
-                  size: 13,
-                  color: Color(0xFF6C63FF),
-                ),
-                const SizedBox(width: 4),
+                // 계획명
                 Text(
-                  timeStr,
+                  item.title,
                   style: GoogleFonts.notoSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF6C63FF),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF111827),
                   ),
+                ),
+                const SizedBox(height: 4),
+                // 계획명 밑에 표시되는 시간
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      size: 13,
+                      color: Color(0xFF6C63FF),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      timeStr,
+                      style: GoogleFonts.notoSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF6C63FF),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2604,7 +2602,7 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
 
   Widget _buildTimelineRow(PlanItem item) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2623,32 +2621,20 @@ class _OldPlanDetailPageState extends ConsumerState<OldPlanDetailPage> {
           Container(
             width: 10,
             height: 10,
-            margin: const EdgeInsets.only(top: 6),
+            margin: const EdgeInsets.only(top: 4),
             decoration: const BoxDecoration(
               color: Color(0xFF3267A2),
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE8E1D9)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: GoogleFonts.notoSans(
-                      fontSize: 13,
-                      color: const Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
+            child: Text(
+              item.title,
+              style: GoogleFonts.notoSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1F2937),
               ),
             ),
           ),

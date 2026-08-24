@@ -18,9 +18,13 @@ class MapStoreItem {
   });
 }
 
-/// Group valid stores sharing similar coordinates and calculate vertical offsets
-/// so overlapping markers stack neatly upwards on the map view.
-List<MapStoreItem> groupStoresByLocation(List<Store> stores, {double threshold = 0.00008}) {
+/// Group valid stores sharing similar coordinates into clusters.
+/// Returns exactly ONE MapStoreItem per unique location cluster.
+List<MapStoreItem> groupStoresByLocation(
+  List<Store> stores, {
+  double threshold = 0.00008,
+  String? selectedStoreId,
+}) {
   final validStores = stores.where((s) => s.latitude != null && s.longitude != null).toList();
   final List<List<Store>> clusters = [];
 
@@ -44,24 +48,27 @@ List<MapStoreItem> groupStoresByLocation(List<Store> stores, {double threshold =
 
   for (final cluster in clusters) {
     final int total = cluster.length;
-    for (int i = 0; i < total; i++) {
-      final store = cluster[i];
-      // Index 0 stays at base location.
-      // Index > 0 shifts upwards in latitude with a tiny horizontal stagger for visual clarity.
-      final double latOffset = i * 0.00016;
-      final double lngOffset = (total > 1 && i > 0) ? (i % 2 == 1 ? 0.00002 : -0.00002) : 0.0;
-
-      result.add(
-        MapStoreItem(
-          store: store,
-          displayLat: store.latitude! + latOffset,
-          displayLng: store.longitude! + lngOffset,
-          clusterIndex: i,
-          clusterTotal: total,
-          clusterStores: cluster,
-        ),
-      );
+    // Find index of selected store if in this cluster, else default to 0
+    int activeIndex = 0;
+    if (selectedStoreId != null) {
+      final idx = cluster.indexWhere((s) => s.id == selectedStoreId);
+      if (idx >= 0) activeIndex = idx;
     }
+
+    final activeStore = cluster[activeIndex];
+    final baseLat = cluster.first.latitude!;
+    final baseLng = cluster.first.longitude!;
+
+    result.add(
+      MapStoreItem(
+        store: activeStore,
+        displayLat: baseLat,
+        displayLng: baseLng,
+        clusterIndex: activeIndex,
+        clusterTotal: total,
+        clusterStores: cluster,
+      ),
+    );
   }
 
   return result;

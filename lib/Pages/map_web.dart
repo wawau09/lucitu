@@ -5,7 +5,6 @@ import 'dart:html' as html;
 import 'dart:js' as js;
 import 'dart:ui_web' as ui_web;
 import 'package:placelist/DB/store.dart';
-import 'package:placelist/utils/map_utils.dart';
 
 Widget getWebMap(double lat, double lng, String name) {
   final String viewType = 'naver-web-map-$lat-$lng';
@@ -42,8 +41,8 @@ Widget getWebMapStores(
   String? selectedStoreId,
   void Function(String storeId)? onStoreSelected,
 }) {
-  final mapStoreItems = groupStoresByLocation(stores);
-  if (mapStoreItems.isEmpty) {
+  final validStores = stores.where((s) => s.latitude != null && s.longitude != null).toList();
+  if (validStores.isEmpty) {
     return const Center(child: Text("지도에 표시할 위치 정보가 없습니다."));
   }
 
@@ -53,7 +52,43 @@ Widget getWebMapStores(
     };
   }
 
-  final String viewType = 'naver-web-map-multi-${mapStoreItems.length}-${mapStoreItems.first.store.id}';
+  final clustersMap = <String, List<Map<String, dynamic>>>{};
+  final clusterLocs = <String, Map<String, double>>{};
+
+  for (final s in validStores) {
+    String? matchedKey;
+    for (final key in clusterLocs.keys) {
+      final loc = clusterLocs[key]!;
+      if ((s.latitude! - loc['lat']!).abs() < 0.00008 &&
+          (s.longitude! - loc['lng']!).abs() < 0.00008) {
+        matchedKey = key;
+        break;
+      }
+    }
+    final key = matchedKey ?? 'cluster_${s.id ?? s.name}';
+    if (!clusterLocs.containsKey(key)) {
+      clusterLocs[key] = {'lat': s.latitude!, 'lng': s.longitude!};
+      clustersMap[key] = [];
+    }
+    clustersMap[key]!.add({
+      'id': s.id ?? '',
+      'name': s.name,
+      'rating': s.rating ?? 0.0,
+      'region': s.region ?? '',
+    });
+  }
+
+  final clustersData = clustersMap.entries.map((e) {
+    final loc = clusterLocs[e.key]!;
+    return {
+      'key': e.key,
+      'lat': loc['lat'],
+      'lng': loc['lng'],
+      'stores': e.value,
+    };
+  }).toList();
+
+  final String viewType = 'naver-web-map-clusters-${clustersData.length}-${validStores.first.id}';
 
   // ignore: undefined_prefixed_name
   ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
@@ -64,19 +99,8 @@ Widget getWebMapStores(
           ..style.height = '100%'
           ..style.touchAction = 'none';
 
-    final storesData = mapStoreItems.map((item) => {
-      'lat': item.displayLat,
-      'lng': item.displayLng,
-      'name': item.store.name,
-      'id': item.store.id ?? '',
-      'rating': item.store.rating ?? 0.0,
-      'region': item.store.region ?? '',
-      'clusterIndex': item.clusterIndex,
-      'clusterTotal': item.clusterTotal,
-    }).toList();
-
     Future.delayed(const Duration(milliseconds: 200), () {
-      js.context.callMethod('initNaverMapMulti', [div, js.JsObject.jsify(storesData), selectedStoreId ?? '']);
+      js.context.callMethod('initNaverMapClusters', [div, js.JsObject.jsify(clustersData), selectedStoreId ?? '']);
     });
 
     return div;

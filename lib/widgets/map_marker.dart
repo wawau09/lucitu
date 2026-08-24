@@ -175,7 +175,7 @@ class _MarkerWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    '${clusterIndex! + 1}/${clusterTotal!}',
+                    '‹ ${clusterIndex! + 1}/${clusterTotal!} ›',
                     style: GoogleFonts.notoSans(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,

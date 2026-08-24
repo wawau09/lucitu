@@ -44,7 +44,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
   // Filter and Search states
   String _searchQuery = '';
-  String _selectedCategoryFilter = '전체'; // 전체, 관광, 식도락, 숙소, 교통, 기타
 
   // Text controller for adding checklist items
   final TextEditingController _checklistInputController = TextEditingController();
@@ -940,9 +939,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   void _showEventBottomSheet({TravelEvent? existingEvent}) {
     final isEdit = existingEvent != null;
     final titleController = TextEditingController(text: existingEvent?.title ?? '');
-    final descController = TextEditingController(text: existingEvent?.description ?? '');
     final costController = TextEditingController(text: existingEvent?.cost.toString() ?? '');
-    String selectedCategory = existingEvent?.category ?? '관광';
     String selectedStartTime = existingEvent?.startTime ?? '09:00';
     String? selectedEndTime = existingEvent?.endTime;
     bool hasEndTime = selectedEndTime != null && selectedEndTime.isNotEmpty;
@@ -1018,52 +1015,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Detail / Memo
-                    Text('상세 설명 / 메모', style: labelStyle),
-                    const SizedBox(height: 8),
-                    CupertinoTextField(
-                      controller: descController,
-                      placeholder: '세부 메모를 적어보세요.',
-                      placeholderStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
-                      style: textStyle,
-                      maxLines: 3,
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Category
-                    Text('카테고리 선택', style: labelStyle),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedCategory,
-                          dropdownColor: sheetBg,
-                          style: textStyle,
-                          isExpanded: true,
-                          icon: Icon(CupertinoIcons.chevron_down, size: 16, color: isDark ? Colors.white60 : Colors.black45),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setSheetState(() => selectedCategory = val);
-                            }
-                          },
-                          items: ['관광', '식도락', '숙소', '교통', '기타']
-                              .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
-                              .toList(),
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -1289,10 +1240,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                   title: titleController.text.trim(),
                                   startTime: selectedStartTime,
                                   endTime: finalEndTime,
-                                  category: selectedCategory,
+                                  category: existingEvent.category,
                                   cost: parsedCost,
                                   status: existingEvent.status,
-                                  description: descController.text.trim(),
+                                  description: '',
                                   participantNames: selectedParticipants,
                                   sortOrder: existingEvent.sortOrder,
                                 );
@@ -1303,10 +1254,10 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                   title: titleController.text.trim(),
                                   startTime: selectedStartTime,
                                   endTime: finalEndTime,
-                                  category: selectedCategory,
+                                  category: '일반',
                                   cost: parsedCost,
                                   status: 'Todo',
-                                  description: descController.text.trim(),
+                                  description: '',
                                   participantNames: selectedParticipants,
                                   sortOrder: _events.length,
                                 );
@@ -1447,10 +1398,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
     // Apply filters to timeline events
     final filteredEvents = _events.where((e) {
-      final matchesSearch = e.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          e.description.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategoryFilter == '전체' || e.category == _selectedCategoryFilter;
-      return matchesSearch && matchesCategory;
+      final matchesSearch = _searchQuery.isEmpty || e.title.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesSearch;
     }).toList();
 
     return Scaffold(
@@ -2138,9 +2087,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
   }
 
-  /// 5. Timeline Filters (Segmented categories + Search)
+  /// 5. Timeline Search
   Widget _buildTimelineFilterWidget(bool isDark) {
-    final categories = ['전체', '관광', '식도락', '숙소', '교통', '기타'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2154,13 +2102,12 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 color: isDark ? Colors.white : Colors.black87,
               ),
             ),
-            const Spacer(),
           ],
         ),
         const SizedBox(height: 12),
         // Search bar
         CupertinoSearchTextField(
-          placeholder: '일정 제목 또는 메모 검색',
+          placeholder: '일정 제목 검색',
           placeholderStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
           style: TextStyle(color: isDark ? Colors.white : Colors.black87),
           decoration: BoxDecoration(
@@ -2178,53 +2125,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               _searchQuery = val;
             });
           },
-        ),
-        const SizedBox(height: 12),
-        // Category Pills
-        SizedBox(
-          height: 36,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final cat = categories[index];
-              final isSel = _selectedCategoryFilter == cat;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedCategoryFilter = cat;
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSel
-                        ? const Color(0xFF007AFF)
-                        : (isDark ? const Color(0xFF1C1C1E) : Colors.white),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      cat,
-                      style: GoogleFonts.notoSansKr(
-                        color: isSel ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
-                        fontSize: 12,
-                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
         ),
       ],
     );
@@ -2278,7 +2178,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         ? matchingStore!.categoryTags.take(2).map((t) => t.startsWith('#') ? t : '#$t').toList()
         : [
             if (region != null && region.isNotEmpty) '#$region',
-            '#${event.category}',
           ];
 
     return IntrinsicHeight(
@@ -2342,147 +2241,94 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
 
-          // 2. 오른쪽 타임라인 카드
+          // 2. 오른쪽 타임라인 항목 (네모 박스, 테두리, 배경 제거)
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 16),
               child: GestureDetector(
                 onTap: onTap,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // 카페 썸네일 (정사각형 1:1, Radius 12)
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  children: [
+                    if (imageUrl != null) ...[
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                         child: SizedBox(
-                          width: 68,
-                          height: 68,
-                          child: imageUrl != null
-                              ? CachedNetworkImage(
-                                  imageUrl: imageUrl,
-                                  fit: BoxFit.cover,
-                                  placeholder: (_, __) => Container(
-                                    color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
-                                  ),
-                                  errorWidget: (_, __, ___) => _buildFallbackThumbnail(event, isDark),
-                                )
-                              : _buildFallbackThumbnail(event, isDark),
+                          width: 52,
+                          height: 52,
+                          child: CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(
+                              color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                            ),
+                            errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
+                    ],
 
-                      // 카페명(Bold 16px) + 태그(#전포 #오션뷰)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // 상단 시간 및 카테고리 칩
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: (isDark ? AppColors.accentLight : AppColors.primary).withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.access_time_filled_rounded,
-                                        size: 11,
-                                        color: isDark ? AppColors.accentLight : AppColors.primary,
-                                      ),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        event.startTime + (event.endTime != null && event.endTime!.isNotEmpty ? ' ~ ${event.endTime}' : ''),
-                                        style: GoogleFonts.notoSans(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: isDark ? AppColors.accentLight : AppColors.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  event.category,
-                                  style: GoogleFonts.notoSans(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.white38 : Colors.grey[500],
-                                  ),
-                                ),
-                              ],
+                    // 카페명(Bold 15px) + 시간
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // 카페명 (Bold 15px)
+                          Text(
+                            event.title,
+                            style: GoogleFonts.notoSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
-                            const SizedBox(height: 5),
-
-                            // 카페명 (Bold 16px)
-                            Text(
-                              event.title,
-                              style: GoogleFonts.notoSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          // 시간 정보
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 12,
+                                color: isDark ? AppColors.accentLight : AppColors.primary,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              const SizedBox(width: 4),
+                              Text(
+                                event.startTime + (event.endTime != null && event.endTime!.isNotEmpty ? ' ~ ${event.endTime}' : ''),
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? AppColors.accentLight : AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (tags.isNotEmpty) ...[
                             const SizedBox(height: 4),
-
-                            // 태그 (#전포 #오션뷰)
-                            Wrap(
-                              spacing: 4,
-                              children: tags.map((tag) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4F5F6),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    tag,
-                                    style: GoogleFonts.notoSans(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? Colors.white60 : Colors.grey[700],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
+                            Text(
+                              tags.join(' '),
+                              style: GoogleFonts.notoSans(
+                                fontSize: 11,
+                                color: isDark ? Colors.white38 : Colors.grey[500],
+                              ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
+                    ),
 
-                      // 우측 상세 화살표
-                      Icon(
-                        CupertinoIcons.chevron_right,
-                        size: 16,
-                        color: isDark ? Colors.white24 : Colors.black26,
-                      ),
-                    ],
-                  ),
+                    // 우측 편집/상세 화살표
+                    Icon(
+                      CupertinoIcons.chevron_right,
+                      size: 14,
+                      color: isDark ? Colors.white24 : Colors.black26,
+                    ),
+                  ],
                 ),
               ),
             ),

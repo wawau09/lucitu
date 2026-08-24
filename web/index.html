@@ -56,12 +56,13 @@
 
 <body>
   <script>
-    function createMarkerHtml(name, rating, isSelected, clusterIndex, clusterTotal) {
+    function createMarkerHtml(name, rating, isSelected, clusterIndex, clusterTotal, clusterKey) {
       var bg = isSelected ? '#6C63FF' : '#ffffff';
       var textColor = isSelected ? '#ffffff' : '#1C1C1E';
       var iconColor = isSelected ? '#ffffff' : '#6C63FF';
       var borderColor = isSelected ? '#8A84FF' : '#6C63FF';
       var shadow = isSelected ? '0 4px 14px rgba(108,99,255,0.45)' : '0 3px 8px rgba(0,0,0,0.18)';
+      
       var ratingBadge = '';
       if (rating && rating > 0) {
         var numStr = Number(rating).toFixed(1);
@@ -70,41 +71,81 @@
         var sColor = isSelected ? '#FFE082' : '#FFA000';
         ratingBadge = '<div style="background:' + rBg + '; color:' + rColor + '; border-radius:6px; padding:1px 4px; font-size:9px; font-weight:700; display:flex; align-items:center; gap:2px; margin-left:4px;"><span style="color:' + sColor + ';">★</span>' + numStr + '</div>';
       }
-      var clusterBadge = '';
+
+      var clusterNav = '';
       if (clusterTotal && clusterTotal > 1) {
-        var cBg = isSelected ? 'rgba(255,255,255,0.3)' : 'rgba(255,152,0,0.18)';
+        var cBg = isSelected ? 'rgba(255,255,255,0.28)' : 'rgba(255,152,0,0.18)';
         var cColor = isSelected ? '#ffffff' : '#E65100';
-        clusterBadge = '<div style="background:' + cBg + '; color:' + cColor + '; border-radius:6px; padding:1px 4px; font-size:9px; font-weight:700; margin-left:4px;">' + (clusterIndex + 1) + '/' + clusterTotal + '</div>';
+        var curr = (clusterIndex !== undefined ? clusterIndex : 0) + 1;
+        
+        clusterNav = '<div style="background:' + cBg + '; color:' + cColor + '; border-radius:8px; padding:1px 3px; font-size:10px; font-weight:700; display:flex; align-items:center; gap:2px; margin-left:5px; user-select:none;">' +
+          '<span onclick="event.stopPropagation(); window.navigateCluster(\'' + clusterKey + '\', -1);" style="cursor:pointer; padding:1px 4px; font-size:13px; font-weight:bold; line-height:1; border-radius:4px;" title="이전">‹</span>' +
+          '<span style="font-size:9.5px; padding:0 1px;">' + curr + '/' + clusterTotal + '</span>' +
+          '<span onclick="event.stopPropagation(); window.navigateCluster(\'' + clusterKey + '\', 1);" style="cursor:pointer; padding:1px 4px; font-size:13px; font-weight:bold; line-height:1; border-radius:4px;" title="다음">›</span>' +
+        '</div>';
       }
+
       return '<div style="display:inline-flex; flex-direction:column; align-items:center; cursor:pointer; transform:translate(-50%, -100%); filter:drop-shadow(0 2px 4px rgba(0,0,0,0.15));">' +
         '<div style="background:' + bg + '; color:' + textColor + '; border:1.5px solid ' + borderColor + '; border-radius:12px; padding:5px 9px; font-family:Pretendard, -apple-system, sans-serif; font-size:11px; font-weight:600; box-shadow:' + shadow + '; display:flex; align-items:center; white-space:nowrap; gap:4px;">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + iconColor + '"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>' +
           '<span>' + (name || '') + '</span>' +
           ratingBadge +
-          clusterBadge +
+          clusterNav +
         '</div>' +
         '<div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:7px solid ' + borderColor + '; margin-top:-1px;"></div>' +
       '</div>';
     }
 
-    var webMarkersMap = {};
+    var webClustersMap = {};
     var currentWebMap = null;
+
+    window.navigateCluster = function(clusterKey, delta) {
+      var cluster = webClustersMap[clusterKey];
+      if (!cluster || !cluster.stores || cluster.stores.length <= 1) return;
+
+      cluster.currentIndex = (cluster.currentIndex + delta + cluster.stores.length) % cluster.stores.length;
+      var curStore = cluster.stores[cluster.currentIndex];
+
+      cluster.marker.setIcon({
+        content: createMarkerHtml(curStore.name, curStore.rating, true, cluster.currentIndex, cluster.stores.length, clusterKey),
+        anchor: new naver.maps.Point(0, 0)
+      });
+      cluster.marker.setZIndex(1000);
+
+      // Unselect other markers
+      Object.keys(webClustersMap).forEach(function(k) {
+        if (k !== clusterKey) {
+          var other = webClustersMap[k];
+          var oStore = other.stores[other.currentIndex];
+          other.marker.setIcon({
+            content: createMarkerHtml(oStore.name, oStore.rating, false, other.currentIndex, other.stores.length, k),
+            anchor: new naver.maps.Point(0, 0)
+          });
+          other.marker.setZIndex(1);
+        }
+      });
+
+      if (window.flutterOnSelectStore) {
+        window.flutterOnSelectStore(String(curStore.id));
+      }
+    };
 
     window.selectWebMarker = function(storeId) {
       var targetLoc = null;
-      Object.keys(webMarkersMap).forEach(function(id) {
-        var item = webMarkersMap[id];
-        if (item && item.marker) {
-          var isSel = (storeId && id === String(storeId));
-          item.marker.setIcon({
-            content: createMarkerHtml(item.name, item.rating, isSel, item.clusterIndex, item.clusterTotal),
-            anchor: new naver.maps.Point(0, 0)
-          });
-          item.marker.setZIndex(isSel ? 1000 : (item.clusterIndex ? 1 + item.clusterIndex : 1));
-          if (isSel) {
-            targetLoc = item.loc;
-          }
+      Object.keys(webClustersMap).forEach(function(k) {
+        var cluster = webClustersMap[k];
+        var foundIdx = cluster.stores.findIndex(function(s) { return String(s.id) === String(storeId); });
+        var isSel = (storeId && foundIdx >= 0);
+        if (isSel) {
+          cluster.currentIndex = foundIdx;
+          targetLoc = cluster.loc;
         }
+        var curStore = cluster.stores[cluster.currentIndex];
+        cluster.marker.setIcon({
+          content: createMarkerHtml(curStore.name, curStore.rating, isSel, cluster.currentIndex, cluster.stores.length, k),
+          anchor: new naver.maps.Point(0, 0)
+        });
+        cluster.marker.setZIndex(isSel ? 1000 : 1);
       });
       if (targetLoc && currentWebMap) {
         currentWebMap.panTo(targetLoc);
@@ -138,16 +179,16 @@
         position: new naver.maps.LatLng(lat, lng),
         map: map,
         icon: {
-          content: createMarkerHtml(name || '', 0, true, 0, 1),
+          content: createMarkerHtml(name || '', 0, true, 0, 1, 'single'),
           anchor: new naver.maps.Point(0, 0)
         }
       });
     }
 
-    function initNaverMapMulti(element, stores, selectedId) {
-      if (!stores || stores.length === 0) return;
-      webMarkersMap = {};
-      var first = stores[0];
+    function initNaverMapClusters(element, clusters, selectedId) {
+      if (!clusters || clusters.length === 0) return;
+      webClustersMap = {};
+      var first = clusters[0];
       var mapOptions = {
         center: new naver.maps.LatLng(first.lat, first.lng),
         zoom: 13,
@@ -172,32 +213,38 @@
       element.addEventListener('wheel', stopScrollEvent, { passive: true });
 
       var bounds = new naver.maps.LatLngBounds();
-      stores.forEach(function(s) {
-        if (s.lat && s.lng) {
-          var loc = new naver.maps.LatLng(s.lat, s.lng);
+      clusters.forEach(function(c) {
+        if (c.lat && c.lng && c.stores && c.stores.length > 0) {
+          var loc = new naver.maps.LatLng(c.lat, c.lng);
           bounds.extend(loc);
-          var isSel = (selectedId && String(s.id) === String(selectedId));
+          
+          var foundIdx = c.stores.findIndex(function(s) { return String(s.id) === String(selectedId); });
+          var activeIdx = (foundIdx >= 0) ? foundIdx : 0;
+          var isSel = (selectedId && foundIdx >= 0);
+          var activeStore = c.stores[activeIdx];
+
           var marker = new naver.maps.Marker({
             position: loc,
             map: map,
-            title: s.name || '',
-            zIndex: isSel ? 1000 : (s.clusterIndex ? 1 + s.clusterIndex : 1),
+            title: activeStore.name || '',
+            zIndex: isSel ? 1000 : 1,
             icon: {
-              content: createMarkerHtml(s.name || '', s.rating, isSel, s.clusterIndex, s.clusterTotal),
+              content: createMarkerHtml(activeStore.name || '', activeStore.rating, isSel, activeIdx, c.stores.length, c.key),
               anchor: new naver.maps.Point(0, 0)
             }
           });
 
-          webMarkersMap[String(s.id)] = {
+          webClustersMap[c.key] = {
             marker: marker,
-            name: s.name || '',
-            rating: s.rating,
-            clusterIndex: s.clusterIndex,
-            clusterTotal: s.clusterTotal,
-            loc: loc
+            key: c.key,
+            loc: loc,
+            stores: c.stores,
+            currentIndex: activeIdx
           };
 
           naver.maps.Event.addListener(marker, 'click', function() {
+            var cl = webClustersMap[c.key];
+            var s = cl.stores[cl.currentIndex];
             window.selectWebMarker(String(s.id));
             if (window.flutterOnSelectStore) {
               window.flutterOnSelectStore(String(s.id));
@@ -205,7 +252,7 @@
           });
         }
       });
-      if (stores.length > 1) {
+      if (clusters.length > 1) {
         map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
       }
     }
