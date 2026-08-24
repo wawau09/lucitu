@@ -37,6 +37,7 @@ class Map extends State<MapPage> {
             tilt: 0,
           ),
         ),
+        forceGesture: true,
         onMapReady: (controller) async {
           // 지도 준비 완료 시 호출되는 콜백 함수
           mapControllerCompleter.complete(

@@ -60,7 +60,7 @@
 
 <body>
   <script>
-    function createMarkerHtml(name, rating, isSelected) {
+    function createMarkerHtml(name, rating, isSelected, clusterIndex, clusterTotal) {
       var bg = isSelected ? '#6C63FF' : '#ffffff';
       var textColor = isSelected ? '#ffffff' : '#1C1C1E';
       var iconColor = isSelected ? '#ffffff' : '#6C63FF';
@@ -74,11 +74,18 @@
         var sColor = isSelected ? '#FFE082' : '#FFA000';
         ratingBadge = '<div style="background:' + rBg + '; color:' + rColor + '; border-radius:6px; padding:1px 4px; font-size:9px; font-weight:700; display:flex; align-items:center; gap:2px; margin-left:4px;"><span style="color:' + sColor + ';">★</span>' + numStr + '</div>';
       }
+      var clusterBadge = '';
+      if (clusterTotal && clusterTotal > 1) {
+        var cBg = isSelected ? 'rgba(255,255,255,0.3)' : 'rgba(255,152,0,0.18)';
+        var cColor = isSelected ? '#ffffff' : '#E65100';
+        clusterBadge = '<div style="background:' + cBg + '; color:' + cColor + '; border-radius:6px; padding:1px 4px; font-size:9px; font-weight:700; margin-left:4px;">' + (clusterIndex + 1) + '/' + clusterTotal + '</div>';
+      }
       return '<div style="display:inline-flex; flex-direction:column; align-items:center; cursor:pointer; transform:translate(-50%, -100%); filter:drop-shadow(0 2px 4px rgba(0,0,0,0.15));">' +
         '<div style="background:' + bg + '; color:' + textColor + '; border:1.5px solid ' + borderColor + '; border-radius:12px; padding:5px 9px; font-family:Pretendard, -apple-system, sans-serif; font-size:11px; font-weight:600; box-shadow:' + shadow + '; display:flex; align-items:center; white-space:nowrap; gap:4px;">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + iconColor + '"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>' +
           '<span>' + (name || '') + '</span>' +
           ratingBadge +
+          clusterBadge +
         '</div>' +
         '<div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:7px solid ' + borderColor + '; margin-top:-1px;"></div>' +
       '</div>';
@@ -94,10 +101,10 @@
         if (item && item.marker) {
           var isSel = (storeId && id === String(storeId));
           item.marker.setIcon({
-            content: createMarkerHtml(item.name, item.rating, isSel),
+            content: createMarkerHtml(item.name, item.rating, isSel, item.clusterIndex, item.clusterTotal),
             anchor: new naver.maps.Point(0, 0)
           });
-          item.marker.setZIndex(isSel ? 1000 : 1);
+          item.marker.setZIndex(isSel ? 1000 : (item.clusterIndex ? 1 + item.clusterIndex : 1));
           if (isSel) {
             targetLoc = item.loc;
           }
@@ -112,25 +119,30 @@
       var mapOptions = {
         center: new naver.maps.LatLng(lat, lng),
         zoom: 15,
+        draggable: true,
+        pinchZoom: true,
+        scrollWheel: true,
+        keyboardShortcuts: false,
+        disableDoubleTapZoom: false,
+        disableDoubleClickZoom: false,
+        disableTwoFingerTapZoom: false,
         mapDataControl: false,
         scaleControl: false,
       };
       var map = new naver.maps.Map(element, mapOptions);
 
-      // Prevent event propagation on scroll/touch to stop parent page scroll in Flutter Web
+      element.style.touchAction = 'none';
+
       var stopScrollEvent = function(e) {
         e.stopPropagation();
       };
       element.addEventListener('wheel', stopScrollEvent, { passive: true });
-      element.addEventListener('touchstart', stopScrollEvent, { passive: true });
-      element.addEventListener('touchmove', stopScrollEvent, { passive: true });
-      element.addEventListener('touchend', stopScrollEvent, { passive: true });
 
       var marker = new naver.maps.Marker({
         position: new naver.maps.LatLng(lat, lng),
         map: map,
         icon: {
-          content: createMarkerHtml(name || '', 0, true),
+          content: createMarkerHtml(name || '', 0, true, 0, 1),
           anchor: new naver.maps.Point(0, 0)
         }
       });
@@ -143,19 +155,25 @@
       var mapOptions = {
         center: new naver.maps.LatLng(first.lat, first.lng),
         zoom: 13,
+        draggable: true,
+        pinchZoom: true,
+        scrollWheel: true,
+        keyboardShortcuts: false,
+        disableDoubleTapZoom: false,
+        disableDoubleClickZoom: false,
+        disableTwoFingerTapZoom: false,
         mapDataControl: false,
         scaleControl: false,
       };
       var map = new naver.maps.Map(element, mapOptions);
       currentWebMap = map;
 
+      element.style.touchAction = 'none';
+
       var stopScrollEvent = function(e) {
         e.stopPropagation();
       };
       element.addEventListener('wheel', stopScrollEvent, { passive: true });
-      element.addEventListener('touchstart', stopScrollEvent, { passive: true });
-      element.addEventListener('touchmove', stopScrollEvent, { passive: true });
-      element.addEventListener('touchend', stopScrollEvent, { passive: true });
 
       var bounds = new naver.maps.LatLngBounds();
       stores.forEach(function(s) {
@@ -167,9 +185,9 @@
             position: loc,
             map: map,
             title: s.name || '',
-            zIndex: isSel ? 1000 : 1,
+            zIndex: isSel ? 1000 : (s.clusterIndex ? 1 + s.clusterIndex : 1),
             icon: {
-              content: createMarkerHtml(s.name || '', s.rating, isSel),
+              content: createMarkerHtml(s.name || '', s.rating, isSel, s.clusterIndex, s.clusterTotal),
               anchor: new naver.maps.Point(0, 0)
             }
           });
@@ -178,6 +196,8 @@
             marker: marker,
             name: s.name || '',
             rating: s.rating,
+            clusterIndex: s.clusterIndex,
+            clusterTotal: s.clusterTotal,
             loc: loc
           };
 

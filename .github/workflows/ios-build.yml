@@ -1,83 +1,83 @@
-name: iOS Test Build
+# name: iOS Test Build
 
-on:
-  push:
-    branches: [ main ] 
-  workflow_dispatch:
+# on:
+#   push:
+#     branches: [ main ] 
+#   workflow_dispatch:
 
-permissions:
-  contents: write
+# permissions:
+#   contents: write
 
-jobs:
-  build:
-    runs-on: macos-15
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
+# jobs:
+#   build:
+#     runs-on: macos-15
+#     timeout-minutes: 30
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           lfs: true
 
-      - name: Git LFS Pull
-        run: git lfs pull
+#       - name: Git LFS Pull
+#         run: git lfs pull
 
-      - name: Set up Latest Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: 'latest-stable'
+#       - name: Set up Latest Xcode
+#         uses: maxim-lobanov/setup-xcode@v1
+#         with:
+#           xcode-version: 'latest-stable'
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
+#       - name: Set up Flutter
+#         uses: subosito/flutter-action@v2
+#         with:
+#           channel: 'stable'
+#           cache: true
 
-      - name: Disable Swift Package Manager
-        run: flutter config --no-enable-swift-package-manager
+#       - name: Disable Swift Package Manager
+#         run: flutter config --no-enable-swift-package-manager
 
-      - name: Diagnose iOS Config
-        run: |
-          echo "=== Info.plist Naver Map Keys ==="
-          /usr/libexec/PlistBuddy -c "Print :NMFClientId" ios/Runner/Info.plist 2>/dev/null || echo "NMFClientId: NOT SET"
-          /usr/libexec/PlistBuddy -c "Print :NMFNcpKeyId" ios/Runner/Info.plist 2>/dev/null || echo "NMFNcpKeyId: NOT SET"
-          echo ""
-          echo "=== Bundle Identifier (from pbxproj) ==="
-          grep "PRODUCT_BUNDLE_IDENTIFIER" ios/Runner.xcodeproj/project.pbxproj | head -3
-          echo ""
-          echo "=== Podfile iOS Version ==="
-          head -2 ios/Podfile
-          echo ""
-          echo "=== Flutter Doctor ==="
-          flutter doctor -v
+#       - name: Diagnose iOS Config
+#         run: |
+#           echo "=== Info.plist Naver Map Keys ==="
+#           /usr/libexec/PlistBuddy -c "Print :NMFClientId" ios/Runner/Info.plist 2>/dev/null || echo "NMFClientId: NOT SET"
+#           /usr/libexec/PlistBuddy -c "Print :NMFNcpKeyId" ios/Runner/Info.plist 2>/dev/null || echo "NMFNcpKeyId: NOT SET"
+#           echo ""
+#           echo "=== Bundle Identifier (from pbxproj) ==="
+#           grep "PRODUCT_BUNDLE_IDENTIFIER" ios/Runner.xcodeproj/project.pbxproj | head -3
+#           echo ""
+#           echo "=== Podfile iOS Version ==="
+#           head -2 ios/Podfile
+#           echo ""
+#           echo "=== Flutter Doctor ==="
+#           flutter doctor -v
 
-      - name: Fetch dependencies
-        run: |
-          flutter clean
-          flutter pub get
+#       - name: Fetch dependencies
+#         run: |
+#           flutter clean
+#           flutter pub get
 
-      - name: Install CocoaPods
-        run: |
-          cd ios
-          pod install || pod update
-          echo ""
-          echo "=== Installed Pods (from Podfile.lock) ==="
-          grep -i naver Podfile.lock || echo "Naver pods not found in lockfile"
+#       - name: Install CocoaPods
+#         run: |
+#           cd ios
+#           pod install || pod update
+#           echo ""
+#           echo "=== Installed Pods (from Podfile.lock) ==="
+#           grep -i naver Podfile.lock || echo "Naver pods not found in lockfile"
 
-      - name: Build iOS (No Sign)
-        run: |
-          flutter build ios --no-codesign --release \
-            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
-            --dart-define=SUPABASE_STORAGE_BUCKET=image \
-            --dart-define=NAVER_MAP_CLIENT_ID=${{ secrets.NAVER_MAP_CLIENT_ID }}
+#       - name: Build iOS (No Sign)
+#         run: |
+#           flutter build ios --no-codesign --release \
+#             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+#             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+#             --dart-define=SUPABASE_STORAGE_BUCKET=image \
+#             --dart-define=NAVER_MAP_CLIENT_ID=${{ secrets.NAVER_MAP_CLIENT_ID }}
 
-      - name: Build IPA
-        run: |
-          mkdir -p Payload
-          mv build/ios/iphoneos/Runner.app Payload/
-          zip -r Runner.ipa Payload
+#       - name: Build IPA
+#         run: |
+#           mkdir -p Payload
+#           mv build/ios/iphoneos/Runner.app Payload/
+#           zip -r Runner.ipa Payload
 
-      - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-app
-          path: Runner.ipa
+#       - name: Upload IPA Artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: ios-app
+#           path: Runner.ipa
