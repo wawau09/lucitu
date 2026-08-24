@@ -409,210 +409,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         // 1. 전체 화면 배경 지도
         Positioned.fill(child: mapWidget),
 
-        // 2. 모바일 친화적 DraggableScrollableSheet (1단계: 요약 카드, 2단계: 전체 목록)
-        _buildMapDraggableSheet(stores, mapStoreItems, isDark),
+        // 2. 선택된 카페가 있을 때 지도 화면 내에 노출되는 플로팅 카드 (< > 화살표 포함)
+        if (_selectedMapStore != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 90,
+            child: _buildMapStoreFloatingCard(_selectedMapStore!, mapStoreItems, isDark),
+          ),
       ],
     );
   }
 
-  Widget _buildMapDraggableSheet(
-    List<Store> stores,
-    List<MapStoreItem> mapStoreItems,
-    bool isDark,
-  ) {
-    final activeStore = _selectedMapStore ?? (stores.isNotEmpty ? stores.first : null);
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.28,
-      minChildSize: 0.12,
-      maxChildSize: 0.88,
-      snap: true,
-      snapSizes: const [0.12, 0.28, 0.88],
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, -6),
-              ),
-            ],
-            border: Border(
-              top: BorderSide(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                width: 1,
-              ),
-            ),
-          ),
-          child: CustomScrollView(
-            controller: scrollController,
-            slivers: [
-              SliverToBoxAdapter(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 드래그 핸들 (Pill Handle)
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 10, bottom: 8),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white24 : Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-
-                    // 헤더 바 (주변 카페 수 & 전체보기)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.coffee_rounded,
-                                size: 18,
-                                color: isDark ? AppColors.accentLight : AppColors.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _selectedMapStore != null ? '선택된 카페' : '주변 카페',
-                                style: GoogleFonts.notoSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? const Color(0xFF2C2C2E)
-                                      : AppColors.primaryContainer,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  '${stores.length}곳',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white70 : AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_selectedMapStore != null)
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedMapStore = null;
-                                });
-                                if (kIsWeb) {
-                                  selectWebMapMarker('');
-                                } else if (_mapController != null) {
-                                  _renderMapMarkers(_mapController!, mapStoreItems, isDark);
-                                }
-                              },
-                              child: Text(
-                                '전체 보기',
-                                style: GoogleFonts.notoSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? AppColors.accentLight : AppColors.primary,
-                                ),
-                              ),
-                            )
-                          else
-                            Text(
-                              '위로 당겨서 목록 보기 ↑',
-                              style: GoogleFonts.notoSans(
-                                fontSize: 11,
-                                color: isDark ? Colors.white38 : Colors.grey[500],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
-                    // 1단계 요약 프리뷰 카드
-                    if (activeStore != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                        child: _buildSheetActiveStoreCard(
-                          activeStore,
-                          mapStoreItems,
-                          isDark,
-                        ),
-                      ),
-
-                    Divider(
-                      height: 1,
-                      color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                    ),
-
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '카페 목록 (${stores.length})',
-                            style: GoogleFonts.notoSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white54 : Colors.grey[700],
-                            ),
-                          ),
-                          Text(
-                            '터치 시 지도로 이동',
-                            style: GoogleFonts.notoSans(
-                              fontSize: 11,
-                              color: isDark ? Colors.white30 : Colors.grey[400],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 2단계 스크롤 시 전체 카페 목록
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final store = stores[index];
-                    final isSelected = _selectedMapStore?.id == store.id;
-                    return _buildSheetStoreListItem(
-                      store,
-                      isSelected,
-                      mapStoreItems,
-                      isDark,
-                    );
-                  },
-                  childCount: stores.length,
-                ),
-              ),
-
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 90),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSheetActiveStoreCard(
+  Widget _buildMapStoreFloatingCard(
     Store store,
     List<MapStoreItem> mapStoreItems,
     bool isDark,
@@ -625,10 +434,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         break;
       }
     }
-    final isCluster = currentItem != null && currentItem.clusterTotal > 1;
 
     final clusterStores = currentItem?.clusterStores ?? [store];
     final totalCount = currentItem?.clusterTotal ?? 1;
+    final isCluster = totalCount > 1;
     final currentIndex = clusterStores.indexWhere((s) => s.id == store.id);
     final validIndex = currentIndex >= 0 ? currentIndex : 0;
 
@@ -661,28 +470,34 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       }
     }
 
-    final cardContent = Container(
-      padding: const EdgeInsets.all(10),
+    final card = Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF242426) : const Color(0xFFF7F7F8),
-        borderRadius: BorderRadius.circular(14),
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
           width: 1,
         ),
       ),
+      padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (isCluster)
             Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF9800).withValues(alpha: isDark ? 0.25 : 0.15),
                       borderRadius: BorderRadius.circular(6),
@@ -690,7 +505,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     child: Text(
                       '📍 같은 위치 (${validIndex + 1} / $totalCount)',
                       style: const TextStyle(
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFFFF9800),
                       ),
@@ -699,133 +514,139 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   Text(
                     '좌우 화살표로 넘겨보기',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       color: isDark ? Colors.white38 : Colors.grey[500],
                     ),
                   ),
                 ],
               ),
             ),
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StoreDetailPage(store: store),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(10),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: imageUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                            ),
-                            errorWidget: (_, __, ___) => Container(
-                              color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                              child: const Icon(Icons.coffee, size: 22, color: Colors.grey),
-                            ),
-                          )
-                        : Container(
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: imageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
+                          ),
+                          errorWidget: (_, __, ___) => Container(
                             color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
                             child: const Icon(Icons.coffee, size: 22, color: Colors.grey),
                           ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        store.name,
-                        style: GoogleFonts.notoSans(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                        )
+                      : Container(
+                          color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
+                          child: const Icon(Icons.coffee, size: 22, color: Colors.grey),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                          const SizedBox(width: 2),
-                          Text(
-                            (store.rating ?? 0.0).toStringAsFixed(1),
-                            style: GoogleFonts.notoSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white70 : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              [
-                                if (store.region != null && store.region!.isNotEmpty) store.region!,
-                                ...store.categoryTags.take(1),
-                              ].join(' · '),
-                              style: GoogleFonts.notoSans(
-                                fontSize: 11,
-                                color: isDark ? Colors.white38 : Colors.grey[600],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StoreDetailPage(store: store),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      store.name,
+                      style: GoogleFonts.notoSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: isDark ? Colors.white : AppColors.textPrimaryLight,
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? AppColors.accentLight : AppColors.primary,
-                    foregroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  child: const Text('상세보기', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                        const SizedBox(width: 2),
+                        Text(
+                          (store.rating ?? 0.0).toStringAsFixed(1),
+                          style: GoogleFonts.notoSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white70 : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            [
+                              if (store.region != null && store.region!.isNotEmpty) store.region!,
+                              ...store.categoryTags.take(1),
+                            ].join(' · '),
+                            style: GoogleFonts.notoSans(
+                              fontSize: 11,
+                              color: isDark ? Colors.white38 : Colors.grey[600],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => StoreDetailPage(store: store),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? AppColors.accentLight : AppColors.primary,
+                  foregroundColor: isDark ? AppColors.backgroundDark : Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text('상세보기', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                color: isDark ? Colors.white54 : Colors.grey[500],
+                onPressed: () {
+                  setState(() {
+                    _selectedMapStore = null;
+                  });
+                  if (kIsWeb) {
+                    selectWebMapMarker('');
+                  } else if (_mapController != null) {
+                    _renderMapMarkers(_mapController!, mapStoreItems, isDark);
+                  }
+                },
+              ),
+            ],
           ),
         ],
       ),
     );
 
     if (!isCluster) {
-      return cardContent;
+      return card;
     }
 
     return Row(
       children: [
-        // Left arrow button (<)
+        // Left arrow (<)
         Material(
           color: Colors.transparent,
           child: InkWell(
@@ -833,36 +654,36 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               final prevIdx = (validIndex - 1 + totalCount) % totalCount;
               selectClusterStore(prevIdx);
             },
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(22),
             child: Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                color: isDark ? AppColors.surfaceDark : Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isDark ? AppColors.borderDark : AppColors.borderLight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
-                    blurRadius: 4,
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                    blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: Icon(
                 Icons.chevron_left_rounded,
-                size: 22,
+                size: 24,
                 color: isDark ? AppColors.accentLight : AppColors.primary,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 6),
-        Expanded(child: cardContent),
-        const SizedBox(width: 6),
-        // Right arrow button (>)
+        const SizedBox(width: 8),
+        Expanded(child: card),
+        const SizedBox(width: 8),
+        // Right arrow (>)
         Material(
           color: Colors.transparent,
           child: InkWell(
@@ -870,163 +691,33 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               final nextIdx = (validIndex + 1) % totalCount;
               selectClusterStore(nextIdx);
             },
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(22),
             child: Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                color: isDark ? AppColors.surfaceDark : Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isDark ? AppColors.borderDark : AppColors.borderLight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
-                    blurRadius: 4,
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                    blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: Icon(
                 Icons.chevron_right_rounded,
-                size: 22,
+                size: 24,
                 color: isDark ? AppColors.accentLight : AppColors.primary,
               ),
             ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSheetStoreListItem(
-    Store store,
-    bool isSelected,
-    List<MapStoreItem> mapStoreItems,
-    bool isDark,
-  ) {
-    final imageUrl = _getMainImageUrl(store);
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedMapStore = store;
-        });
-        if (kIsWeb) {
-          selectWebMapMarker(store.id ?? '');
-        } else if (_mapController != null) {
-          final targetItem = mapStoreItems.firstWhere(
-            (it) => it.store.id == store.id,
-            orElse: () => mapStoreItems.first,
-          );
-          _mapController!.updateCamera(
-            NCameraUpdate.scrollAndZoomTo(
-              target: NLatLng(targetItem.displayLat, targetItem.displayLng),
-              zoom: 15.5,
-            ),
-          );
-          _renderMapMarkers(_mapController!, mapStoreItems, isDark);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.primaryContainer.withValues(alpha: 0.4))
-              : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 52,
-                height: 52,
-                child: imageUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(
-                          color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                        ),
-                        errorWidget: (_, __, ___) => Container(
-                          color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                          child: const Icon(Icons.coffee, size: 18, color: Colors.grey),
-                        ),
-                      )
-                    : Container(
-                        color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                        child: const Icon(Icons.coffee, size: 18, color: Colors.grey),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    store.name,
-                    style: GoogleFonts.notoSans(
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
-                      const SizedBox(width: 2),
-                      Text(
-                        (store.rating ?? 0.0).toStringAsFixed(1),
-                        style: GoogleFonts.notoSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white70 : Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          [
-                            if (store.region != null && store.region!.isNotEmpty) store.region!,
-                            ...store.categoryTags.take(2),
-                          ].join(' · '),
-                          style: GoogleFonts.notoSans(
-                            fontSize: 11,
-                            color: isDark ? Colors.white38 : Colors.grey[600],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: isDark ? Colors.white30 : Colors.grey.shade400,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StoreDetailPage(store: store),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
     );
   }
 
