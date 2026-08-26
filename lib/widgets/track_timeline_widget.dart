@@ -262,15 +262,21 @@ class _TrackPainter extends CustomPainter {
         Paint()..color = Colors.white.withOpacity(isDark ? 0.6 : 0.8),
       );
 
-      // Time label above dot
+      // Time label above dot (start time ~ end time)
+      final timeText = (event.endTime != null &&
+              event.endTime!.isNotEmpty &&
+              event.endTime != event.startTime)
+          ? '${_formatTo12Hour(event.startTime)}~${_formatTo12Hour(event.endTime!)}'
+          : _formatTo12Hour(event.startTime);
+
       _paintText(
         canvas,
-        text: _formatTo12Hour(event.startTime),
+        text: timeText,
         position: Offset(pos.dx, pos.dy - dotRadius - 6),
-        fontSize: 10.5,
+        fontSize: 9.5,
         fontWeight: FontWeight.w700,
         color: _timeTextColor,
-        maxWidth: 80,
+        maxWidth: 100,
         anchorBottom: true,
       );
 

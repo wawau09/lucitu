@@ -2095,13 +2095,19 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             if (region != null && region.isNotEmpty) '#$region',
           ];
 
+    final timeStr = (event.endTime != null &&
+            event.endTime!.isNotEmpty &&
+            event.endTime != event.startTime)
+        ? '${event.startTime} ~ ${event.endTime}'
+        : event.startTime;
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. 왼쪽 세로 라인 + 번호 마커 + 시간 (상단 높이 12로 카드 내부 텍스트 상단과 완벽 정렬)
+          // 1. 왼쪽 세로 라인 + 번호 마커 (상단 높이 12로 카드 내부 텍스트 상단과 완벽 정렬)
           SizedBox(
-            width: 48,
+            width: 36,
             child: Column(
               children: [
                 // 상단 세로 라인 (카드 상단 패딩 12px와 정확히 일치하여 번호와 일정명 상단 위치 일치)
@@ -2136,27 +2142,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     ),
                   ),
                 ),
-                if (event.startTime.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      (event.endTime != null &&
-                              event.endTime!.isNotEmpty &&
-                              event.endTime != event.startTime)
-                          ? '${event.startTime}\n~${event.endTime}'
-                          : event.startTime,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.outfit(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w600,
-                        height: 1.15,
-                        color: isDark ? Colors.white54 : Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 2),
                 // 하단 세로 라인
                 Expanded(
                   child: Container(
@@ -2207,7 +2192,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                         const SizedBox(width: 12),
                       ],
 
-                      // 일정명 & 비용 & 태그
+                      // 일정명 & 시간/가격 & 태그
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2224,16 +2209,49 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            // 비용 발생하는 경우에만 밑에 비용 표시
-                            if (event.cost > 0) ...[
+                            // 일정명 밑 시간 및 오른쪽 가격 배치
+                            if (timeStr.isNotEmpty || event.cost > 0) ...[
                               const SizedBox(height: 4),
-                              Text(
-                                _formatKRW(event.cost),
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? AppColors.accentLight : const Color(0xFF007AFF),
-                                ),
+                              Row(
+                                children: [
+                                  if (timeStr.isNotEmpty) ...[
+                                    Icon(
+                                      Icons.access_time_rounded,
+                                      size: 12,
+                                      color: isDark ? AppColors.accentLight : AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      timeStr,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? AppColors.accentLight : AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                  if (event.cost > 0) ...[
+                                    if (timeStr.isNotEmpty) ...[
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '·',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white38 : Colors.black26,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    Text(
+                                      _formatKRW(event.cost),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF007AFF),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                             if (tags.isNotEmpty) ...[
