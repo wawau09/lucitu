@@ -42,9 +42,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
   bool? _isDarkOverride;
 
-  // Filter and Search states
-  String _searchQuery = '';
-
   // Text controller for adding checklist items
   final TextEditingController _checklistInputController = TextEditingController();
 
@@ -1379,12 +1376,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   Widget build(BuildContext context) {
     final isDark = _isDarkOverride ?? (Theme.of(context).brightness == Brightness.dark);
     final cardBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-
-    // Apply filters to timeline events
-    final filteredEvents = _events.where((e) {
-      final matchesSearch = _searchQuery.isEmpty || e.title.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesSearch;
-    }).toList();
+    final events = _events;
 
     return Scaffold(
       body: _isLoading
@@ -1418,36 +1410,32 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                               _buildTripOverviewCard(isDark),
                               const SizedBox(height: 16),
 
-                              // 4. Expense Tracker with custom doughnut chart
-                              _buildExpenseWidget(cardBg, isDark),
-                              const SizedBox(height: 16),
-
-                              // 5. Timeline header filters
+                              // 3. Timeline header filters
                               _buildTimelineFilterWidget(isDark),
                               const SizedBox(height: 12),
 
                               // Race-track visual timeline & Detailed Timeline Cards
-                              filteredEvents.isEmpty
+                              events.isEmpty
                                   ? _buildEmptyTimelineState(cardBg, isDark)
                                   : Column(
                                       crossAxisAlignment: CrossAxisAlignment.stretch,
                                       children: [
                                         TrackTimelineWidget(
-                                          events: filteredEvents,
+                                          events: events,
                                           isDark: isDark,
                                           onEventTap: (event) =>
                                               _showEventBottomSheet(existingEvent: event),
                                         ),
                                         const SizedBox(height: 16),
                                         // 상세 타임라인 카드 목록
-                                        ...filteredEvents.asMap().entries.map((entry) {
+                                        ...events.asMap().entries.map((entry) {
                                           final index = entry.key;
                                           final event = entry.value;
                                           return _buildTimelineEventCard(
                                             event: event,
                                             index: index + 1,
                                             isFirst: index == 0,
-                                            isLast: index == filteredEvents.length - 1,
+                                            isLast: index == events.length - 1,
                                             isDark: isDark,
                                             onTap: () =>
                                                 _showEventBottomSheet(existingEvent: event),
@@ -1457,11 +1445,15 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                     ),
                               const SizedBox(height: 16),
 
-                              // 6. Packing Checklist Widget
+                              // 4. Expense Tracker with custom doughnut chart
+                              _buildExpenseWidget(cardBg, isDark),
+                              const SizedBox(height: 16),
+
+                              // 5. Packing Checklist Widget
                               _buildChecklistWidget(cardBg, isDark),
                               const SizedBox(height: 16),
 
-                              // 3. Participants Widget
+                              // 6. Participants Widget
                               _buildParticipantsWidget(cardBg, isDark),
                               const SizedBox(height: 48), // Padding space at bottom
                             ],
@@ -1859,7 +1851,9 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       const Color(0xFF8E8E93), // Gray
     ];
 
-    final chartItems = _events
+    final expenseEvents = _events.where((e) => e.cost > 0).toList();
+
+    final chartItems = expenseEvents
         .asMap()
         .entries
         .map((e) => (e.value.cost, eventColors[e.key % eventColors.length]))
@@ -1881,58 +1875,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '지출 리포트',
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              Flexible(
-                child: InkWell(
-                  onTap: _showEditTargetBudgetDialog,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark ? Colors.white24 : Colors.grey.shade300,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          CupertinoIcons.pencil,
-                          size: 12,
-                          color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF007AFF),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              '목표 예산: ${_formatKRW(budget)}',
-                              style: GoogleFonts.notoSansKr(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF007AFF),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            '지출 리포트',
+            style: GoogleFonts.notoSansKr(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
           ),
           const SizedBox(height: 20),
           Row(
@@ -1940,11 +1889,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
             children: [
               // Left: Plan Event legend breakdown
               Expanded(
-                child: _events.isEmpty
+                child: expenseEvents.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Text(
-                          '등록된 일정이 없습니다.',
+                          '지출이 등록된 일정이 없습니다.',
                           style: GoogleFonts.notoSansKr(
                             fontSize: 12,
                             color: isDark ? Colors.white38 : Colors.black38,
@@ -1953,7 +1902,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       )
                     : Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: _events.asMap().entries.map((entry) {
+                        children: expenseEvents.asMap().entries.map((entry) {
                           final index = entry.key;
                           final event = entry.value;
                           final color = eventColors[index % eventColors.length];
@@ -2100,46 +2049,15 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
   }
 
-  /// 5. Timeline Search
+  /// 5. Timeline Header
   Widget _buildTimelineFilterWidget(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Text(
-              '타임라인 일정',
-              style: GoogleFonts.notoSansKr(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Search bar
-        CupertinoSearchTextField(
-          placeholder: '일정 제목 검색',
-          placeholderStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
-          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-                blurRadius: 6,
-              ),
-            ],
-          ),
-          onChanged: (val) {
-            setState(() {
-              _searchQuery = val;
-            });
-          },
-        ),
-      ],
+    return Text(
+      '타임라인 일정',
+      style: GoogleFonts.notoSansKr(
+        fontSize: 15,
+        fontWeight: FontWeight.bold,
+        color: isDark ? Colors.white : Colors.black87,
+      ),
     );
   }
 
@@ -2197,15 +2115,15 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. 왼쪽 세로 라인 + 번호/시간 마커
+          // 1. 왼쪽 세로 라인 + 번호 마커 (상단 높이 12로 카드 내부 텍스트 상단과 완벽 정렬)
           SizedBox(
-            width: 48,
+            width: 44,
             child: Column(
               children: [
-                // 상단 세로 라인
+                // 상단 세로 라인 (카드 상단 패딩 12px와 정확히 일치하여 번호와 일정명 상단 위치 일치)
                 Container(
                   width: 2,
-                  height: 14,
+                  height: 12,
                   color: isFirst ? Colors.transparent : (isDark ? Colors.white24 : const Color(0xFFD8D2CB)),
                 ),
                 // 번호 마커 원형 뱃지
@@ -2234,16 +2152,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                // 시간 텍스트 (마커 아래)
-                Text(
-                  event.startTime,
-                  style: GoogleFonts.notoSans(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white54 : Colors.grey[600],
-                  ),
-                ),
                 // 하단 세로 라인
                 Expanded(
                   child: Container(
@@ -2254,94 +2162,108 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
 
-          // 2. 오른쪽 타임라인 항목 (네모 박스, 테두리, 배경 제거)
+          // 2. 오른쪽 타임라인 개별 카드 (칸별 구분 Container + 테두리 + 그림자)
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: 12),
               child: GestureDetector(
                 onTap: onTap,
                 behavior: HitTestBehavior.opaque,
-                child: Row(
-                  children: [
-                    if (imageUrl != null) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          width: 52,
-                          height: 52,
-                          child: CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (imageUrl != null) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: SizedBox(
+                            width: 52,
+                            height: 52,
+                            child: CachedNetworkImage(
+                              imageUrl: imageUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(
+                                color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
+                              ),
+                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
                             ),
-                            errorWidget: (_, __, ___) => const SizedBox.shrink(),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
+                        const SizedBox(width: 12),
+                      ],
 
-                    // 카페명(Bold 15px) + 시간
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // 카페명 (Bold 15px)
-                          Text(
-                            event.title,
-                            style: GoogleFonts.notoSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          // 시간 정보
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.access_time_rounded,
-                                size: 12,
-                                color: isDark ? AppColors.accentLight : AppColors.primary,
+                      // 일정명 & 비용 & 태그
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 일정명 (Bold 15px)
+                            Text(
+                              event.title,
+                              style: GoogleFonts.notoSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                                height: 1.2,
                               ),
-                              const SizedBox(width: 4),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            // 비용 발생하는 경우에만 밑에 비용 표시
+                            if (event.cost > 0) ...[
+                              const SizedBox(height: 4),
                               Text(
-                                event.startTime + (event.endTime != null && event.endTime!.isNotEmpty ? ' ~ ${event.endTime}' : ''),
-                                style: GoogleFonts.notoSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? AppColors.accentLight : AppColors.primary,
+                                _formatKRW(event.cost),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppColors.accentLight : const Color(0xFF007AFF),
                                 ),
                               ),
                             ],
-                          ),
-                          if (tags.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              tags.join(' '),
-                              style: GoogleFonts.notoSans(
-                                fontSize: 11,
-                                color: isDark ? Colors.white38 : Colors.grey[500],
+                            if (tags.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                tags.join(' '),
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 11,
+                                  color: isDark ? Colors.white38 : Colors.grey[500],
+                                ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
 
-                    // 우측 편집/상세 화살표
-                    Icon(
-                      CupertinoIcons.chevron_right,
-                      size: 14,
-                      color: isDark ? Colors.white24 : Colors.black26,
-                    ),
-                  ],
+                      // 우측 편집/상세 화살표
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Icon(
+                          CupertinoIcons.chevron_right,
+                          size: 14,
+                          color: isDark ? Colors.white24 : Colors.black26,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
