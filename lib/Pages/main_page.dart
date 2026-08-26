@@ -12,13 +12,13 @@ import 'package:placelist/providers/category_provider.dart';
 import 'package:placelist/providers/favorites_provider.dart';
 import 'package:placelist/providers/navigation_provider.dart';
 import 'package:placelist/providers/stores_provider.dart';
-import 'package:placelist/widgets/category_section.dart';
 import 'package:placelist/widgets/map_marker.dart';
 import 'package:placelist/utils/map_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/widgets/shimmer_loading.dart';
 import 'package:placelist/widgets/error_retry_widget.dart';
 import 'package:placelist/utils/app_colors.dart';
+import 'package:placelist/utils/web_helper.dart';
 import 'package:placelist/Pages/map_stub.dart'
     if (dart.library.html) 'package:placelist/Pages/map_web.dart';
 
@@ -91,7 +91,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           children: [
             // 검색바 및 뷰 토글
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
               child: Row(
                 children: [
                   Expanded(
@@ -111,12 +111,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           prefixIcon: const Icon(
                             Icons.search,
                             color: Colors.grey,
-                            size: 20,
+                            size: 18,
                           ),
-                          prefixIconConstraints: const BoxConstraints(minWidth: 32),
+                          prefixIconConstraints: const BoxConstraints(minWidth: 28),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                                  icon: const Icon(Icons.clear, size: 16, color: Colors.grey),
+                                  visualDensity: VisualDensity.compact,
                                   onPressed: () {
                                     _debounceTimer?.cancel();
                                     _searchController.clear();
@@ -125,11 +126,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 )
                               : null,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
                           hintText: "카페 이름 검색 또는 #카테고리",
                           hintStyle: GoogleFonts.notoSans(
                             color: isDark ? Colors.white38 : Colors.grey,
-                            fontSize: 14,
+                            fontSize: 13,
                           ),
                           border: InputBorder.none,
                         ),
@@ -144,6 +145,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 20,
                       icon: Icon(
                         _isMapView ? Icons.format_list_bulleted : Icons.map_outlined,
                         color: isDark ? AppColors.accentLight : AppColors.primary,
@@ -162,12 +165,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             ),
 
             const SizedBox(height: 4),
-            const CategoryFilterSection(),
-            const SizedBox(height: 8),
 
             // 정렬 옵션 Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -417,7 +418,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           Positioned(
             left: 16,
             right: 16,
-            bottom: 90,
+            bottom: 98,
             child: _buildMapStoreFloatingCard(_selectedMapStore!, stores, mapStoreItems, isDark),
           ),
       ],
@@ -721,7 +722,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   Widget _buildCafeList(List<Store> stores, bool isDark) {
     return RefreshIndicator(
-      onRefresh: () => ref.read(storesProvider.notifier).fetchStores(),
+      onRefresh: () async {
+        if (kIsWeb) {
+          reloadWebPage();
+          await Future.delayed(const Duration(seconds: 2));
+        } else {
+          await ref.read(storesProvider.notifier).fetchStores();
+        }
+      },
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.only(bottom: 100),

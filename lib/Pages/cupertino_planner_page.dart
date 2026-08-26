@@ -678,22 +678,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     return colors[index].withOpacity(0.25);
   }
 
-  /// Category breakdown stats for Doughnut Chart
-  Map<String, int> _getCategoryBreakdown() {
-    final Map<String, int> breakdown = {
-      '관광': 0,
-      '식도락': 0,
-      '숙소': 0,
-      '교통': 0,
-      '기타': 0,
-    };
-    for (var e in _events) {
-      if (breakdown.containsKey(e.category)) {
-        breakdown[e.category] = (breakdown[e.category] ?? 0) + e.cost;
-      }
-    }
-    return breakdown;
-  }
 
   int _getTotalExpense() {
     return _events.fold(0, (sum, e) => sum + e.cost);
@@ -1495,7 +1479,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   /// 1. Navigation Header
   Widget _buildHeader(bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161618) : Colors.white,
         border: Border(
@@ -1513,7 +1497,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF2E2E32) : const Color(0xFFF2F2F7),
                     shape: BoxShape.circle,
@@ -1521,18 +1505,18 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                   child: Icon(
                     CupertinoIcons.chevron_back,
                     color: isDark ? Colors.white : Colors.black87,
-                    size: 16,
+                    size: 15,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     _planName,
                     style: GoogleFonts.notoSansKr(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
@@ -1858,18 +1842,28 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
   /// 4. Expense Tracker Widget & Custom Painted Doughnut Chart
   Widget _buildExpenseWidget(Color cardBg, bool isDark) {
-    final breakdown = _getCategoryBreakdown();
     final total = _getTotalExpense();
     final budget = _targetBudget;
     final progress = budget > 0 ? total / budget : 0.0;
 
-    final categoryColors = {
-      '관광': const Color(0xFF007AFF),
-      '식도락': const Color(0xFFFF9500),
-      '숙소': const Color(0xFFAF52DE),
-      '교통': const Color(0xFF34C759),
-      '기타': const Color(0xFF8E8E93),
-    };
+    final eventColors = [
+      const Color(0xFF5B9EEA), // Blue
+      const Color(0xFFEA6C6C), // Coral
+      const Color(0xFFFFB74D), // Amber
+      const Color(0xFF34C759), // Green
+      const Color(0xFFAF52DE), // Purple
+      const Color(0xFF00C7BE), // Teal
+      const Color(0xFFFF7043), // Orange
+      const Color(0xFF5E5CE6), // Indigo
+      const Color(0xFFFF6482), // Pink
+      const Color(0xFF8E8E93), // Gray
+    ];
+
+    final chartItems = _events
+        .asMap()
+        .entries
+        .map((e) => (e.value.cost, eventColors[e.key % eventColors.length]))
+        .toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -1942,15 +1936,88 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
           ),
           const SizedBox(height: 20),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Custom Doughnut Chart
+              // Left: Plan Event legend breakdown
+              Expanded(
+                child: _events.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          '등록된 일정이 없습니다.',
+                          style: GoogleFonts.notoSansKr(
+                            fontSize: 12,
+                            color: isDark ? Colors.white38 : Colors.black38,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: _events.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final event = entry.value;
+                          final color = eventColors[index % eventColors.length];
+                          final pct = total > 0 ? (event.cost / total) * 100 : 0.0;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    event.title,
+                                    style: GoogleFonts.notoSansKr(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? Colors.white70 : Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${pct.toStringAsFixed(0)}%',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    color: isDark ? Colors.white38 : Colors.black38,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    _formatKRW(event.cost),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white70 : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+              ),
+              const SizedBox(width: 16),
+              // Right: Custom Doughnut Chart
               Stack(
                 alignment: Alignment.center,
                 children: [
                   CustomPaint(
                     size: const Size(115, 115),
                     painter: DoughnutChartPainter(
-                      categoryCosts: breakdown,
+                      itemCosts: chartItems,
                       totalCost: total,
                       isDark: isDark,
                     ),
@@ -1959,20 +2026,20 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '총 지출',
+                        '총지출',
                         style: GoogleFonts.notoSansKr(
-                          fontSize: 10,
-                          color: isDark ? Colors.white38 : Colors.black38,
+                          fontSize: 11,
+                          color: isDark ? Colors.white60 : Colors.black54,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 2),
                       SizedBox(
-                        width: 72,
+                        width: 76,
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            _formatKRW(total),
+                            total == 0 ? '0' : _formatKRW(total),
                             style: GoogleFonts.outfit(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -1984,60 +2051,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     ],
                   ),
                 ],
-              ),
-              const SizedBox(width: 20),
-              // Category legend breakdown
-              Expanded(
-                child: Column(
-                  children: breakdown.entries.map((item) {
-                    final color = categoryColors[item.key] ?? Colors.grey;
-                    final pct = total > 0 ? (item.value / total) * 100 : 0.0;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            item.key,
-                            style: GoogleFonts.notoSansKr(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? Colors.white54 : Colors.black54,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '${pct.toStringAsFixed(0)}%',
-                            style: GoogleFonts.outfit(
-                              fontSize: 10,
-                              color: isDark ? Colors.white38 : Colors.black38,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              _formatKRW(item.value),
-                              style: GoogleFonts.outfit(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white54 : Colors.black54,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
               ),
             ],
           ),
@@ -2562,14 +2575,14 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
   }
 }
 
-/// Custom Doughnut Chart Painter for category distribution
+/// Custom Doughnut Chart Painter for plan events distribution
 class DoughnutChartPainter extends CustomPainter {
-  final Map<String, int> categoryCosts;
+  final List<(int cost, Color color)> itemCosts;
   final int totalCost;
   final bool isDark;
 
   DoughnutChartPainter({
-    required this.categoryCosts,
+    required this.itemCosts,
     required this.totalCost,
     required this.isDark,
   });
@@ -2578,33 +2591,29 @@ class DoughnutChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    final strokeWidth = size.width * 0.18; // thickness
+    final strokeWidth = size.width * 0.20; // thickness
 
     final basePaint = Paint()
       ..color = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
 
-    if (totalCost == 0) {
-      canvas.drawCircle(center, radius - strokeWidth / 2, basePaint);
+    // Always draw base background track circle
+    canvas.drawCircle(center, radius - strokeWidth / 2, basePaint);
+
+    if (totalCost <= 0) {
       return;
     }
 
-    final categoryColors = {
-      '관광': const Color(0xFF007AFF),
-      '식도락': const Color(0xFFFF9500),
-      '숙소': const Color(0xFFAF52DE),
-      '교통': const Color(0xFF34C759),
-      '기타': const Color(0xFF8E8E93),
-    };
-
     double startAngle = -3.1415926535 / 2; // top center start
 
-    categoryCosts.forEach((category, cost) {
-      if (cost <= 0) return;
+    for (final item in itemCosts) {
+      final cost = item.$1;
+      final color = item.$2;
+      if (cost <= 0) continue;
       final sweepAngle = (cost / totalCost) * 2 * 3.1415926535;
       final paint = Paint()
-        ..color = categoryColors[category] ?? const Color(0xFF8E8E93)
+        ..color = color
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round; // premium rounded edge stroke
@@ -2617,13 +2626,13 @@ class DoughnutChartPainter extends CustomPainter {
         paint,
       );
       startAngle += sweepAngle;
-    });
+    }
   }
 
   @override
   bool shouldRepaint(covariant DoughnutChartPainter oldDelegate) {
     return oldDelegate.totalCost != totalCost ||
         oldDelegate.isDark != isDark ||
-        oldDelegate.categoryCosts.length != categoryCosts.length;
+        oldDelegate.itemCosts.length != itemCosts.length;
   }
 }

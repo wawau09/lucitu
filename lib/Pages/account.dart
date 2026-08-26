@@ -174,11 +174,11 @@ class _AccountPageState extends State<AccountPage> {
     final String name = metadata?['full_name'] ?? _user!.email?.split('@').first ?? '사용자';
 
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const SizedBox(height: 40),
+          const SizedBox(height: 16),
           CircleAvatar(
             radius: 50,
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,

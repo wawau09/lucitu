@@ -19,6 +19,7 @@ import 'package:placelist/widgets/error_retry_widget.dart';
 import 'package:placelist/Pages/cupertino_planner_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:placelist/utils/app_colors.dart';
+import 'package:placelist/utils/web_helper.dart';
 import 'package:placelist/providers/stores_provider.dart';
 import 'package:placelist/DB/store.dart';
 
@@ -131,7 +132,14 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                   }
 
                   return RefreshIndicator(
-                    onRefresh: () => ref.read(plansProvider.notifier).refresh(),
+                    onRefresh: () async {
+                      if (kIsWeb) {
+                        reloadWebPage();
+                        await Future.delayed(const Duration(seconds: 2));
+                      } else {
+                        await ref.read(plansProvider.notifier).refresh();
+                      }
+                    },
                     child: ListView.separated(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(bottom: 100),

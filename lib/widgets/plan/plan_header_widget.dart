@@ -16,14 +16,14 @@ class PlanHeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             '내 일정',
             style: GoogleFonts.notoSans(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : Colors.black87,
             ),
@@ -31,6 +31,8 @@ class PlanHeaderWidget extends StatelessWidget {
           Row(
             children: [
               IconButton(
+                visualDensity: VisualDensity.compact,
+                iconSize: 22,
                 icon: Icon(
                   Icons.refresh,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -38,6 +40,8 @@ class PlanHeaderWidget extends StatelessWidget {
                 onPressed: onRefresh,
               ),
               IconButton(
+                visualDensity: VisualDensity.compact,
+                iconSize: 22,
                 icon: Icon(
                   Icons.add,
                   color: isDark ? Colors.white70 : Colors.black87,

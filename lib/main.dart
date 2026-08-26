@@ -159,12 +159,13 @@ class _MyAppState extends ConsumerState<MyApp> {
         appBarTheme: const AppBarTheme(
           elevation: 0,
           scrolledUnderElevation: 0,
+          toolbarHeight: 46,
           backgroundColor: AppColors.backgroundLight,
           surfaceTintColor: Colors.transparent,
           titleTextStyle: TextStyle(
             fontFamily: 'Pretendard',
             color: AppColors.textPrimaryLight,
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: FontWeight.bold,
           ),
           iconTheme: IconThemeData(color: AppColors.textPrimaryLight),
@@ -250,8 +251,16 @@ class _MyAppState extends ConsumerState<MyApp> {
         appBarTheme: const AppBarTheme(
           elevation: 0,
           scrolledUnderElevation: 0,
+          toolbarHeight: 46,
           backgroundColor: AppColors.backgroundDark,
           surfaceTintColor: Colors.transparent,
+          titleTextStyle: TextStyle(
+            fontFamily: 'Pretendard',
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
         ),
         cardTheme: CardThemeData(
           elevation: 0,
@@ -416,7 +425,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 48,
+          height: 56,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(items.length, (index) {
@@ -431,7 +440,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                   child: Center(
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? (isDark
@@ -442,7 +451,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                       ),
                       child: Icon(
                         isSelected ? selectedIcon : unselectedIcon,
-                        size: 22,
+                        size: 25,
                         color: isSelected
                             ? (isDark ? AppColors.accentLight : AppColors.primary)
                             : (isDark ? Colors.white38 : Colors.black38),
