@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:placelist/models/planner_model.dart';
 import 'package:placelist/widgets/track_timeline_widget.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:placelist/widgets/app_network_image.dart';
 import 'package:placelist/utils/app_colors.dart';
 import 'package:placelist/providers/stores_provider.dart';
 import 'package:placelist/DB/store.dart';
@@ -1410,10 +1410,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                               _buildTripOverviewCard(isDark),
                               const SizedBox(height: 16),
 
-                              // 3. Timeline header filters
-                              _buildTimelineFilterWidget(isDark),
-                              const SizedBox(height: 12),
-
                               // Race-track visual timeline & Detailed Timeline Cards
                               events.isEmpty
                                   ? _buildEmptyTimelineState(cardBg, isDark)
@@ -2049,17 +2045,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     );
   }
 
-  /// 5. Timeline Header
-  Widget _buildTimelineFilterWidget(bool isDark) {
-    return Text(
-      '타임라인 일정',
-      style: GoogleFonts.notoSansKr(
-        fontSize: 15,
-        fontWeight: FontWeight.bold,
-        color: isDark ? Colors.white : Colors.black87,
-      ),
-    );
-  }
 
   /// Empty Timeline display state
   Widget _buildEmptyTimelineState(Color cardBg, bool isDark) {
@@ -2103,7 +2088,6 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       }
     }
 
-    final imageUrl = matchingStore?.imageUrls.isNotEmpty == true ? matchingStore!.imageUrls.first : null;
     final region = matchingStore?.region;
     final tags = (matchingStore?.categoryTags.isNotEmpty == true)
         ? matchingStore!.categoryTags.take(2).map((t) => t.startsWith('#') ? t : '#$t').toList()
@@ -2115,9 +2099,9 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. 왼쪽 세로 라인 + 번호 마커 (상단 높이 12로 카드 내부 텍스트 상단과 완벽 정렬)
+          // 1. 왼쪽 세로 라인 + 번호 마커 + 시간 (상단 높이 12로 카드 내부 텍스트 상단과 완벽 정렬)
           SizedBox(
-            width: 44,
+            width: 48,
             child: Column(
               children: [
                 // 상단 세로 라인 (카드 상단 패딩 12px와 정확히 일치하여 번호와 일정명 상단 위치 일치)
@@ -2152,6 +2136,27 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                     ),
                   ),
                 ),
+                if (event.startTime.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      (event.endTime != null &&
+                              event.endTime!.isNotEmpty &&
+                              event.endTime != event.startTime)
+                          ? '${event.startTime}\n~${event.endTime}'
+                          : event.startTime,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.15,
+                        color: isDark ? Colors.white54 : Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 2),
                 // 하단 세로 라인
                 Expanded(
                   child: Container(
@@ -2191,21 +2196,13 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (imageUrl != null) ...[
-                        ClipRRect(
+                      if (matchingStore != null && matchingStore.imageUrls.isNotEmpty) ...[
+                        AppNetworkImage(
+                          imageUrls: matchingStore.imageUrls,
+                          width: 52,
+                          height: 52,
                           borderRadius: BorderRadius.circular(10),
-                          child: SizedBox(
-                            width: 52,
-                            height: 52,
-                            child: CachedNetworkImage(
-                              imageUrl: imageUrl,
-                              fit: BoxFit.cover,
-                              placeholder: (_, __) => Container(
-                                color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
-                              ),
-                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                            ),
-                          ),
+                          isDark: isDark,
                         ),
                         const SizedBox(width: 12),
                       ],

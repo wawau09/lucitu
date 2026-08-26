@@ -17,7 +17,7 @@ import 'package:placelist/widgets/plan/plan_header_widget.dart';
 import 'package:placelist/widgets/shimmer_loading.dart';
 import 'package:placelist/widgets/error_retry_widget.dart';
 import 'package:placelist/Pages/cupertino_planner_page.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:placelist/widgets/app_network_image.dart';
 import 'package:placelist/utils/app_colors.dart';
 import 'package:placelist/utils/web_helper.dart';
 import 'package:placelist/providers/stores_provider.dart';
@@ -719,7 +719,6 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       }
     }
 
-    final imageUrl = matchingStore?.imageUrls.isNotEmpty == true ? matchingStore!.imageUrls.first : null;
     final region = matchingStore?.region;
     final tags = (matchingStore?.categoryTags.isNotEmpty == true)
         ? matchingStore!.categoryTags.take(2).map((t) => t.startsWith('#') ? t : '#$t').toList()
@@ -808,36 +807,12 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                   child: Row(
                     children: [
                       // 카페 썸네일 (정사각형 1:1, Radius 12)
-                      ClipRRect(
+                      AppNetworkImage(
+                        imageUrls: matchingStore?.imageUrls,
+                        width: 68,
+                        height: 68,
                         borderRadius: BorderRadius.circular(12),
-                        child: SizedBox(
-                          width: 68,
-                          height: 68,
-                          child: imageUrl != null
-                              ? CachedNetworkImage(
-                                  imageUrl: imageUrl,
-                                  fit: BoxFit.cover,
-                                  placeholder: (_, __) => Container(
-                                    color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[200],
-                                  ),
-                                  errorWidget: (_, __, ___) => Container(
-                                    color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4EDE6),
-                                    child: Icon(
-                                      Icons.coffee_rounded,
-                                      color: isDark ? Colors.white38 : AppColors.accent,
-                                      size: 26,
-                                    ),
-                                  ),
-                                )
-                              : Container(
-                                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4EDE6),
-                                  child: Icon(
-                                    Icons.coffee_rounded,
-                                    color: isDark ? Colors.white38 : AppColors.accent,
-                                    size: 26,
-                                  ),
-                                ),
-                        ),
+                        isDark: isDark,
                       ),
                       const SizedBox(width: 12),
 

@@ -1,9 +1,9 @@
 import 'dart:ui';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
 import 'package:placelist/DB/store.dart';
+import 'package:placelist/widgets/app_network_image.dart';
 
 class StoreDetailImageHeader extends StatefulWidget {
   final Store store;
@@ -34,7 +34,7 @@ class _StoreDetailImageHeaderState extends State<StoreDetailImageHeader> {
           color: widget.isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
           child: Center(
             child: Icon(
-              Icons.image_outlined,
+              Icons.coffee_rounded,
               color: widget.isDark ? Colors.white24 : Colors.grey,
               size: 80,
             ),
@@ -64,25 +64,12 @@ class _StoreDetailImageHeaderState extends State<StoreDetailImageHeader> {
             },
             itemCount: imageUrls.length,
             itemBuilder: (context, index) {
-              return Container(
-                color: widget.isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
-                child: CachedNetworkImage(
-                  imageUrl: imageUrls[index],
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: widget.isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                    child: Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        color: widget.isDark ? Colors.white24 : Colors.grey,
-                        size: 60,
-                      ),
-                    ),
-                  ),
-                ),
+              return AppNetworkImage(
+                imageUrl: imageUrls[index],
+                fit: BoxFit.contain,
+                isDark: widget.isDark,
+                width: double.infinity,
+                height: 400,
               );
             },
           ),

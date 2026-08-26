@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:placelist/models/planner_model.dart';
 
 /// A race-track style timeline widget that displays travel events
@@ -41,29 +42,43 @@ class TrackTimelineWidget extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final w = constraints.maxWidth;
-          final painter = _TrackPainter(
-            events: events,
-            width: w,
-            isDark: isDark,
-          );
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapUp: (details) {
-              final idx = painter.findTappedEventIndex(details.localPosition);
-              if (idx != null && onEventTap != null) {
-                onEventTap!(events[idx]);
-              }
-            },
-            child: CustomPaint(
-              size: Size(w, painter.totalHeight),
-              painter: painter,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '타임라인 일정',
+            style: GoogleFonts.notoSansKr(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final w = constraints.maxWidth;
+              final painter = _TrackPainter(
+                events: events,
+                width: w,
+                isDark: isDark,
+              );
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapUp: (details) {
+                  final idx = painter.findTappedEventIndex(details.localPosition);
+                  if (idx != null && onEventTap != null) {
+                    onEventTap!(events[idx]);
+                  }
+                },
+                child: CustomPaint(
+                  size: Size(w, painter.totalHeight),
+                  painter: painter,
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

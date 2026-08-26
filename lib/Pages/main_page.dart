@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -19,6 +18,7 @@ import 'package:placelist/widgets/shimmer_loading.dart';
 import 'package:placelist/widgets/error_retry_widget.dart';
 import 'package:placelist/utils/app_colors.dart';
 import 'package:placelist/utils/web_helper.dart';
+import 'package:placelist/widgets/app_network_image.dart';
 import 'package:placelist/Pages/map_stub.dart'
     if (dart.library.html) 'package:placelist/Pages/map_web.dart';
 
@@ -431,7 +431,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     List<MapStoreItem> mapStoreItems,
     bool isDark,
   ) {
-    final imageUrl = _getMainImageUrl(store);
     MapStoreItem? currentItem;
     for (final item in mapStoreItems) {
       if (item.store.id == store.id || item.clusterStores.any((s) => s.id == store.id)) {
@@ -522,28 +521,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             ),
           Row(
             children: [
-              ClipRRect(
+              AppNetworkImage(
+                imageUrls: store.imageUrls,
+                width: 60,
+                height: 60,
                 borderRadius: BorderRadius.circular(10),
-                child: SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: imageUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                          ),
-                          errorWidget: (_, __, ___) => Container(
-                            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                            child: const Icon(Icons.coffee, size: 22, color: Colors.grey),
-                          ),
-                        )
-                      : Container(
-                          color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[200],
-                          child: const Icon(Icons.coffee, size: 22, color: Colors.grey),
-                        ),
-                ),
+                isDark: isDark,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -756,40 +739,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
+                  AppNetworkImage(
+                    imageUrls: store.imageUrls,
+                    width: 130,
+                    height: 130,
                     borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 130,
-                      height: 130,
-                      child: Builder(builder: (context) {
-                        final imageUrl = _getMainImageUrl(store);
-                        if (imageUrl == null) {
-                          return Container(color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100]);
-                        }
-                        return CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
-                            child: const Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
-                            child: Icon(
-                              Icons.broken_image,
-                              color: isDark ? Colors.white24 : Colors.grey[400],
-                              size: 24,
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
+                    isDark: isDark,
                   ),
                   const SizedBox(width: 16),
                   Expanded(

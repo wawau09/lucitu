@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Store {
   String? id;
   String name;
@@ -56,15 +58,45 @@ class Store {
     // category_tags: text[] from Supabase
     final List<String> resolvedCategoryTags = () {
       final raw = map['category_tags'];
-      if (raw is List) return raw.map((e) => e.toString()).toList();
+      if (raw is List) return raw.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
       return <String>[];
     }();
 
-    // image_urls: text[] from Supabase
+    // image_urls: text[] or string from Supabase
     final List<String> resolvedImageUrls = () {
       final raw = map['image_urls'];
-      if (raw is List) return raw.map((e) => e.toString()).toList();
-      return <String>[];
+      if (raw == null) return <String>[];
+
+      List<dynamic> list = [];
+      if (raw is List) {
+        list = raw;
+      } else if (raw is String) {
+        final str = raw.trim();
+        if (str.startsWith('[') && str.endsWith(']')) {
+          try {
+            final decoded = jsonDecode(str);
+            if (decoded is List) list = decoded;
+          } catch (_) {
+            list = str.substring(1, str.length - 1).split(',');
+          }
+        } else if (str.isNotEmpty) {
+          list = str.split(',');
+        }
+      }
+
+      return list
+          .map((e) => e?.toString().trim() ?? '')
+          .where((e) => e.isNotEmpty && (e.startsWith('http://') || e.startsWith('https://') || e.startsWith('data:image') || e.startsWith('//')))
+          .map((e) {
+            if (e.startsWith('//')) {
+              return 'https:$e';
+            }
+            if (e.startsWith('http://')) {
+              return 'https://${e.substring(7)}';
+            }
+            return e;
+          })
+          .toList();
     }();
 
     final List<dynamic>? resolvedReviews =
