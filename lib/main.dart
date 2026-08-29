@@ -137,6 +137,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     final List<Widget> screens = [const PlanPage(), const MainScreen(), const AccountPage()];
 
     return MaterialApp(
+      title: 'Loci',
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       navigatorObservers: kIsWeb ? [] : [CNTabBarRouteObserver()],

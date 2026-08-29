@@ -272,7 +272,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       setState(() {
         _planName = planRow['name']?.toString() ?? '';
         _planDate = parsedDate;
-        _planCode = planRow['plan_code']?.toString() ?? '';
+        final rawCode = planRow['plan_code']?.toString() ?? '';
+        _planCode = rawCode.contains('-') ? rawCode.split('-').last.trim() : rawCode.trim();
         _participants = loadedParticipants;
         if (loadedEvents.isNotEmpty) {
           _events = loadedEvents;

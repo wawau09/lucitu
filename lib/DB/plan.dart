@@ -21,17 +21,29 @@ class PlanSummary {
   final bool sharedWithMe;
   final int itemCount;
 
+  String get shortPlanCode {
+    if (planCode.contains('-')) {
+      return planCode.split('-').last.trim();
+    }
+    return planCode.trim();
+  }
+
   factory PlanSummary.fromMap(
     Map<String, dynamic> map, {
     required String currentUserId,
   }) {
     final ownerId = map['owner_id']?.toString() ?? '';
+    final rawCode = map['plan_code']?.toString() ?? '';
+    final formattedCode = rawCode.contains('-')
+        ? rawCode.split('-').last.trim()
+        : rawCode.trim();
+
     return PlanSummary(
       id: map['id']?.toString() ?? '',
-      name: map['name']?.toString() ?? '\uC774\uB984 \uC5C6\uB294 \uACC4\uD68D',
+      name: map['name']?.toString() ?? '이름 없는 계획',
       planDate: DateTime.tryParse(map['plan_date']?.toString() ?? '') ??
           DateTime.now(),
-      planCode: map['plan_code']?.toString() ?? '',
+      planCode: formattedCode,
       ownerId: ownerId,
       ownerName: map['owner_name']?.toString() ?? '',
       isOwner: ownerId == currentUserId,

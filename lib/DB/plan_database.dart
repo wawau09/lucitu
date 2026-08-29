@@ -15,50 +15,66 @@ class PlanDatabase {
     final user = _user;
     if (user == null) return [];
 
-    final email = user.email?.toLowerCase();
+    final email = (user.email ?? user.userMetadata?['email']?.toString())?.toLowerCase();
     
-    // 1. Get plan IDs where the user is a collaborator
-    List<String> collaboratorPlanIds = [];
-    if (email != null && email.isNotEmpty) {
-      final collabs = await _client
-          .from(_collaboratorsTable)
-          .select('plan_id')
-          .eq('collaborator_email', email);
-      collaboratorPlanIds = collabs.map((row) => row['plan_id'] as String).toList();
-    }
+    final Map<String, Map<String, dynamic>> allRows = {};
 
-    // 2. Fetch plans where user is owner
-    final ownerRows = await _client
-        .from(_plansTable)
-        .select('id,name,plan_date,plan_code,owner_id,item_count,created_at,updated_at')
-        .eq('owner_id', user.id);
+    // 1. Direct query from plans table (RLS automatically evaluates member visibility)
+    try {
+      final visibleRows = await _client
+          .from(_plansTable)
+          .select('id,name,plan_date,plan_code,owner_id,item_count,created_at,updated_at');
+      for (final row in visibleRows) {
+        final mapRow = Map<String, dynamic>.from(row as Map);
+        allRows[mapRow['id'].toString()] = mapRow;
+      }
+    } catch (_) {}
 
-    // 3. Fetch plans where user is collaborator
-    List<dynamic> collabRows = [];
-    if (collaboratorPlanIds.isNotEmpty) {
-      collabRows = await _client
+    // 2. Explicit fetch where user is owner
+    try {
+      final ownerRows = await _client
           .from(_plansTable)
           .select('id,name,plan_date,plan_code,owner_id,item_count,created_at,updated_at')
-          .inFilter('id', collaboratorPlanIds);
-    }
+          .eq('owner_id', user.id);
+      for (final row in ownerRows) {
+        final mapRow = Map<String, dynamic>.from(row as Map);
+        allRows[mapRow['id'].toString()] = mapRow;
+      }
+    } catch (_) {}
 
-    // 4. Combine and deduplicate
-    final Map<String, Map<String, dynamic>> allRows = {};
-    for (final row in [...ownerRows, ...collabRows]) {
-      final mapRow = Map<String, dynamic>.from(row as Map);
-      allRows[mapRow['id'].toString()] = mapRow;
-    }
+    // 3. Explicit fetch where user is collaborator
+    try {
+      List<String> collaboratorPlanIds = [];
+      if (email != null && email.isNotEmpty) {
+        final collabs = await _client
+            .from(_collaboratorsTable)
+            .select('plan_id')
+            .eq('collaborator_email', email);
+        collaboratorPlanIds = collabs.map((row) => row['plan_id'] as String).toList();
+      }
+
+      if (collaboratorPlanIds.isNotEmpty) {
+        final collabRows = await _client
+            .from(_plansTable)
+            .select('id,name,plan_date,plan_code,owner_id,item_count,created_at,updated_at')
+            .inFilter('id', collaboratorPlanIds);
+        for (final row in collabRows) {
+          final mapRow = Map<String, dynamic>.from(row as Map);
+          allRows[mapRow['id'].toString()] = mapRow;
+        }
+      }
+    } catch (_) {}
 
     final combinedList = allRows.values.toList();
     
-    // 5. Sort by updated_at descending
+    // 4. Sort by updated_at descending
     combinedList.sort((a, b) {
       final dateA = DateTime.tryParse(a['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
       final dateB = DateTime.tryParse(b['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
       return dateB.compareTo(dateA);
     });
 
-    // 6. Fetch owner names from profiles table
+    // 5. Fetch owner names from profiles table
     final ownerIds = combinedList.map((row) => row['owner_id'] as String).toSet().toList();
     if (ownerIds.isNotEmpty) {
       try {
@@ -264,12 +280,60 @@ class PlanDatabase {
       throw const PostgrestException(message: 'loginRequired');
     }
 
-    final row = await _client.rpc(
-      'join_plan_by_code',
-      params: {
-        'p_plan_code': planCode.trim(),
-      },
-    );
+    final trimmedCode = planCode.trim().toUpperCase();
+    final cleanCode = trimmedCode.contains('-')
+        ? trimmedCode.split('-').last.trim()
+        : trimmedCode;
+
+    dynamic row;
+    try {
+      row = await _client.rpc(
+        'join_plan_by_code',
+        params: {
+          'p_plan_code': trimmedCode,
+        },
+      );
+    } catch (e) {
+      if (cleanCode != trimmedCode) {
+        try {
+          row = await _client.rpc(
+            'join_plan_by_code',
+            params: {
+              'p_plan_code': cleanCode,
+            },
+          );
+        } catch (_) {}
+      }
+
+      if (row == null) {
+        final planSearch = await _client
+            .from(_plansTable)
+            .select('id,name,plan_date,plan_code,owner_id,item_count,created_at,updated_at')
+            .or('plan_code.ilike.%$cleanCode%,plan_code.eq.$trimmedCode')
+            .limit(1);
+
+        if (planSearch.isEmpty) {
+          throw const PostgrestException(message: 'planNotFound');
+        }
+
+        final foundPlan = Map<String, dynamic>.from(planSearch.first as Map);
+        final planId = foundPlan['id'].toString();
+
+        if (foundPlan['owner_id'] != user.id) {
+          final userEmail = (user.email ??
+                  user.userMetadata?['email']?.toString() ??
+                  '${user.id}@user.local')
+              .toLowerCase();
+          await _client.from(_collaboratorsTable).upsert({
+            'plan_id': planId,
+            'collaborator_email': userEmail,
+            'role': 'editor',
+          }, onConflict: 'plan_id,collaborator_email');
+        }
+
+        row = foundPlan;
+      }
+    }
 
     return PlanSummary.fromMap(
       Map<String, dynamic>.from(row as Map),

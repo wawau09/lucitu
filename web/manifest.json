@@ -1,13 +1,12 @@
 {
-    "name": "placelist",
-    "short_name": "placelist",
+    "name": "Loci",
+    "short_name": "Loci",
     "start_url": "./",
-    "scope": "./",
     "display": "standalone",
     "display_override": ["standalone", "fullscreen", "minimal-ui"],
     "background_color": "#121212",
     "theme_color": "#6C63FF",
-    "description": "PlaceList Cafe & Travel Planner",
+    "description": "Loci - 여행 플래너 & 장소 탐색",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

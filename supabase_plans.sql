@@ -295,21 +295,30 @@ set search_path = public
 as $$
 declare
   v_user_id uuid := auth.uid();
-  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_email text := lower(coalesce(
+    auth.jwt() ->> 'email',
+    (select email from auth.users where id = auth.uid()),
+    (select raw_user_meta_data->>'email' from auth.users where id = auth.uid()),
+    auth.uid()::text || '@user.local'
+  ));
   v_plan public.plans;
+  v_clean_code text := btrim(p_plan_code);
 begin
   if v_user_id is null then
     raise exception 'loginRequired';
   end if;
 
-  if btrim(coalesce(p_plan_code, '')) = '' then
+  if v_clean_code = '' then
     raise exception 'planCodeRequired';
   end if;
 
+  -- 1. 일치하는 계획 검색 (정확한 일치 우선, 그 후 접미사/부분 일치)
   select *
     into v_plan
     from public.plans
-   where upper(plan_code) = upper(btrim(p_plan_code))
+   where upper(plan_code) = upper(v_clean_code)
+      or upper(plan_code) like '%' || upper(v_clean_code)
+   order by case when upper(plan_code) = upper(v_clean_code) then 0 else 1 end
    limit 1;
 
   if not found then
@@ -318,10 +327,6 @@ begin
 
   if v_plan.owner_id = v_user_id then
     return v_plan;
-  end if;
-
-  if v_email = '' then
-    raise exception 'emailRequired';
   end if;
 
   insert into public.plan_collaborators (

@@ -32,6 +32,7 @@ class MainScreen extends ConsumerStatefulWidget {
 class _MainScreenState extends ConsumerState<MainScreen> {
   late final TextEditingController _searchController;
   Timer? _debounceTimer;
+  StreamSubscription<AuthState>? _authSub;
   bool _isMapView = false;
   String _sortBy = 'default'; // 'default', 'rating', 'name'
   Store? _selectedMapStore;
@@ -41,11 +42,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: ref.read(searchQueryProvider));
+
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (mounted) {
+        setState(() {});
+        ref.read(storesProvider.notifier).fetchStores();
+      }
+    });
   }
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _authSub?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -227,18 +236,20 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
             // 메인 컨텐츠 (리스트 뷰 vs 지도 뷰)
             Expanded(
-              child: storesAsync.when(
-                loading: () => ListView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: 5,
-                  itemBuilder: (context, index) => const StoreSkeletonCard(),
-                ),
-                error: (err, stack) => ErrorRetryWidget(
-                  message: err.toString(),
-                  onRetry: () => ref.read(storesProvider.notifier).fetchStores(),
-                ),
-                data: (storesList) {
+              child: _isMapView && Supabase.instance.client.auth.currentUser == null
+                  ? _buildMapLoggedOutState(isDark)
+                  : storesAsync.when(
+                      loading: () => ListView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: 5,
+                        itemBuilder: (context, index) => const StoreSkeletonCard(),
+                      ),
+                      error: (err, stack) => ErrorRetryWidget(
+                        message: err.toString(),
+                        onRetry: () => ref.read(storesProvider.notifier).fetchStores(),
+                      ),
+                      data: (storesList) {
                   var stores = List<Store>.from(storesList);
 
                   if (searchQuery.isNotEmpty) {
@@ -901,6 +912,100 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 textAlign: TextAlign.center,
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapLoggedOutState(bool isDark) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.accentLight.withValues(alpha: 0.12)
+                    : AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.map_outlined,
+                size: 40,
+                color: isDark ? AppColors.accentLight : AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "지도를 이용하려면 로그인이 필요합니다",
+              style: GoogleFonts.notoSans(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "로그인을 진행하시면 지도 위에서\n다양한 장소와 위치 정보를 자유롭게 탐색할 수 있습니다.",
+              style: GoogleFonts.notoSans(
+                fontSize: 13,
+                color: isDark ? Colors.white54 : Colors.black54,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxWidth: 240),
+              child: ElevatedButton(
+                onPressed: () => ref.read(navigationProvider.notifier).setIndex(2),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? AppColors.accentLight : AppColors.primary,
+                  foregroundColor: isDark ? AppColors.backgroundDark : Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.login_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      '로그인 하러 가기',
+                      style: GoogleFonts.notoSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isMapView = false;
+                });
+              },
+              child: Text(
+                '목록으로 계속 보기',
+                style: GoogleFonts.notoSans(
+                  fontSize: 13,
+                  color: isDark ? Colors.white38 : Colors.black45,
+                ),
+              ),
+            ),
           ],
         ),
       ),
